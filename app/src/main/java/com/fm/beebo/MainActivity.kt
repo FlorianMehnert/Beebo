@@ -21,12 +21,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.border
 import androidx.compose.material3.MaterialTheme
+import android.content.res.Configuration
+import androidx.compose.material3.Surface
+import com.fm.beebo.ui.theme.BeeboTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MessageCard(Message("Android", "Jetpack Compose"))
+            BeeboTheme {
+                Surface {
+                    MessageCard(
+                        msg = Message("Lexi", "Hey, take a look at Jetpack Compose, it's great!")
+                    )
+                }
+            }
         }
     }
 }
@@ -65,13 +75,20 @@ fun MessageCard(msg: Message) {
     }
 }
 
-
-
-
-@Preview
+@Preview(name = "Light Mode")
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    showBackground = true,
+    name = "Dark Mode"
+)
 @Composable
 fun PreviewMessageCard() {
-    MessageCard(
-        msg = Message("florian", "Hey, take a look at Jetpack Compose, it's great!")
-    )
+    BeeboTheme {
+        Surface {
+            MessageCard(
+                msg = Message("Lexi", "Hey, take a look at Jetpack Compose, it's great!")
+            )
+        }
+    }
 }
+
