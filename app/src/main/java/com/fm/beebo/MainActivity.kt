@@ -22,7 +22,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.border
 import androidx.compose.material3.MaterialTheme
 import android.content.res.Configuration
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.fm.beebo.ui.theme.BeeboTheme
 
 
@@ -31,19 +38,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             BeeboTheme {
-                Surface {
-                    MessageCard(
-                        msg = Message("Lexi", "Hey, take a look at Jetpack Compose, it's great!")
-                    )
-                }
+                Conversation(SampleData.conversationSample)
             }
         }
     }
 }
-
-
-data class Message(val author: String, val body: String)
-
 
 @Composable
 fun MessageCard(msg: Message) {
@@ -58,7 +57,12 @@ fun MessageCard(msg: Message) {
         )
         Spacer(modifier = Modifier.width(8.dp))
 
-        Column {
+        // We keep track if the message is expanded or not in this
+        // variable
+        var isExpanded by remember { mutableStateOf(false) }
+
+        // We toggle the isExpanded variable when we click on this Column
+        Column(modifier = Modifier.clickable { isExpanded = !isExpanded }) {
             Text(
                 text = msg.author,
                 color = MaterialTheme.colorScheme.secondary,
@@ -67,13 +71,42 @@ fun MessageCard(msg: Message) {
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
-                text = msg.body,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                shadowElevation = 1.dp,
+            ) {
+                Text(
+                    text = msg.body,
+                    modifier = Modifier.padding(all = 4.dp),
+                    // If the message is expanded, we display all its content
+                    // otherwise we only display the first line
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         }
     }
 }
+
+@Composable
+fun Conversation(messages: List<Message>) {
+    LazyColumn {
+        items(messages) { message ->
+            MessageCard(message)
+        }
+    }
+}
+
+@Preview
+@Composable
+fun PreviewConversation() {
+    BeeboTheme {
+        Conversation(SampleData.conversationSample)
+    }
+}
+
+
+data class Message(val author: String, val body: String)
 
 @Preview(name = "Light Mode")
 @Preview(
