@@ -160,21 +160,29 @@ class LibrarySearchService {
             return results
         }
 
-        for (row in table.select("tr").filter { row -> row.text().contains("st") }) {
+        for (row in table.select("tr").filter { row -> row.select("th").isNotEmpty() }) {
             try {
                 // title
                 val titleTag = row.select("a[href][title=null]").firstOrNull()
-                    ?: row.select("a[href]:not([title])").firstOrNull()
+                    ?: row.select("a[href]:not([title='in die Merkliste'])").firstOrNull()
+                    ?: row.select("a[href]:not([title='vormerken/bestellen'])").firstOrNull()
                 val title = titleTag?.text()?.trim() ?: continue
 
                 // Extract the year
-                val text = row.text().trim()
-                var year = ""  // Default to empty string instead of "No year found"
-                if (text.contains("[") && text.contains("]")) {
-                    val startIndex = text.indexOf("[") + 1
-                    val endIndex = text.indexOf("]", startIndex)
-                    if (startIndex < endIndex) {
-                        year = text.substring(startIndex, endIndex)
+                val text = row.select("td").text()
+                var year = ""
+
+                // Look for [YYYY] pattern first
+                val bracketPattern = "\\[(\\d{4})]".toRegex()
+                val bracketMatch = bracketPattern.find(text)
+                if (bracketMatch != null) {
+                    year = bracketMatch.groupValues[1]
+                } else {
+                    // If not found in brackets, look for standalone year
+                    val yearPattern = "\\b(20\\d{2})\\b".toRegex()  // Matches years from 2000-2099
+                    val yearMatch = yearPattern.find(text)
+                    if (yearMatch != null) {
+                        year = yearMatch.groupValues[1]
                     }
                 }
 
@@ -188,7 +196,7 @@ class LibrarySearchService {
                 val media = LibraryMedia(
                     url = itemLink,
                     isAvailable = isAvailable,
-                    year = year,  // Use the empty string if no year found
+                    year = year,
                     title = title,
                     dueDates = emptyList(),
                     kindOfMedium = kindOfMedium
