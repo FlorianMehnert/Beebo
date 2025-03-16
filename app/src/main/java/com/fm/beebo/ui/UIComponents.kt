@@ -257,7 +257,7 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean) {
     var title = if (parts.size > 2) parts.drop(2).joinToString(" ") else ""
 
     // Split title and availability info
-    val availabilityText = if (title.contains(" ausleihbar")) " ausleihbar" else " nicht ausleihbar "
+    val availabilityText = if (title.contains(" ausleihbar")) " ausleihbar" else " nicht_ausleihbar "
     title = title.replace(availabilityText, "")
 
     // Extract due date if present
@@ -271,6 +271,9 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean) {
     if (dueDate.isNotEmpty()) {
         title = title.replace(dueDate, "").trim()
     }
+
+    // Determine what to display in the medium icon
+    val displayMedium = medium.ifEmpty { "?" }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -291,7 +294,7 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = medium,
+                    text = displayMedium,
                     fontSize = 20.sp,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -316,14 +319,26 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = year,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    // Only show the year if it's not empty
+                    if (year.isNotEmpty()) {
+                        Text(
+                            text = year,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else{
+                      Text(
+                          text = "No year found",
+                          style = MaterialTheme.typography.bodySmall,
+                          color = MaterialTheme.colorScheme.onSurfaceVariant
+                      )
+                    }
 
                     if (dueDate.isNotEmpty()) {
-                        Spacer(modifier = Modifier.width(8.dp))
+                        // Add spacer only if year is shown
+                        if (year.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
 
                         Text(
                             text = buildAnnotatedString {

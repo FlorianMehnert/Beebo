@@ -13,10 +13,11 @@ data class LibraryMedia(
             "DVD" -> "📀"
             "Blu-ray Disc" -> "🔵"
             "CD" -> "💿"
-            else -> kindOfMedium
+            "Buch" -> "📖"
+            else -> "❓"
         }
 
-        val availabilityText = if (isAvailable) " ausleihbar" else " nicht ausleihbar "
+        val availabilityText = if (isAvailable) " ausleihbar" else " nicht_ausleihbar "
         val dueDate = if (!isAvailable && dueDates.isNotEmpty()) dueDates[0] else ""
 
         return "$year $mediumIcon $title $availabilityText$dueDate"

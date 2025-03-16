@@ -169,7 +169,7 @@ class LibrarySearchService {
 
                 // Extract the year
                 val text = row.text().trim()
-                var year: String? = null
+                var year = ""  // Default to empty string instead of "No year found"
                 if (text.contains("[") && text.contains("]")) {
                     val startIndex = text.indexOf("[") + 1
                     val endIndex = text.indexOf("]", startIndex)
@@ -188,7 +188,7 @@ class LibrarySearchService {
                 val media = LibraryMedia(
                     url = itemLink,
                     isAvailable = isAvailable,
-                    year = year ?: "No year found",
+                    year = year,  // Use the empty string if no year found
                     title = title,
                     dueDates = emptyList(),
                     kindOfMedium = kindOfMedium
