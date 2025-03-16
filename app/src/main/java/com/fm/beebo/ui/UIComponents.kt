@@ -26,7 +26,7 @@ import com.fm.beebo.viewmodels.LibrarySearchViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibrarySearchScreen(viewModel: LibrarySearchViewModel = viewModel()) {
-    var query by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf("fight club") }
     var pages by remember { mutableStateOf("3") }
 
     Scaffold(

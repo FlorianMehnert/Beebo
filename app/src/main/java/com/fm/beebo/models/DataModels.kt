@@ -3,7 +3,7 @@ package com.fm.beebo.models
 data class LibraryMedia(
     val url: String,
     val isAvailable: Boolean,
-    val year: String,
+    val year: String = "kein Jahr",
     val title: String,
     val dueDates: List<String>,
     val kindOfMedium: String = ""

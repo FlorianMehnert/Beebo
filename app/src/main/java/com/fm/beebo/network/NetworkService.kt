@@ -132,9 +132,11 @@ class LibrarySearchService {
             val matcher = pattern.matcher(lastPageUrl)
 
             if (matcher.find()) {
-                val lastPosition = matcher.group(1).toInt()
+                val lastPosition = matcher.group(1)?.toInt()
                 val resultsPerPage = 10  // Adjust based on site pagination
-                return (lastPosition / resultsPerPage) + 1
+                if (lastPosition != null) {
+                    return (lastPosition / resultsPerPage) + 1
+                }
             }
         }
         return 1  // If we can't determine, assume at least 1 page
@@ -215,7 +217,9 @@ class LibrarySearchService {
 
                 if (matcher.find()) {
                     val dueDate = matcher.group(1)
-                    results.add(dueDate)
+                    if (dueDate != null) {
+                        results.add(dueDate)
+                    }
                 }
             }
         }
