@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -44,18 +44,14 @@ fun MovieSearchScreen(viewModel: MovieSearchViewModel = viewModel()) {
                 Text(mediaType)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                DropdownMenuItem(onClick = {
+                DropdownMenuItem(text={Text("Movie")}, onClick = {
                     mediaType = "Movie"
                     expanded = false
-                }) {
-                    Text("Movie")
-                }
-                DropdownMenuItem(onClick = {
+                })
+                DropdownMenuItem(text={Text("Series")}, onClick = {
                     mediaType = "Series"
                     expanded = false
-                }) {
-                    Text("Series")
-                }
+                })
             }
         }
 
