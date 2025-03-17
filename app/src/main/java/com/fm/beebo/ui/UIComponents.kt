@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -244,7 +245,7 @@ fun LibraryItemDetailScreen(viewModel: LibrarySearchViewModel, onBack: () -> Uni
         ) {
             IconButton(onClick = onBack) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back"
                 )
             }
@@ -476,135 +477,6 @@ fun EmptyResults() {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
-        }
-    }
-}
-
-@Composable
-fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean) {
-    val parts = text.split(" ", limit = 4)
-    val year = if (parts.isNotEmpty()) parts.getOrNull(0) ?: "" else ""
-    val medium = if (parts.size > 1) parts.getOrNull(1) ?: "" else ""
-    var title = if (parts.size > 2) parts.drop(2).joinToString(" ") else ""
-
-    // Split title and availability info
-    val availabilityText = if (title.contains(" ausleihbar")) " ausleihbar" else " nicht_ausleihbar "
-    title = title.replace(availabilityText, "")
-
-    // Extract due date if present
-    val dueDate = if (!isAvailable && title.contains(Regex("\\d{2}\\.\\d{2}\\.\\d{4}"))) {
-        val regex = Regex("(\\d{2}\\.\\d{2}\\.\\d{4})")
-        val match = regex.find(title)
-        match?.value ?: ""
-    } else ""
-
-    // Clean up title if it contains due date
-    if (dueDate.isNotEmpty()) {
-        title = title.replace(dueDate, "").trim()
-    }
-
-    // Determine what to display in the medium icon
-    val displayMedium = medium.ifEmpty { "?" }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Medium icon
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = displayMedium,
-                    fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Content
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Only show the year if it's not empty
-                    if (year.isNotEmpty()) {
-                        Text(
-                            text = year,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else{
-                      Text(
-                          text = "No year found",
-                          style = MaterialTheme.typography.bodySmall,
-                          color = MaterialTheme.colorScheme.onSurfaceVariant
-                      )
-                    }
-
-                    if (dueDate.isNotEmpty()) {
-                        // Add spacer only if year is shown
-                        if (year.isNotEmpty()) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-
-                        Text(
-                            text = buildAnnotatedString {
-                                append("Due: ")
-                                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append(dueDate)
-                                }
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Availability indicator
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isAvailable) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.errorContainer
-                    )
-                    .padding(8.dp)
-            ) {
-                Icon(
-                    imageVector = if (isAvailable) Icons.Default.Check else Icons.Default.Close,
-                    contentDescription = if (isAvailable) "Available" else "Not Available",
-                    tint = if (isAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                )
-            }
         }
     }
 }

@@ -29,10 +29,7 @@ class LibrarySearchService {
 
                 val initialDoc = initialResponse.parse()
                 val csidInput = initialDoc.select("input[name=CSId]").first()
-
-                if (csidInput == null) {
-                    return@withContext Pair(results, cookies)
-                }
+                    ?: return@withContext Pair(results, cookies)
 
                 val csid = csidInput.attr("value")
 
@@ -207,11 +204,7 @@ class LibrarySearchService {
 
     private fun extractMetadata(doc: Document): List<LibraryMedia> {
         val results = mutableListOf<LibraryMedia>()
-        val table = doc.select("table").firstOrNull()
-
-        if (table == null) {
-            return results
-        }
+        val table = doc.select("table").firstOrNull() ?: return results
 
         for (row in table.select("tr").filter { row -> row.select("th").isNotEmpty() }) {
             try {
