@@ -78,13 +78,12 @@ fun LibrarySearchScreen(viewModel: LibrarySearchViewModel = viewModel()) {
                 }
             } else {
                 if (selectedItem != null) {
-                    LibraryItemDetailScreen(selectedItem!!, viewModel) {
+                    LibraryItemDetailScreen(viewModel) {
                         selectedItem = null
                     }
                 } else {
                     SearchResults(
                         results = viewModel.results,
-                        viewModel = viewModel,
                         onItemClick = { item ->
                             selectedItem = Pair(item.title, item.isAvailable)
                             viewModel.fetchItemDetails(item.url, emptyMap()) // Pass empty cookies for now
@@ -230,7 +229,7 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean, onClick: () -> U
 
 
 @Composable
-fun LibraryItemDetailScreen(item: Pair<String, Boolean>, viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
+fun LibraryItemDetailScreen(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
     val itemDetails = viewModel.selectedItemDetails
 
     Column(
@@ -383,7 +382,7 @@ fun SearchStatus(
 }
 
 @Composable
-fun SearchResults(results: List<LibraryMedia>, viewModel: LibrarySearchViewModel, onItemClick: (LibraryMedia) -> Unit) {
+fun SearchResults(results: List<LibraryMedia>, onItemClick: (LibraryMedia) -> Unit) {
     if (results.isEmpty()) {
         EmptyResults()
     } else {

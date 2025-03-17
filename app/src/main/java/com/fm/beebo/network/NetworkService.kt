@@ -84,7 +84,7 @@ class LibrarySearchService {
 
                 // Process first page
                 statusUpdates.add("Processing first page...")
-                val firstPageResults = extractMetadata(searchDoc, cookies)
+                val firstPageResults = extractMetadata(searchDoc)
                 results.addAll(firstPageResults)
 
                 // Process remaining pages
@@ -104,7 +104,7 @@ class LibrarySearchService {
                     cookies.putAll(nextPageResponse.cookies())
 
                     val nextPageDoc = nextPageResponse.parse()
-                    val pageResults = extractMetadata(nextPageDoc, cookies)
+                    val pageResults = extractMetadata(nextPageDoc)
                     results.addAll(pageResults)
 
                     // Get next page URL
@@ -163,7 +163,7 @@ class LibrarySearchService {
         }
     }
 
-    private fun extractMetadata(doc: Document, cookies: Map<String, String>): List<LibraryMedia> {
+    private fun extractMetadata(doc: Document): List<LibraryMedia> {
         val results = mutableListOf<LibraryMedia>()
         val table = doc.select("table").firstOrNull()
 
@@ -223,26 +223,4 @@ class LibrarySearchService {
         return results
     }
 
-    private fun findDueDates(html: String): List<String> {
-        val results = mutableListOf<String>()
-        val doc = Jsoup.parse(html)
-
-        for (row in doc.select("tr")) {
-            val textContent = row.text()
-
-            if (textContent.contains("entliehen")) {
-                val pattern = Pattern.compile("entliehen.*?(\\d{2}\\.\\d{2}\\.\\d{4})")
-                val matcher = pattern.matcher(textContent)
-
-                if (matcher.find()) {
-                    val dueDate = matcher.group(1)
-                    if (dueDate != null) {
-                        results.add(dueDate)
-                    }
-                }
-            }
-        }
-
-        return results
-    }
 }
