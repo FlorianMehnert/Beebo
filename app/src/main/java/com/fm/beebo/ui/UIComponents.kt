@@ -22,6 +22,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,13 +78,17 @@ fun LibrarySearchScreen(viewModel: LibrarySearchViewModel = viewModel()) {
                 }
             } else {
                 if (selectedItem != null) {
-                    LibraryItemDetailScreen(selectedItem!!) {
+                    LibraryItemDetailScreen(selectedItem!!, viewModel) {
                         selectedItem = null
                     }
                 } else {
                     SearchResults(
                         results = viewModel.results,
-                        onItemClick = { item -> selectedItem = item }
+                        viewModel = viewModel,
+                        onItemClick = { item ->
+                            selectedItem = Pair(item.title, item.isAvailable)
+                            viewModel.fetchItemDetails(item.url, emptyMap()) // Pass empty cookies for now
+                        }
                     )
                 }
             }
@@ -223,31 +228,10 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean, onClick: () -> U
 }
 
 
+
 @Composable
-fun LibraryItemDetailScreen(item: Pair<String, Boolean>, onBack: () -> Unit) {
-    val parts = item.first.split(" ", limit = 4)
-    val year = if (parts.isNotEmpty()) parts.getOrNull(0) ?: "" else ""
-    val medium = if (parts.size > 1) parts.getOrNull(1) ?: "" else ""
-    var title = if (parts.size > 2) parts.drop(2).joinToString(" ") else ""
-
-    // Split title and availability info
-    val availabilityText = if (title.contains(" ausleihbar")) " ausleihbar" else " nicht_ausleihbar "
-    title = title.replace(availabilityText, "")
-
-    // Extract due date if present
-    val dueDate = if (!item.second && title.contains(Regex("\\d{2}\\.\\d{2}\\.\\d{4}"))) {
-        val regex = Regex("(\\d{2}\\.\\d{2}\\.\\d{4})")
-        val match = regex.find(title)
-        match?.value ?: ""
-    } else ""
-
-    // Clean up title if it contains due date
-    if (dueDate.isNotEmpty()) {
-        title = title.replace(dueDate, "").trim()
-    }
-
-    // Determine what to display in the medium icon
-    val displayMedium = medium.ifEmpty { "?" }
+fun LibraryItemDetailScreen(item: Pair<String, Boolean>, viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
+    val itemDetails = viewModel.selectedItemDetails
 
     Column(
         modifier = Modifier
@@ -273,81 +257,17 @@ fun LibraryItemDetailScreen(item: Pair<String, Boolean>, onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Only show the year if it's not empty
-                    if (year.isNotEmpty()) {
-                        Text(
-                            text = year,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        Text(
-                            text = "No year found",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    if (dueDate.isNotEmpty()) {
-                        // Add spacer only if year is shown
-                        if (year.isNotEmpty()) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-
-                        Text(
-                            text = buildAnnotatedString {
-                                append("Due: ")
-                                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append(dueDate)
-                                }
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Medium: $displayMedium",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = if (item.second) "Available" else "Not Available",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (item.second) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                )
-            }
+        if (itemDetails != null) {
+            Text(
+                text = itemDetails,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        } else {
+            CircularProgressIndicator()
         }
     }
 }
+
 
 
 @Composable
@@ -463,7 +383,7 @@ fun SearchStatus(
 }
 
 @Composable
-fun SearchResults(results: List<Pair<String, Boolean>>, onItemClick: (Pair<String, Boolean>) -> Unit) {
+fun SearchResults(results: List<LibraryMedia>, viewModel: LibrarySearchViewModel, onItemClick: (LibraryMedia) -> Unit) {
     if (results.isEmpty()) {
         EmptyResults()
     } else {
@@ -473,14 +393,16 @@ fun SearchResults(results: List<Pair<String, Boolean>>, onItemClick: (Pair<Strin
         ) {
             items(results) { item ->
                 EnhancedLibraryItemCard(
-                    text = item.first,
-                    isAvailable = item.second,
+                    text = item.toString(),
+                    isAvailable = item.isAvailable,
                     onClick = { onItemClick(item) }
                 )
             }
         }
     }
 }
+
+
 
 
 @Composable

@@ -13,9 +13,9 @@ class LibrarySearchService {
         private const val BASE_LOGGED_IN_URL = "https://katalog.bibo-dresden.de"
     }
 
-    suspend fun search(searchTerm: String, maxPages: Int = 3): List<Pair<String, Boolean>> {
+    suspend fun search(searchTerm: String, maxPages: Int = 3): List<LibraryMedia> {
         return withContext(Dispatchers.IO) {
-            val results = mutableListOf<Pair<String, Boolean>>()
+            val results = mutableListOf<LibraryMedia>()
             val statusUpdates = mutableListOf<String>()
 
             try {
@@ -121,6 +121,17 @@ class LibrarySearchService {
         }
     }
 
+    suspend fun getItemDetails(itemUrl: String, cookies: Map<String, String>): String {
+        return withContext(Dispatchers.IO) {
+            val response = Jsoup.connect(itemUrl)
+                .cookies(cookies)
+                .timeout(30000)
+                .execute()
+
+            return@withContext response.parse().html()
+        }
+    }
+
     private fun getMaxPages(doc: Document): Int {
         val lastPageLink = doc.select("a[title='Letzte Seite']").firstOrNull()
 
@@ -152,8 +163,8 @@ class LibrarySearchService {
         }
     }
 
-    private fun extractMetadata(doc: Document, cookies: Map<String, String>): List<Pair<String, Boolean>> {
-        val results = mutableListOf<Pair<String, Boolean>>()
+    private fun extractMetadata(doc: Document, cookies: Map<String, String>): List<LibraryMedia> {
+        val results = mutableListOf<LibraryMedia>()
         val table = doc.select("table").firstOrNull()
 
         if (table == null) {
@@ -194,7 +205,7 @@ class LibrarySearchService {
                 val kindOfMedium = kindOfMediumRaw?.attr("title") ?: ""
 
                 val media = LibraryMedia(
-                    url = itemLink,
+                    url = "$BASE_LOGGED_IN_URL$itemLink",
                     isAvailable = isAvailable,
                     year = year,
                     title = title,
@@ -202,7 +213,7 @@ class LibrarySearchService {
                     kindOfMedium = kindOfMedium
                 )
 
-                results.add(Pair(media.toString(), isAvailable))
+                results.add(media)
             } catch (e: Exception) {
                 println("Error processing item: ${e.message}")
                 continue
