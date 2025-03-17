@@ -13,7 +13,8 @@ class LibrarySearchViewModel : ViewModel() {
     var results by mutableStateOf(listOf<LibraryMedia>())
     var isLoading by mutableStateOf(false)
     var statusMessage by mutableStateOf("")
-    var selectedItemDetails by mutableStateOf<String?>(null)
+    var selectedItemDetails by mutableStateOf<LibraryMedia?>(null)
+    private var cookies = mutableMapOf<String, String>()
 
     private val librarySearchService = LibrarySearchService()
 
@@ -26,8 +27,9 @@ class LibrarySearchViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val searchResults = librarySearchService.search(query, maxPages)
+                val (searchResults, newCookies) = librarySearchService.search(query, maxPages)
                 results = searchResults
+                setCookies(newCookies)  // Store cookies
                 statusMessage = if (searchResults.isEmpty()) "No results found" else "Found ${searchResults.size} items"
             } catch (e: Exception) {
                 statusMessage = "Error: ${e.message}"
@@ -37,7 +39,8 @@ class LibrarySearchViewModel : ViewModel() {
         }
     }
 
-    fun fetchItemDetails(itemUrl: String, cookies: Map<String, String>) {
+
+    fun fetchItemDetails(itemUrl: String) {
         isLoading = true
         statusMessage = "Fetching item details..."
 
@@ -53,4 +56,10 @@ class LibrarySearchViewModel : ViewModel() {
             }
         }
     }
+
+    // Function to set cookies after initial search
+    fun setCookies(newCookies: Map<String, String>) {
+        cookies.putAll(newCookies)
+    }
 }
+

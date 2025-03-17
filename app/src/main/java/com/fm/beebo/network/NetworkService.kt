@@ -13,17 +13,13 @@ class LibrarySearchService {
         private const val BASE_LOGGED_IN_URL = "https://katalog.bibo-dresden.de"
     }
 
-    suspend fun search(searchTerm: String, maxPages: Int = 3): List<LibraryMedia> {
+    suspend fun search(searchTerm: String, maxPages: Int = 3): Pair<List<LibraryMedia>, Map<String, String>> {
         return withContext(Dispatchers.IO) {
             val results = mutableListOf<LibraryMedia>()
-            val statusUpdates = mutableListOf<String>()
+            val cookies = HashMap<String, String>()
 
             try {
-                // Create a session
-                val cookies = HashMap<String, String>()
-
                 // Initialize the session and get the CSId
-                statusUpdates.add("Initializing search session...")
                 val initialResponse = Jsoup.connect(BASE_URL)
                     .timeout(30000)
                     .execute()
@@ -35,18 +31,15 @@ class LibrarySearchService {
                 val csidInput = initialDoc.select("input[name=CSId]").first()
 
                 if (csidInput == null) {
-                    statusUpdates.add("Failed to get CSID token")
-                    return@withContext results
+                    return@withContext Pair(results, cookies)
                 }
 
                 val csid = csidInput.attr("value")
-                statusUpdates.add("Got CSID: ${csid.take(5)}...")
 
                 // Prepare search URL
                 val searchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
 
                 // Execute the search
-                statusUpdates.add("Searching for: '$searchTerm'...")
                 val searchResponse = Jsoup.connect(searchUrl)
                     .data("searchCategories[0]", "-1")
                     .data("searchString[0]", searchTerm)
@@ -71,19 +64,16 @@ class LibrarySearchService {
 
                 // Check if we have results
                 if (searchDoc.text().contains("keine Treffer")) {
-                    statusUpdates.add("No results found")
-                    return@withContext results
+                    return@withContext Pair(results, cookies)
                 }
 
                 // Determine total pages
                 val totalPages = getMaxPages(searchDoc)
-                statusUpdates.add("Found $totalPages pages of results")
 
                 // Limit to specified max pages
                 val pagesToFetch = minOf(totalPages, maxPages)
 
                 // Process first page
-                statusUpdates.add("Processing first page...")
                 val firstPageResults = extractMetadata(searchDoc)
                 results.addAll(firstPageResults)
 
@@ -93,7 +83,6 @@ class LibrarySearchService {
 
                 while (nextUrl != null && currentPage < pagesToFetch) {
                     currentPage++
-                    statusUpdates.add("Fetching page $currentPage of $pagesToFetch...")
 
                     val nextPageResponse = Jsoup.connect(nextUrl)
                         .cookies(cookies)
@@ -110,27 +99,80 @@ class LibrarySearchService {
                     // Get next page URL
                     nextUrl = getNextPageLink(nextPageDoc)
                 }
-
-                statusUpdates.add("Completed search with ${results.size} items across $currentPage pages")
             } catch (e: Exception) {
-                statusUpdates.add("Error: ${e.message}")
                 e.printStackTrace()
             }
 
-            return@withContext results
+            return@withContext Pair(results, cookies)
         }
     }
 
-    suspend fun getItemDetails(itemUrl: String, cookies: Map<String, String>): String {
+
+    suspend fun getItemDetails(itemUrl: String, cookies: Map<String, String>): LibraryMedia? {
         return withContext(Dispatchers.IO) {
+            println(cookies)
             val response = Jsoup.connect(itemUrl)
                 .cookies(cookies)
                 .timeout(30000)
                 .execute()
 
-            return@withContext response.parse().html()
+            val doc = response.parse()
+
+            // Check for session expiry
+            if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
+                // Handle session expiry
+                println("Session expired. Please log in again.")
+                return@withContext null
+            }
+
+            // Extract title
+            val title = doc.select("h1").text()
+
+            // Extract authors
+            val authors = doc.select("div.teaser li").eachText().filter { it.contains("Regie:") || it.contains("Drehb.:") }
+
+            // Extract description
+            val description = doc.select("div.teaser").text()
+
+            // Extract additional info
+            val additionalInfo = doc.select("ul.teaser").text()
+
+            // Extract availability and due dates
+            val isAvailable = doc.select("span.textgruen").isNotEmpty()
+            val dueDates = doc.select("td:contains(entliehen bis)").eachText().map { it.replace("entliehen bis ", "") }
+
+            // Extract year
+            val year = doc.select("div.teaser").text().let {
+                val yearPattern = "\\b(20\\d{2})\\b".toRegex()
+                val yearMatch = yearPattern.find(it)
+                yearMatch?.value ?: "kein Jahr"
+            }
+
+            // Extract kind of medium
+            val kindOfMedium = doc.select("div.teaser").text().let {
+                if (it.contains("DVD")) "DVD"
+                else if (it.contains("Blu-ray")) "Blu-ray Disc"
+                else if (it.contains("CD")) "CD"
+                else if (it.contains("Buch")) "Buch"
+                else ""
+            }
+
+            LibraryMedia(
+                url = itemUrl,
+                isAvailable = isAvailable,
+                year = year,
+                title = title,
+                dueDates = dueDates,
+                kindOfMedium = kindOfMedium,
+                authors = authors,
+                description = description,
+                additionalInfo = additionalInfo
+            )
         }
     }
+
+
+
 
     private fun getMaxPages(doc: Document): Int {
         val lastPageLink = doc.select("a[title='Letzte Seite']").firstOrNull()

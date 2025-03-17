@@ -6,7 +6,10 @@ data class LibraryMedia(
     val year: String = "kein Jahr",
     val title: String,
     val dueDates: List<String>,
-    val kindOfMedium: String = ""
+    val kindOfMedium: String = "",
+    val authors: List<String> = emptyList(),
+    val description: String = "",
+    val additionalInfo: String = ""
 ) {
     override fun toString(): String {
         val mediumIcon = when (kindOfMedium) {
@@ -23,5 +26,3 @@ data class LibraryMedia(
         return "$year $mediumIcon $title $availabilityText$dueDate"
     }
 }
-
-

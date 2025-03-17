@@ -80,13 +80,15 @@ fun LibrarySearchScreen(viewModel: LibrarySearchViewModel = viewModel()) {
                 if (selectedItem != null) {
                     LibraryItemDetailScreen(viewModel) {
                         selectedItem = null
+                        println("is not null")
                     }
                 } else {
+                    println("is null")
                     SearchResults(
                         results = viewModel.results,
                         onItemClick = { item ->
                             selectedItem = Pair(item.title, item.isAvailable)
-                            viewModel.fetchItemDetails(item.url, emptyMap()) // Pass empty cookies for now
+                            viewModel.fetchItemDetails(item.url) // Pass empty cookies for now
                         }
                     )
                 }
@@ -227,7 +229,6 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean, onClick: () -> U
 }
 
 
-
 @Composable
 fun LibraryItemDetailScreen(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
     val itemDetails = viewModel.selectedItemDetails
@@ -255,17 +256,54 @@ fun LibraryItemDetailScreen(viewModel: LibrarySearchViewModel, onBack: () -> Uni
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
         if (itemDetails != null) {
             Text(
-                text = itemDetails,
+                text = itemDetails.toString(),
+                style = MaterialTheme.typography.headlineSmall
+            )
+        }
+        if (itemDetails != null) {
+            Text(
+                text = itemDetails.title,
+                style = MaterialTheme.typography.headlineSmall
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Year: ${itemDetails.year}",
                 style = MaterialTheme.typography.bodyMedium
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Authors: ${itemDetails.authors.joinToString(", ")}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Description: ${itemDetails.description}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Additional Info: ${itemDetails.additionalInfo}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Availability: ${if (itemDetails.isAvailable) "Available" else "Not Available"}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            if (!itemDetails.isAvailable && itemDetails.dueDates.isNotEmpty()) {
+                Text(
+                    text = "Due Date: ${itemDetails.dueDates[0]}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         } else {
             CircularProgressIndicator()
         }
     }
 }
+
 
 
 
