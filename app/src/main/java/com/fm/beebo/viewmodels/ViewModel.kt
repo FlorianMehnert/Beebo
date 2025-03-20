@@ -22,7 +22,7 @@ class LibrarySearchViewModel : ViewModel() {
         if (query.isBlank()) return
 
         isLoading = true
-        statusMessage = "Searching..."
+        statusMessage = "Suche..."
         results = emptyList()
 
         viewModelScope.launch {
@@ -30,7 +30,7 @@ class LibrarySearchViewModel : ViewModel() {
                 val (searchResults, newCookies) = librarySearchService.search(query, maxPages)
                 results = searchResults
                 setCookies(newCookies)  // Store cookies
-                statusMessage = if (searchResults.isEmpty()) "No results found" else "Found ${searchResults.size} items"
+                statusMessage = if (searchResults.isEmpty()) "Keine Ergebnisse gefunden" else "${searchResults.size} Treffer"
             } catch (e: Exception) {
                 statusMessage = "Error: ${e.message}"
             } finally {
@@ -42,13 +42,13 @@ class LibrarySearchViewModel : ViewModel() {
 
     fun fetchItemDetails(itemUrl: String) {
         isLoading = true
-        statusMessage = "Fetching item details..."
+        statusMessage = "Aktualisiere Details..."
 
         viewModelScope.launch {
             try {
                 val itemDetails = librarySearchService.getItemDetails(itemUrl, cookies)
                 selectedItemDetails = itemDetails
-                statusMessage = "Item details fetched"
+                statusMessage = "Details aktualisiert"
             } catch (e: Exception) {
                 statusMessage = "Error: ${e.message}"
             } finally {

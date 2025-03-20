@@ -66,6 +66,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.graphics.Color
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -254,15 +257,15 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean, onClick: () -> U
                     .size(48.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isAvailable) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.errorContainer
+                        if (isAvailable) Color(0x59B5FF38)
+                        else Color(0x37FF2F2F)
                     )
                     .padding(8.dp)
             ) {
                 Icon(
                     imageVector = if (isAvailable) Icons.Default.Check else Icons.Default.Close,
                     contentDescription = if (isAvailable) "Available" else "Not Available",
-                    tint = if (isAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    tint = if (isAvailable) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -273,6 +276,11 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean, onClick: () -> U
 @Composable
 fun LibraryItemDetailScreen(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
     val itemDetails = viewModel.selectedItemDetails
+
+    // Handle the system back button press
+    BackHandler {
+        onBack()
+    }
 
     Column(
         modifier = Modifier
@@ -302,8 +310,6 @@ fun LibraryItemDetailScreen(viewModel: LibrarySearchViewModel, onBack: () -> Uni
                 text = itemDetails.toString(),
                 style = MaterialTheme.typography.headlineSmall
             )
-        }
-        if (itemDetails != null) {
             Text(
                 text = itemDetails.title,
                 style = MaterialTheme.typography.headlineSmall
