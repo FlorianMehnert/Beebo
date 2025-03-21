@@ -5,15 +5,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 import java.util.regex.Pattern
 
 class LibrarySearchService {
     companion object {
-        private const val BASE_URL = "https://katalog.bibo-dresden.de/webOPACClient/start.do?Login=webopac&BaseURL=this"
+        private const val BASE_URL =
+            "https://katalog.bibo-dresden.de/webOPACClient/start.do?Login=webopac&BaseURL=this"
         private const val BASE_LOGGED_IN_URL = "https://katalog.bibo-dresden.de"
     }
 
-    suspend fun search(searchTerm: String, maxPages: Int = 3): Pair<List<LibraryMedia>, Map<String, String>> {
+    suspend fun search(
+        searchTerm: String,
+        maxPages: Int = 3
+    ): Pair<List<LibraryMedia>, Map<String, String>> {
         return withContext(Dispatchers.IO) {
             val results = mutableListOf<LibraryMedia>()
             val cookies = HashMap<String, String>()
@@ -34,7 +39,8 @@ class LibrarySearchService {
                 val csid = csidInput.attr("value")
 
                 // Prepare search URL
-                val searchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
+                val searchUrl =
+                    "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
 
                 // Execute the search
                 val searchResponse = Jsoup.connect(searchUrl)
@@ -107,7 +113,6 @@ class LibrarySearchService {
 
     suspend fun getItemDetails(itemUrl: String, cookies: Map<String, String>): LibraryMedia? {
         return withContext(Dispatchers.IO) {
-            println(cookies)
             val response = Jsoup.connect(itemUrl)
                 .cookies(cookies)
                 .timeout(30000)
@@ -122,21 +127,34 @@ class LibrarySearchService {
                 return@withContext null
             }
 
+
+            val extraDetailsTabUrl = changeDetailsTab(doc)
+            println(extraDetailsTabUrl)
+            val extendedMedia: LibraryMedia?
+            if (extraDetailsTabUrl.isNotEmpty()) {
+                extendedMedia = parseDetailsTab(BASE_LOGGED_IN_URL + extraDetailsTabUrl, cookies)
+            }
+
             // Extract title
             val title = doc.select("h1").text()
 
-            // Extract authors
-            val authors = doc.select("div.teaser li").eachText().filter { it.contains("Regie:") || it.contains("Drehb.:") }
+            val language = ""
+            val publisher = "" // verlag
+            val direction = "" // regie
+            val actors = emptyList<String>()
+            val authors: String
+            if (extraDetailsTabUrl.isNotEmpty()) {
+                authors = extraDetailsTabUrl
+            } else {
+                authors = "a"
+            }
 
-            // Extract description
-            val description = doc.select("div.teaser").text()
-
-            // Extract additional info
-            val additionalInfo = doc.select("ul.teaser").text()
+            val isbn = ""
 
             // Extract availability and due dates
             val isAvailable = doc.select("span.textgruen").isNotEmpty()
-            val dueDates = doc.select("td:contains(entliehen bis)").eachText().map { it.replace("entliehen bis ", "") }
+            val dueDates = doc.select("td:contains(entliehen bis)").eachText()
+                .map { it.replace("entliehen bis ", "") }
 
             // Extract year
             val year = doc.select("div.teaser").text().let {
@@ -161,14 +179,82 @@ class LibrarySearchService {
                 title = title,
                 dueDates = dueDates,
                 kindOfMedium = kindOfMedium,
-                authors = authors,
-                description = description,
-                additionalInfo = additionalInfo
+                author = authors,
             )
         }
     }
 
+    suspend fun parseDetailsTab(
+        detailsTabUrl: String,
+        cookies: Map<String, String>
+    ): LibraryMedia? {
+        return withContext(Dispatchers.IO) {
+            val response = Jsoup.connect(detailsTabUrl)
+                .cookies(cookies)
+                .timeout(30000)
+                .execute()
 
+            val doc = response.parse()
+
+            // Check for session expiry
+            if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
+                // Handle session expiry
+                println("Session expired. Please log in again.")
+                return@withContext null
+            }
+
+            val information =
+                doc.getElementById("tab-content").select("table.data").select("tbody").select("tr")
+                    .select("td");
+            println("before")
+
+            val attributes = mutableMapOf<String, String>()
+            val actorsList = mutableListOf<String>()
+
+            // Define the mapping of HTML field names to data class properties
+            val fieldMappings = mapOf(
+                "Titel" to "title",
+                "Medienart" to "kindOfMedium",
+                "Erscheinungsdatum" to "year",
+                "Verf.Vorlage" to "author",
+                "Sprache(n)" to "language",
+                "Verlagsname" to "publisher",
+                "Regie" to "direction",
+                "EAN/UPC" to "isbn",
+                "Cover_URL" to "url",
+                "Beteiligt" to "actors"
+            )
+
+            doc.select("strong.c2").forEach { strongElement ->
+                val key = strongElement.text().removeSuffix(":").trim()
+                val valueElement: Element? = strongElement.nextElementSibling()
+                val value = valueElement?.text()?.trim() ?: ""
+
+                if (key == "Beteiligt") {
+                    actorsList.add(value)
+                } else if (fieldMappings.containsKey(key)) {
+                    attributes[fieldMappings[key]!!] = value
+                }
+            }
+
+            println(attributes)
+
+            // Construct LibraryMedia object with mapped values
+            LibraryMedia(
+                url = attributes["url"] ?: "",
+                title = attributes["title"] ?: "Unbekannter Titel",
+                isAvailable = true,  // Extract separately if needed
+                year = attributes["year"] ?: "kein Jahr",
+                kindOfMedium = attributes["kindOfMedium"] ?: "",
+                author = attributes["author"] ?: "",
+                language = attributes["language"] ?: "",
+                publisher = attributes["publisher"] ?: "",
+                direction = attributes["direction"] ?: "",
+                actors = actorsList,
+                dueDates = emptyList()
+            )
+        }
+    }
 
 
     private fun getMaxPages(doc: Document): Int {
@@ -256,6 +342,10 @@ class LibrarySearchService {
         }
 
         return results
+    }
+
+    private fun changeDetailsTab(doc: Document): String {
+        return doc.select("#labelTitle a").first()?.attr("href") ?: ""
     }
 
 }

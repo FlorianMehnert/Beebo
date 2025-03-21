@@ -8,27 +8,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
@@ -67,7 +60,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import androidx.activity.compose.BackHandler
-import androidx.compose.ui.graphics.Color
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -122,13 +114,13 @@ fun LibrarySearchScreen(viewModel: LibrarySearchViewModel = viewModel()) {
                 }
             } else {
                 if (selectedItem != null) {
-                    LibraryItemDetailScreen(viewModel) {
+                    ItemDetails(viewModel) {
                         selectedItem = null
                         println("is not null")
                     }
                 } else {
                     println("is null")
-                    SearchResults(
+                    SearchResultsList(
                         results = viewModel.results,
                         onItemClick = { item ->
                             selectedItem = Pair(item.title, item.isAvailable)
@@ -184,7 +176,7 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean, onClick: () -> U
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(if (isAvailable) MaterialTheme.colorScheme.inversePrimary else MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -247,34 +239,13 @@ fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean, onClick: () -> U
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Availability indicator
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isAvailable) Color(0x59B5FF38)
-                        else Color(0x37FF2F2F)
-                    )
-                    .padding(8.dp)
-            ) {
-                Icon(
-                    imageVector = if (isAvailable) Icons.Default.Check else Icons.Default.Close,
-                    contentDescription = if (isAvailable) "Available" else "Not Available",
-                    tint = if (isAvailable) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-                )
-            }
         }
     }
 }
 
 
 @Composable
-fun LibraryItemDetailScreen(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
+fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
     val itemDetails = viewModel.selectedItemDetails
 
     // Handle the system back button press
@@ -298,22 +269,20 @@ fun LibraryItemDetailScreen(viewModel: LibrarySearchViewModel, onBack: () -> Uni
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Item Details",
-                style = MaterialTheme.typography.titleLarge
-            )
+            if (itemDetails != null) {
+                Text(
+                    text = itemDetails.title,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }else {
+                Text(
+                    text = "Katalog",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
         if (itemDetails != null) {
-            Text(
-                text = itemDetails.toString(),
-                style = MaterialTheme.typography.headlineSmall
-            )
-            Text(
-                text = itemDetails.title,
-                style = MaterialTheme.typography.headlineSmall
-            )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Year: ${itemDetails.year}",
@@ -321,17 +290,7 @@ fun LibraryItemDetailScreen(viewModel: LibrarySearchViewModel, onBack: () -> Uni
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Authors: ${itemDetails.authors.joinToString(", ")}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Description: ${itemDetails.description}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Additional Info: ${itemDetails.additionalInfo}",
+                text = "Authors: ${itemDetails.author}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -368,13 +327,13 @@ fun SearchBar(
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                label = { Text("Search Library") },
-                placeholder = { Text("Enter book/movie title, author...") },
+                label = { Text("Suche im Online-Katalog") },
+                placeholder = { Text("Gib einen Suchbegriff ein...") },
                 singleLine = true,
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Search"
+                        contentDescription = "Suchen"
                     )
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -394,12 +353,12 @@ fun SearchBar(
                             onPagesChange(value)
                         }
                     },
-                    label = { Text("Pages") },
+                    label = { Text("Maximale Seitenanzahl") },
                     singleLine = true,
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Pages"
+                            contentDescription = "Seiten"
                         )
                     },
                     modifier = Modifier.weight(1f)
@@ -415,7 +374,7 @@ fun SearchBar(
                         .offset(y = 2.dp),
                     shape = RoundedCornerShape(4.dp),
                 ) {
-                    Text("Search")
+                    Text("Suchen")
                 }
             }
         }
@@ -465,7 +424,7 @@ fun SearchStatus(
 }
 
 @Composable
-fun SearchResults(results: List<LibraryMedia>, onItemClick: (LibraryMedia) -> Unit) {
+fun SearchResultsList(results: List<LibraryMedia>, onItemClick: (LibraryMedia) -> Unit) {
     if (results.isEmpty()) {
         EmptyResults()
     } else {
@@ -507,7 +466,7 @@ fun EmptyResults() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "No search results",
+                text = "Keine Suchergebnisse",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
@@ -515,7 +474,7 @@ fun EmptyResults() {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Try a different search term",
+                text = "Probiere es mit einem anderen Suchbegriff",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )

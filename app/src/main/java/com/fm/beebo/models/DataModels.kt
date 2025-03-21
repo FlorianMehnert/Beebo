@@ -2,14 +2,17 @@ package com.fm.beebo.models
 
 data class LibraryMedia(
     val url: String,
+    val title: String,
     val isAvailable: Boolean,
     val year: String = "kein Jahr",
-    val title: String,
     val dueDates: List<String>,
     val kindOfMedium: String = "",
-    val authors: List<String> = emptyList(),
-    val description: String = "",
-    val additionalInfo: String = ""
+    val author: String = "",
+    val language: String = "",
+    val publisher: String = "", // verlag
+    val direction: String = "", // regie
+    val actors: List<String> = emptyList(),
+    val isbn: String = "",
 ) {
     override fun toString(): String {
         val mediumIcon = when (kindOfMedium) {
