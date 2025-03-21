@@ -1,11 +1,11 @@
 package com.fm.beebo.models
 
 data class LibraryMedia(
-    val url: String,
-    val title: String,
-    val isAvailable: Boolean,
+    val url: String="",
+    val title: String="",
+    val isAvailable: Boolean=false,
     val year: String = "kein Jahr",
-    val dueDates: List<String>,
+    val dueDates: List<String> = emptyList(),
     val kindOfMedium: String = "",
     val author: String = "",
     val language: String = "",
@@ -17,7 +17,7 @@ data class LibraryMedia(
     override fun toString(): String {
         val mediumIcon = when (kindOfMedium) {
             "DVD" -> "📀"
-            "Blu-ray Disc" -> "🔵^"
+            "Blu-ray Disc" -> "🔵"
             "CD" -> "💿"
             "Buch" -> "📖"
             else -> "❓"

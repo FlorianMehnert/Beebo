@@ -111,7 +111,7 @@ class LibrarySearchService {
     }
 
 
-    suspend fun getItemDetails(itemUrl: String, cookies: Map<String, String>): LibraryMedia? {
+    suspend fun getItemDetails(itemUrl: String, cookies: Map<String, String>, isAvailable: Boolean): LibraryMedia? {
         return withContext(Dispatchers.IO) {
             val response = Jsoup.connect(itemUrl)
                 .cookies(cookies)
@@ -129,39 +129,36 @@ class LibrarySearchService {
 
 
             val extraDetailsTabUrl = changeDetailsTab(doc)
-            println(extraDetailsTabUrl)
-            val extendedMedia: LibraryMedia?
+            var extendedMedia: LibraryMedia? = LibraryMedia()
             if (extraDetailsTabUrl.isNotEmpty()) {
                 extendedMedia = parseDetailsTab(BASE_LOGGED_IN_URL + extraDetailsTabUrl, cookies)
             }
 
             // Extract title
             val title = doc.select("h1").text()
+            var language: String = ""
+            var publisher: String = ""
+            var direction: String = ""
+            var actors: List<String> = emptyList()
+            var author: String = ""
+            var isbn: String = ""
+            var year: String = ""
 
-            val language = ""
-            val publisher = "" // verlag
-            val direction = "" // regie
-            val actors = emptyList<String>()
-            val authors: String
-            if (extraDetailsTabUrl.isNotEmpty()) {
-                authors = extraDetailsTabUrl
-            } else {
-                authors = "a"
+            if (extendedMedia != null) {
+                if (extendedMedia.language.isNotEmpty()){language = extendedMedia.language}
+                if (extendedMedia.publisher.isNotEmpty()){publisher = extendedMedia.publisher}
+                if (extendedMedia.direction.isNotEmpty()) { direction = extendedMedia.direction }
+                if (extendedMedia.actors.isNotEmpty()) { actors = extendedMedia.actors }
+                if (extendedMedia.author.isNotEmpty()) { author = extendedMedia.author }
+                if (extendedMedia.isbn.isNotEmpty()) { isbn = extendedMedia.isbn }
+                if (extendedMedia.year.isNotEmpty()) { year = extendedMedia.year.replace("[", "").replace("]", "") }
             }
 
-            val isbn = ""
-
             // Extract availability and due dates
-            val isAvailable = doc.select("span.textgruen").isNotEmpty()
+
             val dueDates = doc.select("td:contains(entliehen bis)").eachText()
                 .map { it.replace("entliehen bis ", "") }
 
-            // Extract year
-            val year = doc.select("div.teaser").text().let {
-                val yearPattern = "\\b(20\\d{2})\\b".toRegex()
-                val yearMatch = yearPattern.find(it)
-                yearMatch?.value ?: "kein Jahr"
-            }
 
             // Extract kind of medium
             val kindOfMedium = doc.select("div.teaser").text().let {
@@ -179,7 +176,12 @@ class LibrarySearchService {
                 title = title,
                 dueDates = dueDates,
                 kindOfMedium = kindOfMedium,
-                author = authors,
+                author = author,
+                actors = actors,
+                language = language,
+                isbn = isbn,
+                publisher = publisher,
+                direction = direction
             )
         }
     }
@@ -206,7 +208,6 @@ class LibrarySearchService {
             val information =
                 doc.getElementById("tab-content").select("table.data").select("tbody").select("tr")
                     .select("td");
-            println("before")
 
             val attributes = mutableMapOf<String, String>()
             val actorsList = mutableListOf<String>()
@@ -243,7 +244,6 @@ class LibrarySearchService {
             LibraryMedia(
                 url = attributes["url"] ?: "",
                 title = attributes["title"] ?: "Unbekannter Titel",
-                isAvailable = true,  // Extract separately if needed
                 year = attributes["year"] ?: "kein Jahr",
                 kindOfMedium = attributes["kindOfMedium"] ?: "",
                 author = attributes["author"] ?: "",
@@ -288,6 +288,10 @@ class LibrarySearchService {
         }
     }
 
+    /**
+     * Is invoked on the search results list
+     * @return List of search results as DataClass LibraryMedia
+     */
     private fun extractMetadata(doc: Document): List<LibraryMedia> {
         val results = mutableListOf<LibraryMedia>()
         val table = doc.select("table").firstOrNull() ?: return results

@@ -116,15 +116,13 @@ fun LibrarySearchScreen(viewModel: LibrarySearchViewModel = viewModel()) {
                 if (selectedItem != null) {
                     ItemDetails(viewModel) {
                         selectedItem = null
-                        println("is not null")
                     }
                 } else {
-                    println("is null")
                     SearchResultsList(
                         results = viewModel.results,
                         onItemClick = { item ->
                             selectedItem = Pair(item.title, item.isAvailable)
-                            viewModel.fetchItemDetails(item.url) // Pass empty cookies for now
+                            viewModel.fetchItemDetails(item.url, item.isAvailable) // Pass empty cookies for now
                         }
                     )
                 }
@@ -134,7 +132,7 @@ fun LibrarySearchScreen(viewModel: LibrarySearchViewModel = viewModel()) {
 }
 
 @Composable
-fun EnhancedLibraryItemCard(text: String, isAvailable: Boolean, onClick: () -> Unit) {
+fun LibraryResultListItem(text: String, isAvailable: Boolean, onClick: () -> Unit) {
     val parts = text.split(" ", limit = 4)
     val year = if (parts.isNotEmpty()) parts.getOrNull(0) ?: "" else ""
     val medium = if (parts.size > 1) parts.getOrNull(1) ?: "" else ""
@@ -257,6 +255,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
+
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -298,6 +297,17 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                 text = "Availability: ${if (itemDetails.isAvailable) "Available" else "Not Available"}",
                 style = MaterialTheme.typography.bodyMedium
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "ISBN: ${itemDetails.isbn}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "language: ${itemDetails.language}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
             if (!itemDetails.isAvailable && itemDetails.dueDates.isNotEmpty()) {
                 Text(
                     text = "Due Date: ${itemDetails.dueDates[0]}",
@@ -305,6 +315,9 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                 )
             }
         } else {
+            Text(
+                text = "Keine Details verfügbar"
+            )
             CircularProgressIndicator()
         }
     }
@@ -433,7 +446,7 @@ fun SearchResultsList(results: List<LibraryMedia>, onItemClick: (LibraryMedia) -
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(results) { item ->
-                EnhancedLibraryItemCard(
+                LibraryResultListItem(
                     text = item.toString(),
                     isAvailable = item.isAvailable,
                     onClick = { onItemClick(item) }
