@@ -439,15 +439,21 @@ fun SearchStatus(
 }
 
 @Composable
-fun SearchResultsList(results: List<LibraryMedia>, onItemClick: (LibraryMedia) -> Unit) {
-    if (results.isEmpty()) {
+fun SearchResultsList(
+    results: List<LibraryMedia>,
+    onItemClick: (LibraryMedia) -> Unit
+) {
+    // Sort the results by year
+    val sortedResults = results.sortedBy { it.year }
+
+    if (sortedResults.isEmpty()) {
         EmptyResults()
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(results) { item ->
+            items(sortedResults) { item ->
                 LibraryResultListItem(
                     text = item.toString(),
                     isAvailable = item.isAvailable,
