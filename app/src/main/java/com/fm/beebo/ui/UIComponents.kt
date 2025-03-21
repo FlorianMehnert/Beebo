@@ -140,7 +140,7 @@ fun LibraryResultListItem(text: String, isAvailable: Boolean, onClick: () -> Uni
 
     // Split title and availability info
     val availabilityText = if (title.contains(" ausleihbar")) " ausleihbar" else " nicht_ausleihbar "
-    title = title.replace(availabilityText, "")
+    title = title.replace(availabilityText, "").replace("¬", "")
 
     // Extract due date if present
     val dueDate = if (!isAvailable && title.contains(Regex("\\d{2}\\.\\d{2}\\.\\d{4}"))) {
@@ -287,14 +287,16 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                 text = "Year: ${itemDetails.year}",
                 style = MaterialTheme.typography.bodyMedium
             )
+            if (itemDetails.author.isNotEmpty()){
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Autor: ${itemDetails.author}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Authors: ${itemDetails.author}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Availability: ${if (itemDetails.isAvailable) "Available" else "Not Available"}",
+                text = "Verfügbarkeit: ${if (itemDetails.isAvailable) "Ausleihbar" else "Nicht verfügbar"}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -304,7 +306,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "language: ${itemDetails.language}",
+                    text = "Sprache: ${itemDetails.language}",
                     style = MaterialTheme.typography.bodyMedium
                 )
 

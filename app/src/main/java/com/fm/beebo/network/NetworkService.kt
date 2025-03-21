@@ -136,13 +136,13 @@ class LibrarySearchService {
 
             // Extract title
             val title = doc.select("h1").text()
-            var language: String = ""
-            var publisher: String = ""
-            var direction: String = ""
+            var language = ""
+            var publisher = ""
+            var direction = ""
             var actors: List<String> = emptyList()
-            var author: String = ""
-            var isbn: String = ""
-            var year: String = ""
+            var author = ""
+            var isbn = ""
+            var year = ""
 
             if (extendedMedia != null) {
                 if (extendedMedia.language.isNotEmpty()){language = extendedMedia.language}
@@ -221,7 +221,7 @@ class LibrarySearchService {
                 "Sprache(n)" to "language",
                 "Verlagsname" to "publisher",
                 "Regie" to "direction",
-                "EAN/UPC" to "isbn",
+                "ISBN" to "isbn",
                 "Cover_URL" to "url",
                 "Beteiligt" to "actors"
             )
@@ -245,6 +245,7 @@ class LibrarySearchService {
                 url = attributes["url"] ?: "",
                 title = attributes["title"] ?: "Unbekannter Titel",
                 year = attributes["year"] ?: "kein Jahr",
+                isbn = attributes["isbn"] ?: "keine ISBN gefunden",
                 kindOfMedium = attributes["kindOfMedium"] ?: "",
                 author = attributes["author"] ?: "",
                 language = attributes["language"] ?: "",
