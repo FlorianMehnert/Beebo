@@ -60,6 +60,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.twotone.Home
+import androidx.compose.material.icons.twotone.Search
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -122,8 +124,9 @@ fun LibrarySearchScreen(viewModel: LibrarySearchViewModel = viewModel()) {
                         results = viewModel.results,
                         onItemClick = { item ->
                             selectedItem = Pair(item.title, item.isAvailable)
-                            viewModel.fetchItemDetails(item.url, item.isAvailable) // Pass empty cookies for now
-                        }
+                            viewModel.fetchItemDetails(item.url, item.isAvailable)
+                        },
+                        searchQuery = query
                     )
                 }
             }
@@ -441,10 +444,20 @@ fun SearchStatus(
 @Composable
 fun SearchResultsList(
     results: List<LibraryMedia>,
+    searchQuery: String,
     onItemClick: (LibraryMedia) -> Unit
 ) {
-    // Sort the results by year
-    val sortedResults = results.sortedBy { it.year }
+    // Sort results by similarity to the search query
+    val sortedResults = if (searchQuery.isNotEmpty()) {
+        results.sortedBy { item ->
+            // Calculate similarity - lower value means closer match
+            levenshteinDistance(item.title.lowercase(), searchQuery.lowercase())
+        }
+    } else {
+        results
+    }
+
+    println(sortedResults)
 
     if (sortedResults.isEmpty()) {
         EmptyResults()
@@ -464,6 +477,25 @@ fun SearchResultsList(
     }
 }
 
+// Function to calculate Levenshtein distance between two strings
+// Lower distance means strings are more similar
+fun levenshteinDistance(s1: String, s2: String): Int {
+    val dp = Array(s1.length + 1) { IntArray(s2.length + 1) }
+
+    for (i in s1.indices) dp[i][0] = i
+    for (j in s2.indices) dp[0][j] = j
+
+    for (i in 1..s1.length) {
+        for (j in 1..s2.length) {
+            val cost = if (s1[i - 1] == s2[j - 1]) 0 else 1
+            dp[i][j] = minOf(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost)
+        }
+    }
+
+    return dp[s1.length][s2.length]
+}
+
+
 
 @Composable
 fun EmptyResults() {
@@ -478,7 +510,7 @@ fun EmptyResults() {
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                imageVector = Icons.Default.Email,
+                imageVector = Icons.TwoTone.Search,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
