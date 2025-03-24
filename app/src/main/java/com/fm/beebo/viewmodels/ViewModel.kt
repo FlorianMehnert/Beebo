@@ -7,14 +7,40 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.LibrarySearchService
+import com.fm.beebo.network.LoginService
 import kotlinx.coroutines.launch
+
+class SessionRepository private constructor() {
+    private val _cookies = mutableMapOf<String, String>()
+
+    val cookies: Map<String, String>
+        get() = _cookies
+
+    fun updateCookies(newCookies: Map<String, String>) {
+        _cookies.putAll(newCookies)
+    }
+
+    fun clearCookies() {
+        _cookies.clear()
+    }
+
+    companion object {
+        @Volatile
+        private var INSTANCE: SessionRepository? = null
+
+        fun getInstance(): SessionRepository =
+            INSTANCE ?: synchronized(this) {
+                INSTANCE ?: SessionRepository().also { INSTANCE = it }
+            }
+    }
+}
 
 class LibrarySearchViewModel : ViewModel() {
     var results by mutableStateOf(listOf<LibraryMedia>())
     var isLoading by mutableStateOf(false)
     var statusMessage by mutableStateOf("")
     var selectedItemDetails by mutableStateOf<LibraryMedia?>(null)
-    private var cookies = mutableMapOf<String, String>()
+
 
     private val librarySearchService = LibrarySearchService()
 
@@ -29,7 +55,8 @@ class LibrarySearchViewModel : ViewModel() {
             try {
                 val (searchResults, newCookies) = librarySearchService.search(query, maxPages)
                 results = searchResults
-                setCookies(newCookies)  // Store cookies
+                SessionRepository.getInstance()
+                    .updateCookies(newCookies)
                 statusMessage = if (searchResults.isEmpty()) "Keine Ergebnisse gefunden" else "${searchResults.size} Treffer"
             } catch (e: Exception) {
                 statusMessage = "Error: ${e.message}"
@@ -46,7 +73,8 @@ class LibrarySearchViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val itemDetails = librarySearchService.getItemDetails(itemUrl, cookies, available)
+                val itemDetails = librarySearchService.getItemDetails(itemUrl, SessionRepository.getInstance()
+                    .cookies, available)
                 selectedItemDetails = itemDetails
                 statusMessage = "Details aktualisiert"
             } catch (e: Exception) {
@@ -56,10 +84,38 @@ class LibrarySearchViewModel : ViewModel() {
             }
         }
     }
+}
 
-    // Function to set cookies after initial search
-    fun setCookies(newCookies: Map<String, String>) {
-        cookies.putAll(newCookies)
+
+class LoginViewModel : ViewModel() {
+    var isLoggedIn by mutableStateOf(false)
+    var username by mutableStateOf("")
+    var password by mutableStateOf("")
+    var isLoading by mutableStateOf(false)
+    var errorMessage by mutableStateOf<String?>(null)
+
+    private val loginService = LoginService()
+
+    fun login() {
+        viewModelScope.launch { // will be canceled if the ViewModel is cleared
+
+            // Assume the server returns session cookies after login
+
+            // Update repository with new session cookies
+            var newCookies = loginService.login(username, password);
+            if (newCookies != null){
+                SessionRepository.getInstance()
+                    .updateCookies(newCookies)
+                isLoggedIn = true
+            }
+        }
+    }
+
+    fun logout() {
+        isLoggedIn = false
+        SessionRepository.getInstance()
+            .clearCookies()
     }
 }
+
 
