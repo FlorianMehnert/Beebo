@@ -81,13 +81,14 @@ class LibrarySearchService {
                 val currentTab = getCurrentTab(searchDoc)
                 if (currentTab == "Detailanzeige"){
                     val result = parseDetails(doc = searchDoc)
-                    println(searchDoc)
                     if (result != null){
+                        changeDetailsTab(searchDoc)
                         result.url = searchResponse.url().toString()
                         println(result.toString())
-                        // TODO: 1. get mehr zu diesem Titel url
-                        // TODO: 2. create library media from this
-                        results.add(result)
+                        val details : LibraryMedia? = getItemDetails2(searchDoc, result.url, cookies)
+                        if (details != null) {
+                            results.add(details)
+                        }
                     }
                 }else if (currentTab == "Suchergebnis"){
                     // Process first page results
@@ -206,6 +207,67 @@ class LibrarySearchService {
         }
     }
 
+    suspend fun getItemDetails2(doc: Document, url: String, cookies: Map<String, String>): LibraryMedia? {
+        return withContext(Dispatchers.IO) {
+
+            // Check for session expiry
+            if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
+                // Handle session expiry
+                println("Session expired. Please log in again.")
+                return@withContext null
+            }
+
+            val extraDetailsTabUrl = changeDetailsTab(doc)
+            var extendedMedia: LibraryMedia? = LibraryMedia()
+            if (extraDetailsTabUrl.isNotEmpty()) {
+                extendedMedia = parseDetailsTab(BASE_LOGGED_IN_URL + extraDetailsTabUrl, cookies)
+            }
+
+            // Extract title
+            val title = doc.select("h1").text()
+            var language = ""
+            var publisher = ""
+            var direction = ""
+            var actors: List<String> = emptyList()
+            var author = ""
+            var isAvailable: Boolean? = null
+            var isbn = ""
+            var year = ""
+            var kindOfMedium = ""
+
+            if (extendedMedia != null) {
+                if (extendedMedia.language.isNotEmpty()){language = extendedMedia.language}
+                if (extendedMedia.publisher.isNotEmpty()){publisher = extendedMedia.publisher}
+                if (extendedMedia.direction.isNotEmpty()) { direction = extendedMedia.direction }
+                if (extendedMedia.actors.isNotEmpty()) { actors = extendedMedia.actors }
+                if (extendedMedia.author.isNotEmpty()) { author = extendedMedia.author }
+                if (extendedMedia.isbn.isNotEmpty()) { isbn = extendedMedia.isbn }
+                isAvailable = extendedMedia.isAvailable
+                if (extendedMedia.year.isNotEmpty()) { year = extendedMedia.year.replace("[", "").replace("]", "") }
+                if (extendedMedia.kindOfMedium.isNotEmpty()) {kindOfMedium = extendedMedia.kindOfMedium}
+            }
+
+            // Extract availability and due dates
+
+            val dueDates = doc.select("td:contains(entliehen bis)").eachText()
+                .map { it.replace("entliehen bis ", "") }
+            LibraryMedia(
+                url = url,
+                isAvailable = false,
+                year = year,
+                title = title,
+                dueDates = dueDates,
+                kindOfMedium = kindOfMedium,
+                author = author,
+                actors = actors,
+                language = language,
+                isbn = isbn,
+                publisher = publisher,
+                direction = direction
+            )
+        }
+    }
+
     suspend fun parseDetailsTab(
         detailsTabUrl: String,
         cookies: Map<String, String>
@@ -259,8 +321,6 @@ class LibrarySearchService {
                 attributes[fieldMappings[key]!!] = value
             }
         }
-
-        println(attributes)
 
         // Construct LibraryMedia object with mapped values
         return LibraryMedia(
