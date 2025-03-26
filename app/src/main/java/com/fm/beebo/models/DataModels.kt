@@ -1,7 +1,7 @@
 package com.fm.beebo.models
 
 data class LibraryMedia(
-    val url: String="",
+    var url: String="",
     val title: String="",
     val isAvailable: Boolean=false,
     val year: String = "kein Jahr",
@@ -20,6 +20,7 @@ data class LibraryMedia(
             "Blu-ray Disc" -> "🔵"
             "CD" -> "💿"
             "Buch" -> "📖"
+            "Kinderbuch" -> "\uD83E\uDDF8"
             else -> "❓"
         }
 

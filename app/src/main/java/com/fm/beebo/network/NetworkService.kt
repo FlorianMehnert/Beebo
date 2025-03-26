@@ -78,45 +78,57 @@ class LibrarySearchService {
                     return@withContext Pair(results, cookies)
                 }
 
-                // Determine total pages
-                val totalPages = getMaxPages(searchDoc)
+                val currentTab = getCurrentTab(searchDoc)
+                if (currentTab == "Detailanzeige"){
+                    val result = parseDetails(doc = searchDoc)
+                    println(searchDoc)
+                    if (result != null){
+                        result.url = searchResponse.url().toString()
+                        println(result.toString())
+                        // TODO: 1. get mehr zu diesem Titel url
+                        // TODO: 2. create library media from this
+                        results.add(result)
+                    }
+                }else if (currentTab == "Suchergebnis"){
+                    // Process first page results
+                    val firstPageResults = extractMetadata(searchDoc)
+                    println("fpr: " + firstPageResults.count())
+                    results.addAll(firstPageResults)
+                    val totalPages = getMaxPages(searchDoc)
+                    val pagesToFetch = minOf(totalPages, maxPages)
+                    var currentPage = 1
+                    var nextUrl = getNextPageLink(searchDoc)
 
-                // Limit to specified max pages
-                val pagesToFetch = minOf(totalPages, maxPages)
+                    while (nextUrl != null && currentPage < pagesToFetch) {
+                        currentPage++
 
-                // Process first page
-                val firstPageResults = extractMetadata(searchDoc)
-                results.addAll(firstPageResults)
+                        val nextPageResponse = Jsoup.connect(nextUrl)
+                            .cookies(cookies)
+                            .timeout(30000)
+                            .execute()
 
-                // Process remaining pages
-                var currentPage = 1
-                var nextUrl = getNextPageLink(searchDoc)
+                        cookies.putAll(nextPageResponse.cookies())
 
-                while (nextUrl != null && currentPage < pagesToFetch) {
-                    currentPage++
+                        val nextPageDoc = nextPageResponse.parse()
+                        val pageResults = extractMetadata(nextPageDoc)
+                        results.addAll(pageResults)
 
-                    val nextPageResponse = Jsoup.connect(nextUrl)
-                        .cookies(cookies)
-                        .timeout(30000)
-                        .execute()
-
-                    // Update cookies
-                    cookies.putAll(nextPageResponse.cookies())
-
-                    val nextPageDoc = nextPageResponse.parse()
-                    val pageResults = extractMetadata(nextPageDoc)
-                    results.addAll(pageResults)
-
-                    // Get next page URL
-                    nextUrl = getNextPageLink(nextPageDoc)
+                        // Get next page URL
+                        nextUrl = getNextPageLink(nextPageDoc)
+                        if (currentPage >= totalPages) break
+                    }
                 }
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+            println(results.count())
 
             return@withContext Pair(results, cookies)
         }
     }
+
+
 
 
     suspend fun getItemDetails(itemUrl: String, cookies: Map<String, String>, isAvailable: Boolean): LibraryMedia? {
@@ -206,62 +218,64 @@ class LibrarySearchService {
 
             val doc = response.parse()
 
-            // Check for session expiry
-            if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
-                // Handle session expiry
-                println("Session expired. Please log in again.")
-                return@withContext null
-            }
-
-            doc.getElementById("tab-content")?.select("table.data")?.select("tbody")?.select("tr")
-                ?.select("td")
-
-            val attributes = mutableMapOf<String, String>()
-            val actorsList = mutableListOf<String>()
-
-            // Define the mapping of HTML field names to data class properties
-            val fieldMappings = mapOf(
-                "Titel" to "title",
-                "Medienart" to "kindOfMedium",
-                "Erscheinungsdatum" to "year",
-                "Verf.Vorlage" to "author",
-                "Sprache(n)" to "language",
-                "Verlagsname" to "publisher",
-                "Regie" to "direction",
-                "ISBN" to "isbn",
-                "Cover_URL" to "url",
-                "Beteiligt" to "actors"
-            )
-
-            doc.select("strong.c2").forEach { strongElement ->
-                val key = strongElement.text().removeSuffix(":").trim()
-                val valueElement: Element? = strongElement.nextElementSibling()
-                val value = valueElement?.text()?.trim() ?: ""
-
-                if (key == "Beteiligt") {
-                    actorsList.add(value)
-                } else if (fieldMappings.containsKey(key)) {
-                    attributes[fieldMappings[key]!!] = value
-                }
-            }
-
-            println(attributes)
-
-            // Construct LibraryMedia object with mapped values
-            LibraryMedia(
-                url = attributes["url"] ?: "",
-                title = attributes["title"] ?: "Unbekannter Titel",
-                year = attributes["year"] ?: "kein Jahr",
-                isbn = attributes["isbn"] ?: "keine ISBN gefunden",
-                kindOfMedium = attributes["kindOfMedium"] ?: "",
-                author = attributes["author"] ?: "",
-                language = attributes["language"] ?: "",
-                publisher = attributes["publisher"] ?: "",
-                direction = attributes["direction"] ?: "",
-                actors = actorsList,
-                dueDates = emptyList()
-            )
+            parseDetails(doc)
         }
+    }
+
+    private fun parseDetails(doc: Document) : LibraryMedia?{
+        if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
+            println("Session expired. Please log in again.")
+            return null
+        }
+
+        doc.getElementById("tab-content")?.select("table.data")?.select("tbody")?.select("tr")
+            ?.select("td")
+
+        val attributes = mutableMapOf<String, String>()
+        val actorsList = mutableListOf<String>()
+
+        // Define the mapping of HTML field names to data class properties
+        val fieldMappings = mapOf(
+            "Titel" to "title",
+            "Medienart" to "kindOfMedium",
+            "Erscheinungsdatum" to "year",
+            "Verf.Vorlage" to "author",
+            "Sprache(n)" to "language",
+            "Verlagsname" to "publisher",
+            "Regie" to "direction",
+            "ISBN" to "isbn",
+            "Cover_URL" to "url",
+            "Beteiligt" to "actors"
+        )
+
+        doc.select("strong.c2").forEach { strongElement ->
+            val key = strongElement.text().removeSuffix(":").trim()
+            val valueElement: Element? = strongElement.nextElementSibling()
+            val value = valueElement?.text()?.trim() ?: ""
+
+            if (key == "Beteiligt") {
+                actorsList.add(value)
+            } else if (fieldMappings.containsKey(key)) {
+                attributes[fieldMappings[key]!!] = value
+            }
+        }
+
+        println(attributes)
+
+        // Construct LibraryMedia object with mapped values
+        return LibraryMedia(
+            url = attributes["url"] ?: "",
+            title = attributes["title"] ?: "Unbekannter Titel",
+            year = attributes["year"] ?: "kein Jahr",
+            isbn = attributes["isbn"] ?: "keine ISBN gefunden",
+            kindOfMedium = attributes["kindOfMedium"] ?: "",
+            author = attributes["author"] ?: "",
+            language = attributes["language"] ?: "",
+            publisher = attributes["publisher"] ?: "",
+            direction = attributes["direction"] ?: "",
+            actors = actorsList,
+            dueDates = emptyList()
+        )
     }
 
 
@@ -303,7 +317,7 @@ class LibrarySearchService {
     private fun extractMetadata(doc: Document): List<LibraryMedia> {
         val results = mutableListOf<LibraryMedia>()
         val table = doc.select("table").firstOrNull() ?: return results
-
+        println("table exists")
         for (row in table.select("tr").filter { row -> row.select("th").isNotEmpty() }) {
             try {
                 // title
@@ -352,12 +366,16 @@ class LibrarySearchService {
                 continue
             }
         }
-
+        println(results.count())
         return results
     }
 
     private fun changeDetailsTab(doc: Document): String {
         return doc.select("#labelTitle a").first()?.attr("href") ?: ""
+    }
+
+    private fun getCurrentTab(doc: Document): String {
+        return doc.select("#current2").text()
     }
 }
 
