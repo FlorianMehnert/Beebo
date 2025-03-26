@@ -93,10 +93,7 @@ class LoginViewModel : ViewModel() {
     private val loginService = LoginService()
 
     fun login() {
-        viewModelScope.launch { // will be canceled if the ViewModel is cleared
-
-            // Assume the server returns session cookies after login
-
+        viewModelScope.launch {
             // Update repository with new session cookies
             var newCookies = loginService.login(username, password)
             if (newCookies != null){
