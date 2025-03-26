@@ -129,8 +129,6 @@ fun LibrarySearchScreen(
             SearchBar(
                 query = query,
                 onQueryChange = { query = it },
-                pages = pages,
-                onPagesChange = { pages = it },
                 onSearch = { viewModel.searchLibrary(query, pages.toIntOrNull() ?: 3) }
             )
 
@@ -412,15 +410,16 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
 fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    pages: String,
-    onPagesChange: (String) -> Unit,
     onSearch: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
@@ -433,46 +432,20 @@ fun SearchBar(
                         contentDescription = "Suchen"
                     )
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.weight(1f)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+            Button(
+                onClick = onSearch,
+                modifier = Modifier
+                    .height(60.dp)
+                    .padding(top = 4.dp)
+                    .offset(y = 2.dp),
+                shape = RoundedCornerShape(4.dp),
             ) {
-                OutlinedTextField(
-                    value = pages,
-                    onValueChange = { value ->
-                        // Only allow numbers
-                        if (value.isEmpty() || value.all { it.isDigit() }) {
-                            onPagesChange(value)
-                        }
-                    },
-                    label = { Text("Maximale Seitenanzahl") },
-                    singleLine = true,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Seiten"
-                        )
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Button(
-                    onClick = onSearch,
-                    modifier = Modifier
-                        .height(60.dp)
-                        .padding(top = 4.dp)
-                        .offset(y = 2.dp),
-                    shape = RoundedCornerShape(4.dp),
-                ) {
-                    Text("Suchen")
-                }
+                Text("Suchen")
             }
         }
     }
