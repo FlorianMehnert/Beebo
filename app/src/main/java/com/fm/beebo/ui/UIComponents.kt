@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
@@ -65,6 +66,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -677,10 +679,14 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
     val coroutineScope = rememberCoroutineScope()
     val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(initial = false)
     val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
+    val maxPagesSetting by settingsDataStore.maxPagesFlow.collectAsState(initial = 3)
 
     // Use derivedStateOf to prevent unnecessary recompositions
     var text by remember(defaultSearchTerm) {
         mutableStateOf(defaultSearchTerm)
+    }
+    var maxPages by remember(maxPagesSetting) {
+        mutableStateOf(maxPagesSetting)
     }
 
     Scaffold(
@@ -741,6 +747,25 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
                 singleLine = true,
                 enabled = enableDefaultSearchTerm // Disable the field when toggle is off
             )
+
+            LaunchedEffect(maxPages) {
+                // Debounce the save operation
+                delay(500) // Wait 500ms before saving
+                settingsDataStore.setMaxPages(maxPages)
+            }
+
+            OutlinedTextField(
+                value = maxPages.toString(),  // Convert Int to String for display
+                onValueChange = { newMaxPages ->
+                    maxPages = newMaxPages.toIntOrNull() ?: 3
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+                label = { Text("Maximale Anzahl an Suchergebnisseiten") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
         }
     }
 }
