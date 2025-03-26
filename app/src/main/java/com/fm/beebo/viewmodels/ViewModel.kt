@@ -20,10 +20,6 @@ class SessionRepository private constructor() {
         _cookies.putAll(newCookies)
     }
 
-    fun clearCookies() {
-        _cookies.clear()
-    }
-
     companion object {
         @Volatile
         private var INSTANCE: SessionRepository? = null
@@ -102,7 +98,7 @@ class LoginViewModel : ViewModel() {
             // Assume the server returns session cookies after login
 
             // Update repository with new session cookies
-            var newCookies = loginService.login(username, password);
+            var newCookies = loginService.login(username, password)
             if (newCookies != null){
                 SessionRepository.getInstance()
                     .updateCookies(newCookies)
@@ -111,11 +107,6 @@ class LoginViewModel : ViewModel() {
         }
     }
 
-    fun logout() {
-        isLoggedIn = false
-        SessionRepository.getInstance()
-            .clearCookies()
-    }
 }
 
 
