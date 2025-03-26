@@ -13,6 +13,7 @@ class SettingsDataStore(private val context: Context) {
     companion object {
         val ENABLE_DEFAULT_SEARCH_TERM_KEY = booleanPreferencesKey("enable_default_search_term")
         val DEFAULT_SEARCH_TERM_KEY = stringPreferencesKey("default_search_term")
+        val MAX_PAGES_KEY = intPreferencesKey("max_pages_term")
     }
 
     val enableDefaultSearchTermFlow: Flow<Boolean> = context.dataStore.data
@@ -26,6 +27,12 @@ class SettingsDataStore(private val context: Context) {
             preferences[DEFAULT_SEARCH_TERM_KEY] ?: ""
         }
 
+    val maxPagesFlow: Flow<Int> = context.dataStore.data
+        .map {
+                preferences ->
+            preferences[MAX_PAGES_KEY] ?: 3
+        }
+
     suspend fun enableDefaultSearchTerm(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[ENABLE_DEFAULT_SEARCH_TERM_KEY] = enabled
@@ -35,6 +42,12 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setDefaultSearchTerm(searchTerm: String) {
         context.dataStore.edit { preferences ->
             preferences[DEFAULT_SEARCH_TERM_KEY] = searchTerm
+        }
+    }
+
+    suspend fun setMaxPages(maxPages: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[MAX_PAGES_KEY] = maxPages
         }
     }
 }
