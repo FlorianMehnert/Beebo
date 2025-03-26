@@ -24,12 +24,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Pages
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -47,6 +48,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.OutlinedIconToggleButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -54,6 +57,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -62,11 +66,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -90,10 +94,12 @@ fun LibrarySearchScreen(
 ) {
     val settingsDataStore = SettingsDataStore(LocalContext.current)
     val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
-    val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(initial = true)
+    val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(
+        initial = true
+    )
     var query by remember { mutableStateOf("") }
 
-    if (enableDefaultSearchTerm){
+    if (enableDefaultSearchTerm) {
         LaunchedEffect(defaultSearchTerm) {
             query = defaultSearchTerm
         }
@@ -114,9 +120,7 @@ fun LibrarySearchScreen(
     // Handle login dialog
     if (showLoginDialog) {
         LoginDialog(
-            loginViewModel = loginViewModel,
-            onDismiss = { showLoginDialog = false }
-        )
+            loginViewModel = loginViewModel, onDismiss = { showLoginDialog = false })
     }
     Scaffold(
         topBar = {
@@ -143,10 +147,8 @@ fun LibrarySearchScreen(
                             )
                         }
                     }
-                }
-            )
-        }
-    ) { paddingValues ->
+                })
+        }) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
@@ -156,8 +158,7 @@ fun LibrarySearchScreen(
             SearchBar(
                 query = query,
                 onQueryChange = { query = it },
-                onSearch = { viewModel.searchLibrary(query, pages.toIntOrNull() ?: 3) }
-            )
+                onSearch = { viewModel.searchLibrary(query, pages.toIntOrNull() ?: 3) })
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -185,12 +186,10 @@ fun LibrarySearchScreen(
                     }
                 } else {
                     SearchResultsList(
-                        results = viewModel.results,
-                        onItemClick = { item ->
+                        results = viewModel.results, onItemClick = { item ->
                             selectedItem = Pair(item.title, item.isAvailable)
                             viewModel.fetchItemDetails(item.url, item.isAvailable)
-                        },
-                        searchQuery = query
+                        }, searchQuery = query
                     )
                 }
             }
@@ -200,8 +199,7 @@ fun LibrarySearchScreen(
 
 @Composable
 fun LoginDialog(
-    loginViewModel: LoginViewModel,
-    onDismiss: () -> Unit
+    loginViewModel: LoginViewModel, onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -348,6 +346,37 @@ fun LibraryResultListItem(text: String, isAvailable: Boolean, onClick: () -> Uni
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MaxPagesSlider(
+    value: Int,
+    onValueChange: (String) -> Unit,
+) {
+    var sliderPosition by remember { mutableIntStateOf(value) }
+    Column {
+        Slider(
+            value = sliderPosition.toFloat(), onValueChange = {
+                sliderPosition = it.toInt()
+                onValueChange
+            }, colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.secondary,
+                activeTrackColor = MaterialTheme.colorScheme.secondary,
+                inactiveTrackColor = MaterialTheme.colorScheme.secondaryContainer,
+            ), valueRange = 1f..10f, thumb = {
+                Icon(
+                    imageVector = Icons.Default.Pages, // Custom Icon
+                    contentDescription = "Pages Thumb",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .graphicsLayer { shadowElevation = 8f } // Add shadow for depth
+                )
+            })
+        val results = sliderPosition * 10
+        Text(text = "Maximale Anzahl an Suchergebnissen: $results")
+    }
+}
+
 
 @Composable
 fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
@@ -365,25 +394,21 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
 
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = onBack) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back"
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
             if (itemDetails != null) {
                 Text(
-                    text = itemDetails.title,
-                    style = MaterialTheme.typography.titleLarge
+                    text = itemDetails.title, style = MaterialTheme.typography.titleLarge
                 )
             } else {
                 Text(
-                    text = "Katalog",
-                    style = MaterialTheme.typography.titleLarge
+                    text = "Katalog", style = MaterialTheme.typography.titleLarge
                 )
             }
         }
@@ -391,8 +416,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
         if (itemDetails != null) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Year: ${itemDetails.year}",
-                style = MaterialTheme.typography.bodyMedium
+                text = "Year: ${itemDetails.year}", style = MaterialTheme.typography.bodyMedium
             )
             if (itemDetails.author.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -408,8 +432,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "ISBN: ${itemDetails.isbn}",
-                style = MaterialTheme.typography.bodyMedium
+                text = "ISBN: ${itemDetails.isbn}", style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -435,9 +458,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
 
 @Composable
 fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onSearch: () -> Unit
+    query: String, onQueryChange: (String) -> Unit, onSearch: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -456,8 +477,7 @@ fun SearchBar(
                 singleLine = true,
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Suchen"
+                        imageVector = Icons.Default.Search, contentDescription = "Suchen"
                     )
                 },
                 modifier = Modifier.weight(1f)
@@ -481,14 +501,11 @@ fun SearchBar(
 
 @Composable
 fun SearchStatus(
-    isLoading: Boolean,
-    statusMessage: String,
-    resultCount: Int
+    isLoading: Boolean, statusMessage: String, resultCount: Int
 ) {
     if (statusMessage.isNotEmpty()) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()
         ) {
             val icon = when {
                 isLoading -> Icons.Default.Refresh
@@ -514,8 +531,7 @@ fun SearchStatus(
             Spacer(modifier = Modifier.width(8.dp))
 
             Text(
-                text = statusMessage,
-                color = color
+                text = statusMessage, color = color
             )
         }
     }
@@ -523,9 +539,7 @@ fun SearchStatus(
 
 @Composable
 fun SearchResultsList(
-    results: List<LibraryMedia>,
-    searchQuery: String,
-    onItemClick: (LibraryMedia) -> Unit
+    results: List<LibraryMedia>, searchQuery: String, onItemClick: (LibraryMedia) -> Unit
 ) {
     // Sort results by similarity to the search query
     val sortedResults = if (searchQuery.isNotEmpty()) {
@@ -543,15 +557,13 @@ fun SearchResultsList(
         EmptyResults()
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(sortedResults) { item ->
                 LibraryResultListItem(
                     text = item.toString(),
                     isAvailable = item.isAvailable,
-                    onClick = { onItemClick(item) }
-                )
+                    onClick = { onItemClick(item) })
             }
         }
     }
@@ -581,8 +593,7 @@ fun EmptyResults() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+            .padding(16.dp), contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -631,15 +642,14 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Username") }
-        )
+            label = { Text("Benutzername") })
 
         Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = { Text("Passwort") },
             visualTransformation = PasswordVisualTransformation()
         )
 
@@ -653,10 +663,9 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
                     viewModel.username = username
                     viewModel.password = password
                     viewModel.login()
-                },
-                shape = RoundedCornerShape(4.dp)
+                }, shape = RoundedCornerShape(4.dp)
             ) {
-                Text("Login")
+                Text("Anmelden")
             }
         }
 
@@ -677,7 +686,9 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
 @Composable
 fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit) {
     val coroutineScope = rememberCoroutineScope()
-    val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(initial = false)
+    val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(
+        initial = false
+    )
     val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
     val maxPagesSetting by settingsDataStore.maxPagesFlow.collectAsState(initial = 3)
 
@@ -686,67 +697,68 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
         mutableStateOf(defaultSearchTerm)
     }
     var maxPages by remember(maxPagesSetting) {
-        mutableStateOf(maxPagesSetting)
+        mutableIntStateOf(maxPagesSetting)
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onBackPress) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+            TopAppBar(title = { Text("Einstellungen") }, navigationIcon = {
+                IconButton(onClick = onBackPress) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
-            )
-        }
-    ) { paddingValues ->
+            })
+        }) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedIconToggleButton(
-                    checked = enableDefaultSearchTerm,
-                    onCheckedChange = { isChecked ->
-                        coroutineScope.launch {
-                            settingsDataStore.enableDefaultSearchTerm(isChecked)
-                        }
-                    },
-                    content = { Text("Einen Standard Suchbegriff verwenden") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(4.dp),
-                    colors = IconToggleButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                        disabledContainerColor = MaterialTheme.colorScheme.onPrimary,
-                        disabledContentColor = MaterialTheme.colorScheme.onPrimary,
-                        checkedContainerColor = MaterialTheme.colorScheme.primary,
-                        checkedContentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                    border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                )
-            }
-
             // Use LaunchedEffect with a key to trigger saving
             LaunchedEffect(text) {
                 // Debounce the save operation
                 delay(500) // Wait 500ms before saving
                 settingsDataStore.setDefaultSearchTerm(text)
             }
+            Row (modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                OutlinedIconToggleButton(
+                    checked = enableDefaultSearchTerm,
+                    modifier = Modifier.width(100.dp).height(60.dp).offset(y = 3.dp),
+                    onCheckedChange = { isChecked ->
+                        coroutineScope.launch {
+                            settingsDataStore.enableDefaultSearchTerm(isChecked)
+                        }
+                    },
+                    content = { Icon(Icons.Default.PowerSettingsNew, contentDescription = "Back") },
+                    shape = RoundedCornerShape(4.dp),
+                    colors = IconToggleButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContentColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedContainerColor = MaterialTheme.colorScheme.primary,
+                        checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                    border = BorderStroke(
+                        width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { newText -> text = newText },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Standard Suchbegriff") },
+                    singleLine = true,
+                    enabled = enableDefaultSearchTerm // Disable the field when toggle is off
+                )
 
-            OutlinedTextField(
-                value = text,
-                onValueChange = { newText -> text = newText },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Standard Suchbegriff") },
-                singleLine = true,
-                enabled = enableDefaultSearchTerm // Disable the field when toggle is off
-            )
+            }
+
 
             LaunchedEffect(maxPages) {
                 // Debounce the save operation
@@ -754,17 +766,12 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
                 settingsDataStore.setMaxPages(maxPages)
             }
 
-            OutlinedTextField(
-                value = maxPages.toString(),  // Convert Int to String for display
-                onValueChange = { newMaxPages ->
+            Spacer(modifier = Modifier.height(16.dp))
+
+            MaxPagesSlider(
+                value = maxPages, onValueChange = { newMaxPages ->
                     maxPages = newMaxPages.toIntOrNull() ?: 3
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                ),
-                label = { Text("Maximale Anzahl an Suchergebnisseiten") },
-                modifier = Modifier.fillMaxWidth()
-            )
+                })
 
         }
     }
