@@ -678,6 +678,11 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
     val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(initial = false)
     val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
 
+    // Use derivedStateOf to prevent unnecessary recompositions
+    var text by remember(defaultSearchTerm) {
+        mutableStateOf(defaultSearchTerm)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -699,7 +704,6 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 OutlinedIconToggleButton(
                     checked = enableDefaultSearchTerm,
                     onCheckedChange = { isChecked ->
@@ -720,26 +724,23 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
                     ),
                     border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
                 )
-
             }
-            var text by remember { mutableStateOf(defaultSearchTerm) }
-            val coroutineScope = rememberCoroutineScope()
 
+            // Use LaunchedEffect with a key to trigger saving
             LaunchedEffect(text) {
-                delay(500) // Wait 500ms before saving (adjust if needed)
-                coroutineScope.launch {
-                    settingsDataStore.setDefaultSearchTerm(text)
-                }
+                // Debounce the save operation
+                delay(500) // Wait 500ms before saving
+                settingsDataStore.setDefaultSearchTerm(text)
             }
 
             OutlinedTextField(
                 value = text,
-                onValueChange = { newText -> text = newText }, // Update state, not DataStore immediately
+                onValueChange = { newText -> text = newText },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Standard Suchbegriff") },
                 singleLine = true,
+                enabled = enableDefaultSearchTerm // Disable the field when toggle is off
             )
-
         }
     }
 }
