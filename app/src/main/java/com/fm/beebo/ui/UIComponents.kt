@@ -1,7 +1,7 @@
 package com.fm.beebo.ui
 
 
-import SettingsDataStore
+import com.fm.beebo.datastore.SettingsDataStore
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

@@ -1,3 +1,5 @@
+package com.fm.beebo.datastore
+
 import android.content.Context
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore

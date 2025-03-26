@@ -1,6 +1,6 @@
 package com.fm.beebo
 
-import SettingsDataStore
+import com.fm.beebo.datastore.SettingsDataStore
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
