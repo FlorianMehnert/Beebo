@@ -25,11 +25,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material3.Button
@@ -73,6 +75,7 @@ import com.fm.beebo.viewmodels.LoginViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibrarySearchScreen(
+    onSettingsClick: () -> Unit,
     viewModel: LibrarySearchViewModel = viewModel(),
     loginViewModel: LoginViewModel = viewModel()
 ) {
@@ -88,7 +91,6 @@ fun LibrarySearchScreen(
             onDismiss = { showLoginDialog = false }
         )
     }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -98,13 +100,21 @@ fun LibrarySearchScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
-                    // Login button in the top bar
-                    IconButton(onClick = { showLoginDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.AccountCircle,
-                            contentDescription = "Login",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
+                    Row {
+                        IconButton(onClick = { showLoginDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.AccountCircle,
+                                contentDescription = "Login",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                        IconButton(onClick = onSettingsClick) {
+                            Icon(
+                                Icons.Filled.Settings,
+                                contentDescription = "Einstellungen",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
                     }
                 }
             )
@@ -210,7 +220,8 @@ fun LibraryResultListItem(text: String, isAvailable: Boolean, onClick: () -> Uni
     var title = if (parts.size > 2) parts.drop(2).joinToString(" ") else ""
 
     // Split title and availability info
-    val availabilityText = if (title.contains(" ausleihbar")) " ausleihbar" else " nicht_ausleihbar "
+    val availabilityText =
+        if (title.contains(" ausleihbar")) " ausleihbar" else " nicht_ausleihbar "
     title = title.replace(availabilityText, "").replace("¬", "")
 
     // Extract due date if present
@@ -344,7 +355,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                     text = itemDetails.title,
                     style = MaterialTheme.typography.titleLarge
                 )
-            }else {
+            } else {
                 Text(
                     text = "Katalog",
                     style = MaterialTheme.typography.titleLarge
@@ -358,7 +369,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                 text = "Year: ${itemDetails.year}",
                 style = MaterialTheme.typography.bodyMedium
             )
-            if (itemDetails.author.isNotEmpty()){
+            if (itemDetails.author.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Autor: ${itemDetails.author}",
@@ -376,10 +387,10 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Sprache: ${itemDetails.language}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+            Text(
+                text = "Sprache: ${itemDetails.language}",
+                style = MaterialTheme.typography.bodyMedium
+            )
 
             if (!itemDetails.isAvailable && itemDetails.dueDates.isNotEmpty()) {
                 Text(
@@ -564,7 +575,6 @@ fun levenshteinDistance(s1: String, s2: String): Int {
 }
 
 
-
 @Composable
 fun EmptyResults() {
     Box(
@@ -637,12 +647,14 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
         if (viewModel.isLoading) {
             CircularProgressIndicator()
         } else {
-            Button(onClick = {
-                viewModel.username = username
-                viewModel.password = password
-                viewModel.login()
-            },
-                shape = RoundedCornerShape(4.dp)) {
+            Button(
+                onClick = {
+                    viewModel.username = username
+                    viewModel.password = password
+                    viewModel.login()
+                },
+                shape = RoundedCornerShape(4.dp)
+            ) {
                 Text("Login")
             }
         }
@@ -659,4 +671,32 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(onBackPress: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Settings") },
+                navigationIcon = {
+                    IconButton(onClick = onBackPress) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            Text("Settings go here!", style = MaterialTheme.typography.bodyLarge)
+            // Add settings options here...
+        }
+    }
+}
+
 

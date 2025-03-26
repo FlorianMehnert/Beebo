@@ -13,7 +13,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.fm.beebo.ui.SettingsScreen
+import me.zhanghai.compose.preference.ProvidePreferenceLocals
+import me.zhanghai.compose.preference.switchPreference
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,21 +32,25 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.onSurface)
-                    .statusBarsPadding(), // Add padding for the status bar
-
-            ){
             BeeboTheme {
+                val navController = rememberNavController()
 
-                Surface(
-                    color = MaterialTheme.colorScheme.primary
+                NavHost(
+                    navController = navController,
+                    startDestination = "librarySearch"
                 ) {
-                    LibrarySearchScreen()
+                    composable("librarySearch") {
+                        LibrarySearchScreen(
+                            onSettingsClick = { navController.navigate("settings") }
+                        )
+                    }
+                    composable("settings") {
+                        SettingsScreen(
+                            onBackPress = { navController.popBackStack() }
+                        )
+                    }
                 }
-            }}
+            }
         }
     }
 }
