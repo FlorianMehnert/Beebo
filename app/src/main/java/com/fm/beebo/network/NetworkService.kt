@@ -1,8 +1,6 @@
 package com.fm.beebo.network
 
 import com.fm.beebo.models.LibraryMedia
-import com.fm.beebo.network.LibrarySearchService.Companion.BASE_LOGGED_IN_URL
-import com.fm.beebo.network.LibrarySearchService.Companion.BASE_URL
 import com.fm.beebo.network.NetworkConfig.BASE_LOGGED_IN_URL
 import com.fm.beebo.network.NetworkConfig.BASE_URL
 import kotlinx.coroutines.Dispatchers
@@ -215,9 +213,8 @@ class LibrarySearchService {
                 return@withContext null
             }
 
-            val information =
-                doc.getElementById("tab-content").select("table.data").select("tbody").select("tr")
-                    .select("td");
+            doc.getElementById("tab-content")?.select("table.data")?.select("tbody")?.select("tr")
+                ?.select("td");
 
             val attributes = mutableMapOf<String, String>()
             val actorsList = mutableListOf<String>()

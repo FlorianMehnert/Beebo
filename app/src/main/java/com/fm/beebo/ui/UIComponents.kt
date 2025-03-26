@@ -1,7 +1,9 @@
 package com.fm.beebo.ui
 
 
+import SettingsDataStore
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,10 +27,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -41,22 +41,27 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButtonColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.OutlinedIconToggleButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -70,6 +75,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.LoginViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,7 +86,23 @@ fun LibrarySearchScreen(
     viewModel: LibrarySearchViewModel = viewModel(),
     loginViewModel: LoginViewModel = viewModel()
 ) {
-    var query by remember { mutableStateOf("fight club") }
+    val settingsDataStore = SettingsDataStore(LocalContext.current)
+    val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
+    val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(initial = true)
+    var query by remember { mutableStateOf("") }
+
+
+    LaunchedEffect(defaultSearchTerm) {
+        query = defaultSearchTerm
+    }
+
+    OutlinedTextField(
+        value = query,
+        onValueChange = { newQuery -> query = newQuery },
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("Standard Suchbegriff") },
+        singleLine = true,
+    )
     var pages by remember { mutableStateOf("3") }
     var selectedItem by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var showLoginDialog by remember { mutableStateOf(false) }
@@ -418,13 +441,14 @@ fun SearchBar(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                label = { Text("Suche im Online-Katalog") },
-                placeholder = { Text("Gib einen Suchbegriff ein...") },
+                label = { Text("Suchbegriff") },
                 singleLine = true,
                 leadingIcon = {
                     Icon(
@@ -647,7 +671,11 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBackPress: () -> Unit) {
+fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit) {
+    val coroutineScope = rememberCoroutineScope()
+    val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(initial = false)
+    val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -666,10 +694,53 @@ fun SettingsScreen(onBackPress: () -> Unit) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            Text("Settings go here!", style = MaterialTheme.typography.bodyLarge)
-            // Add settings options here...
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                OutlinedIconToggleButton(
+                    checked = enableDefaultSearchTerm,
+                    onCheckedChange = { isChecked ->
+                        coroutineScope.launch {
+                            settingsDataStore.enableDefaultSearchTerm(isChecked)
+                        }
+                    },
+                    content = { Text("Einen Standard Suchbegriff verwenden") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(4.dp),
+                    colors = IconToggleButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        disabledContainerColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContentColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedContainerColor = MaterialTheme.colorScheme.primary,
+                        checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                    border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                )
+
+            }
+            var text by remember { mutableStateOf(defaultSearchTerm) }
+            val coroutineScope = rememberCoroutineScope()
+
+            LaunchedEffect(text) {
+                delay(500) // Wait 500ms before saving (adjust if needed)
+                coroutineScope.launch {
+                    settingsDataStore.setDefaultSearchTerm(text)
+                }
+            }
+
+            OutlinedTextField(
+                value = text,
+                onValueChange = { newText -> text = newText }, // Update state, not DataStore immediately
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Standard Suchbegriff") },
+                singleLine = true,
+            )
+
         }
     }
 }
+
 
 
