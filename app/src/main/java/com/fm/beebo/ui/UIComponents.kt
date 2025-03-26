@@ -91,10 +91,12 @@ fun LibrarySearchScreen(
     val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(initial = true)
     var query by remember { mutableStateOf("") }
 
-
-    LaunchedEffect(defaultSearchTerm) {
-        query = defaultSearchTerm
+    if (enableDefaultSearchTerm){
+        LaunchedEffect(defaultSearchTerm) {
+            query = defaultSearchTerm
+        }
     }
+
 
     OutlinedTextField(
         value = query,

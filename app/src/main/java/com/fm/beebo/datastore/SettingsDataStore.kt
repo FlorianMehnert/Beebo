@@ -15,7 +15,7 @@ class SettingsDataStore(private val context: Context) {
 
     val enableDefaultSearchTermFlow: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
-            preferences[ENABLE_DEFAULT_SEARCH_TERM_KEY] ?: false
+            preferences[ENABLE_DEFAULT_SEARCH_TERM_KEY] == true
         }
 
     val defaultSearchTermFlow: Flow<String> = context.dataStore.data

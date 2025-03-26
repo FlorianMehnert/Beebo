@@ -214,7 +214,7 @@ class LibrarySearchService {
             }
 
             doc.getElementById("tab-content")?.select("table.data")?.select("tbody")?.select("tr")
-                ?.select("td");
+                ?.select("td")
 
             val attributes = mutableMapOf<String, String>()
             val actorsList = mutableListOf<String>()
