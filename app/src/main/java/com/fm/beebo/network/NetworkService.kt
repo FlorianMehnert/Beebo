@@ -1,11 +1,8 @@
 package com.fm.beebo.network
 
 import com.fm.beebo.models.LibraryMedia
-import com.fm.beebo.network.NetworkConfig.BASE_LOGGED_IN_URL
-import com.fm.beebo.network.NetworkConfig.BASE_URL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.jsoup.Connection
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
