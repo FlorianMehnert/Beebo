@@ -97,6 +97,7 @@ fun LibrarySearchScreen(
     val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(
         initial = true
     )
+    val maxPagesSetting by settingsDataStore.maxPagesFlow.collectAsState(initial = "")
     var query by remember { mutableStateOf("") }
 
     if (enableDefaultSearchTerm) {
@@ -113,7 +114,6 @@ fun LibrarySearchScreen(
         label = { Text("Standard Suchbegriff") },
         singleLine = true,
     )
-    var pages by remember { mutableStateOf("3") }
     var selectedItem by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var showLoginDialog by remember { mutableStateOf(false) }
 
@@ -158,7 +158,7 @@ fun LibrarySearchScreen(
             SearchBar(
                 query = query,
                 onQueryChange = { query = it },
-                onSearch = { viewModel.searchLibrary(query, pages.toIntOrNull() ?: 3) })
+                onSearch = { viewModel.searchLibrary(query, maxPagesSetting.toString().toIntOrNull()?:3) })
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -564,8 +564,6 @@ fun SearchResultsList(
     } else {
         results
     }
-
-    println(sortedResults)
 
     if (sortedResults.isEmpty()) {
         EmptyResults()
