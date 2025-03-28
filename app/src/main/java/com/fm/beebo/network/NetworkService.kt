@@ -84,7 +84,6 @@ class LibrarySearchService {
                     if (result != null){
                         changeDetailsTab(searchDoc)
                         result.url = searchResponse.url().toString()
-                        println(result.toString())
                         val details : LibraryMedia? = getItemDetails2(searchDoc, result.url, cookies)
                         if (details != null) {
                             results.add(details)
@@ -93,7 +92,6 @@ class LibrarySearchService {
                 }else if (currentTab == "Suchergebnis"){
                     // Process first page results
                     val firstPageResults = extractMetadata(searchDoc)
-                    println("fpr: " + firstPageResults.count())
                     results.addAll(firstPageResults)
                     val totalPages = getMaxPages(searchDoc)
                     val pagesToFetch = minOf(totalPages, maxPages)
@@ -123,7 +121,6 @@ class LibrarySearchService {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            println(results.count())
 
             return@withContext Pair(results, cookies)
         }
@@ -377,7 +374,6 @@ class LibrarySearchService {
     private fun extractMetadata(doc: Document): List<LibraryMedia> {
         val results = mutableListOf<LibraryMedia>()
         val table = doc.select("table").firstOrNull() ?: return results
-        println("table exists")
         for (row in table.select("tr").filter { row -> row.select("th").isNotEmpty() }) {
             try {
                 // title
@@ -426,7 +422,6 @@ class LibrarySearchService {
                 continue
             }
         }
-        println(results.count())
         return results
     }
 
