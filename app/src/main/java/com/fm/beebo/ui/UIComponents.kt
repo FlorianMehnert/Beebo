@@ -1,7 +1,5 @@
 package com.fm.beebo.ui
 
-
-import com.fm.beebo.datastore.SettingsDataStore
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -45,9 +43,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButtonColors
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconToggleButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.OutlinedIconToggleButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -78,9 +76,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.LoginViewModel
+import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -698,7 +698,11 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit) {
+fun SettingsScreen(
+    settingsDataStore: SettingsDataStore,
+    onBackPress: () -> Unit,
+    onShowLibraries: () -> Unit
+) {
     val coroutineScope = rememberCoroutineScope()
     val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(
         initial = false
@@ -752,7 +756,7 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
                         disabledContainerColor = MaterialTheme.colorScheme.onPrimary,
                         disabledContentColor = MaterialTheme.colorScheme.onPrimary,
                         checkedContainerColor = MaterialTheme.colorScheme.primary,
-                        checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedContentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     border = BorderStroke(
                         width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant
@@ -778,9 +782,40 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
                 settingsDataStore = settingsDataStore,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = onShowLibraries,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Über verwendete Bibliotheken")
+            }
         }
     }
 }
 
-
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LibrariesScreen(onBackPress: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Verwendete Bibliotheken") },
+                navigationIcon = {
+                    IconButton(onClick = onBackPress) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        // Use LibrariesContainer with the default resource location
+        LibrariesContainer(
+            Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        )
+    }
+}
 

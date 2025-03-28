@@ -9,6 +9,7 @@ import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.fm.beebo.ui.LibrariesScreen
 import com.fm.beebo.ui.LibrarySearchScreen
 import com.fm.beebo.ui.SettingsScreen
 import com.fm.beebo.ui.theme.BeeboTheme
@@ -33,8 +34,12 @@ class MainActivity : ComponentActivity() {
                     composable("settings") {
                         SettingsScreen(
                             settingsDataStore = settingsDataStore,
+                            onShowLibraries = { navController.navigate("libraries") },
                             onBackPress = { navController.popBackStack() }
                         )
+                    }
+                    composable("libraries") {
+                        LibrariesScreen(onBackPress = { navController.popBackStack() })
                     }
                 }
             }
