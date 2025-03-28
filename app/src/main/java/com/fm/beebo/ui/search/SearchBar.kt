@@ -3,6 +3,7 @@ package com.fm.beebo.ui.search
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -83,6 +84,7 @@ fun SearchBar(
                     .offset(y = 4.dp),
                 color = MaterialTheme.colorScheme.primary
             ) {
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -113,7 +115,11 @@ fun SearchBar(
                                 DropdownMenuItem(
                                     text = { Text(option) },
                                     onClick = {
-                                        viewModel.setSelectedFilterOption(filterOptions.indexOf(option))
+                                        viewModel.setSelectedFilterOption(
+                                            filterOptions.indexOf(
+                                                option
+                                            )
+                                        )
                                         filterExpanded = false
                                     }
                                 )

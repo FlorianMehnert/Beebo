@@ -1,6 +1,7 @@
 package com.fm.beebo.network
 
 import com.fm.beebo.models.LibraryMedia
+import com.fm.beebo.viewmodels.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
@@ -23,7 +24,8 @@ class LibrarySearchService {
 
     suspend fun search(
         searchTerm: String,
-        maxPages: Int = 3
+        maxPages: Int = 3,
+        viewModel: SettingsViewModel
     ): Pair<List<LibraryMedia>, Map<String, String>> {
         return withContext(Dispatchers.IO) {
             val results = mutableListOf<LibraryMedia>()
@@ -49,14 +51,22 @@ class LibrarySearchService {
                     "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
 
                 // Execute the search
+                // selectedSearchBranchlib=
+                // searchRestrictionID[0]=8
+                // searchRestrictionValue1[0]=305
+                // searchRestrictionID[1]=6
+                // searchRestrictionValue1[1]=
+                // searchRestrictionID[2]=3
+                // searchRestrictionValue1[2]=
+                // searchRestrictionValue2[2]=
                 val searchResponse = Jsoup.connect(searchUrl)
                     .data("searchCategories[0]", "-1")
                     .data("searchString[0]", searchTerm)
                     .data("callingPage", "searchParameters")
                     .data("selectedViewBranchlib", "0")
                     .data("selectedSearchBranchlib", "")
-                    .data("searchRestrictionID[0]", "8")
-                    .data("searchRestrictionValue1[0]", "")
+                    .data("searchRestrictionID[0]", "8") // search restriction
+                    .data("searchRestrictionValue1[0]", viewModel.selectedFilterOption.value.getSearchRestrictionValue1()) // kind of media
                     .data("searchRestrictionID[1]", "6")
                     .data("searchRestrictionValue1[1]", "")
                     .data("searchRestrictionID[2]", "3")
