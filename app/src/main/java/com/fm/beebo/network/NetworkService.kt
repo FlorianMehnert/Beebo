@@ -12,7 +12,8 @@ import org.jsoup.nodes.Element
 import java.util.regex.Pattern
 
 object NetworkConfig {
-    const val BASE_URL = "https://katalog.bibo-dresden.de/webOPACClient/start.do?Login=webopac&BaseURL=this"
+    const val BASE_URL =
+        "https://katalog.bibo-dresden.de/webOPACClient/start.do?Login=webopac&BaseURL=this"
     const val BASE_LOGGED_IN_URL = "https://katalog.bibo-dresden.de"
 }
 
@@ -79,17 +80,17 @@ class LibrarySearchService {
                 }
 
                 val currentTab = getCurrentTab(searchDoc)
-                if (currentTab == "Detailanzeige"){
+                if (currentTab == "Detailanzeige") {
                     val result = parseDetails(doc = searchDoc)
-                    if (result != null){
+                    if (result != null) {
                         changeDetailsTab(searchDoc)
                         result.url = searchResponse.url().toString()
-                        val details : LibraryMedia? = getItemDetails2(searchDoc, result.url, cookies)
+                        val details: LibraryMedia? = getItemDetails2(searchDoc, result.url, cookies)
                         if (details != null) {
                             results.add(details)
                         }
                     }
-                }else if (currentTab == "Suchergebnis"){
+                } else if (currentTab == "Suchergebnis") {
                     // Process first page results
                     val firstPageResults = extractMetadata(searchDoc)
                     results.addAll(firstPageResults)
@@ -127,9 +128,11 @@ class LibrarySearchService {
     }
 
 
-
-
-    suspend fun getItemDetails(itemUrl: String, cookies: Map<String, String>, isAvailable: Boolean): LibraryMedia? {
+    suspend fun getItemDetails(
+        itemUrl: String,
+        cookies: Map<String, String>,
+        isAvailable: Boolean
+    ): LibraryMedia? {
         return withContext(Dispatchers.IO) {
             val response = Jsoup.connect(itemUrl)
                 .cookies(cookies)
@@ -163,13 +166,27 @@ class LibrarySearchService {
             var year = ""
 
             if (extendedMedia != null) {
-                if (extendedMedia.language.isNotEmpty()){language = extendedMedia.language}
-                if (extendedMedia.publisher.isNotEmpty()){publisher = extendedMedia.publisher}
-                if (extendedMedia.direction.isNotEmpty()) { direction = extendedMedia.direction }
-                if (extendedMedia.actors.isNotEmpty()) { actors = extendedMedia.actors }
-                if (extendedMedia.author.isNotEmpty()) { author = extendedMedia.author }
-                if (extendedMedia.isbn.isNotEmpty()) { isbn = extendedMedia.isbn }
-                if (extendedMedia.year.isNotEmpty()) { year = extendedMedia.year.replace("[", "").replace("]", "") }
+                if (extendedMedia.language.isNotEmpty()) {
+                    language = extendedMedia.language
+                }
+                if (extendedMedia.publisher.isNotEmpty()) {
+                    publisher = extendedMedia.publisher
+                }
+                if (extendedMedia.direction.isNotEmpty()) {
+                    direction = extendedMedia.direction
+                }
+                if (extendedMedia.actors.isNotEmpty()) {
+                    actors = extendedMedia.actors
+                }
+                if (extendedMedia.author.isNotEmpty()) {
+                    author = extendedMedia.author
+                }
+                if (extendedMedia.isbn.isNotEmpty()) {
+                    isbn = extendedMedia.isbn
+                }
+                if (extendedMedia.year.isNotEmpty()) {
+                    year = extendedMedia.year.replace("[", "").replace("]", "")
+                }
             }
 
             // Extract availability and due dates
@@ -204,7 +221,11 @@ class LibrarySearchService {
         }
     }
 
-    suspend fun getItemDetails2(doc: Document, url: String, cookies: Map<String, String>): LibraryMedia? {
+    suspend fun getItemDetails2(
+        doc: Document,
+        url: String,
+        cookies: Map<String, String>
+    ): LibraryMedia? {
         return withContext(Dispatchers.IO) {
 
             // Check for session expiry
@@ -233,15 +254,31 @@ class LibrarySearchService {
             var kindOfMedium = ""
 
             if (extendedMedia != null) {
-                if (extendedMedia.language.isNotEmpty()){language = extendedMedia.language}
-                if (extendedMedia.publisher.isNotEmpty()){publisher = extendedMedia.publisher}
-                if (extendedMedia.direction.isNotEmpty()) { direction = extendedMedia.direction }
-                if (extendedMedia.actors.isNotEmpty()) { actors = extendedMedia.actors }
-                if (extendedMedia.author.isNotEmpty()) { author = extendedMedia.author }
-                if (extendedMedia.isbn.isNotEmpty()) { isbn = extendedMedia.isbn }
+                if (extendedMedia.language.isNotEmpty()) {
+                    language = extendedMedia.language
+                }
+                if (extendedMedia.publisher.isNotEmpty()) {
+                    publisher = extendedMedia.publisher
+                }
+                if (extendedMedia.direction.isNotEmpty()) {
+                    direction = extendedMedia.direction
+                }
+                if (extendedMedia.actors.isNotEmpty()) {
+                    actors = extendedMedia.actors
+                }
+                if (extendedMedia.author.isNotEmpty()) {
+                    author = extendedMedia.author
+                }
+                if (extendedMedia.isbn.isNotEmpty()) {
+                    isbn = extendedMedia.isbn
+                }
                 isAvailable = extendedMedia.isAvailable
-                if (extendedMedia.year.isNotEmpty()) { year = extendedMedia.year.replace("[", "").replace("]", "") }
-                if (extendedMedia.kindOfMedium.isNotEmpty()) {kindOfMedium = extendedMedia.kindOfMedium}
+                if (extendedMedia.year.isNotEmpty()) {
+                    year = extendedMedia.year.replace("[", "").replace("]", "")
+                }
+                if (extendedMedia.kindOfMedium.isNotEmpty()) {
+                    kindOfMedium = extendedMedia.kindOfMedium
+                }
             }
 
             // Extract availability and due dates
@@ -281,7 +318,7 @@ class LibrarySearchService {
         }
     }
 
-    private fun parseDetails(doc: Document) : LibraryMedia?{
+    private fun parseDetails(doc: Document): LibraryMedia? {
         if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
             println("Session expired. Please log in again.")
             return null
@@ -431,61 +468,5 @@ class LibrarySearchService {
 
     private fun getCurrentTab(doc: Document): String {
         return doc.select("#current2").text()
-    }
-}
-
-class LoginService{
-
-    /**
-     * Get CSID to allow login if never logged in before then login using credentials
-     * and return cookies
-     */
-    suspend fun login(username: String, password: String): Map<String, String>? {
-        return withContext(Dispatchers.IO) {
-            val cookies = mutableMapOf<String, String>()
-
-            try {
-                val initialResponse = Jsoup.connect(BASE_URL)
-                    .timeout(30000)
-                    .execute()
-
-                // Store initial cookies
-                cookies.putAll(initialResponse.cookies())
-
-                val initialDoc = initialResponse.parse()
-                val csidInput = initialDoc.select("input[name=CSId]").first()
-                    ?: return@withContext null
-
-                val csid = csidInput.attr("value")
-
-                // Step 2: Send login request
-                val loginResponse = Jsoup.connect("$BASE_LOGGED_IN_URL/webOPACClient/login.do")
-                    .data("username", username)
-                    .data("password", password)
-                    .data("CSId", csid)
-                    .cookies(cookies)
-                    .timeout(30000)
-                    .method(Connection.Method.POST)
-                    .execute()
-
-                // Step 3: Update cookies after login
-                cookies.putAll(loginResponse.cookies())
-
-                // Step 4: Verify if login was successful
-                val loginDoc = loginResponse.parse()
-                val loginError = loginDoc.select(".loginError") // Adjust the selector if necessary
-
-                return@withContext if (loginError.isNotEmpty()) {
-                    println("Login failed: ${loginError.text()}")
-                    null
-                } else {
-                    println("Login successful")
-                    cookies
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                return@withContext null
-            }
-        }
     }
 }
