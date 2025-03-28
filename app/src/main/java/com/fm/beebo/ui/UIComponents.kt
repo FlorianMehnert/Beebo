@@ -352,27 +352,19 @@ fun MaxPagesSlider(
     settingsDataStore: SettingsDataStore,
     modifier: Modifier = Modifier
 ) {
-    // Collect the max pages value from DataStore
     val maxPagesSetting by settingsDataStore.maxPagesFlow.collectAsState(initial = 3)
-
     var sliderPosition by remember(maxPagesSetting) {
         mutableIntStateOf(maxPagesSetting)
     }
-
-    val coroutineScope = rememberCoroutineScope()
-
+    LaunchedEffect(sliderPosition) {
+        delay(300)
+        settingsDataStore.setMaxPages(sliderPosition)
+    }
     Column(modifier = modifier) {
         Slider(
             value = sliderPosition.toFloat(),
             onValueChange = { newValue ->
-                val newMaxPages = newValue.toInt()
-                sliderPosition = newMaxPages
-
-                // Save to DataStore with a small delay to reduce unnecessary writes
-                coroutineScope.launch {
-                    delay(300) // Debounce for 300ms
-                    settingsDataStore.setMaxPages(newMaxPages)
-                }
+                sliderPosition = newValue.toInt()
             },
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.secondary,
@@ -393,16 +385,18 @@ fun MaxPagesSlider(
         )
 
         val results = sliderPosition * 10
-        Text(text = "Maximale Anzahl an Suchergebnissen: $results")
+        Text(
+            text = "Maximale Anzahl an Suchergebnissen: $results",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 }
-
 
 @Composable
 fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
     val itemDetails = viewModel.selectedItemDetails
 
-    // Handle the system back button press
     BackHandler {
         onBack()
     }
@@ -710,40 +704,33 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
         initial = false
     )
     val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
-    val maxPagesSetting by settingsDataStore.maxPagesFlow.collectAsState(initial = 3)
 
-    // Use derivedStateOf to prevent unnecessary recompositions
     var text by remember(defaultSearchTerm) {
         mutableStateOf(defaultSearchTerm)
-    }
-    var maxPages by remember(maxPagesSetting) {
-        mutableIntStateOf(maxPagesSetting)
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Einstellungen") }, navigationIcon = {
-                IconButton(onClick = onBackPress) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            TopAppBar(
+                title = { Text("Einstellungen") },
+                navigationIcon = {
+                    IconButton(onClick = onBackPress) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
                 }
-            })
-        }) { paddingValues ->
+            )
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Use LaunchedEffect with a key to trigger saving
-            LaunchedEffect(text) {
-                // Debounce the save operation
-                delay(500) // Wait 500ms before saving
-                settingsDataStore.setDefaultSearchTerm(text)
-            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedIconToggleButton(
@@ -780,13 +767,17 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
                     singleLine = true,
                     enabled = enableDefaultSearchTerm
                 )
-
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            LaunchedEffect(text) {
+                delay(500)
+                settingsDataStore.setDefaultSearchTerm(text)
+            }
 
             MaxPagesSlider(
-                settingsDataStore)
+                settingsDataStore = settingsDataStore,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
