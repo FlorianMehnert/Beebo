@@ -741,8 +741,8 @@ fun SettingsScreen(
                     checked = enableDefaultSearchTerm,
                     modifier = Modifier
                         .width(100.dp)
-                        .height(60.dp)
-                        .offset(y = 3.dp),
+                        .height(55.dp)
+                        .offset(y = 4.dp),
                     onCheckedChange = { isChecked ->
                         coroutineScope.launch {
                             settingsDataStore.enableDefaultSearchTerm(isChecked)
@@ -785,11 +785,21 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
+            IconButton(
                 onClick = onShowLibraries,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(4.dp),
             ) {
-                Text("Über verwendete Bibliotheken")
+                Row (horizontalArrangement = Arrangement.SpaceBetween){
+                    Icon(
+                        Icons.Filled.Info,
+                        contentDescription = "Einstellungen",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.width(40.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Über verwendete Bibliotheken")
+                }
             }
         }
     }
