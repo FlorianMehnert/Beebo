@@ -119,7 +119,6 @@ fun LibrarySearchScreen(
                     )
                 },
                 onFilterClick = {  },
-                showFilter = true
             )
 
             Spacer(modifier = Modifier.height(8.dp))

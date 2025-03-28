@@ -1,5 +1,6 @@
 package com.fm.beebo
 
+import SettingsScreen
 import com.fm.beebo.datastore.SettingsDataStore
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,8 +12,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.fm.beebo.ui.LibrariesScreen
 import com.fm.beebo.ui.search.LibrarySearchScreen
-import com.fm.beebo.ui.settings.SettingsScreen
 import com.fm.beebo.ui.theme.BeeboTheme
+import com.fm.beebo.viewmodels.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,6 +21,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val settingsDataStore = SettingsDataStore(applicationContext)
+        val settingsViewModel = SettingsViewModel()
 
         setContent {
             BeeboTheme {
@@ -34,6 +36,7 @@ class MainActivity : ComponentActivity() {
                     composable("settings") {
                         SettingsScreen(
                             settingsDataStore = settingsDataStore,
+                            settingsViewModel = settingsViewModel,
                             onShowLibraries = { navController.navigate("libraries") },
                             onBackPress = { navController.popBackStack() }
                         )
