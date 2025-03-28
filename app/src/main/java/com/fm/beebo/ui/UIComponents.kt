@@ -349,29 +349,49 @@ fun LibraryResultListItem(text: String, isAvailable: Boolean, onClick: () -> Uni
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MaxPagesSlider(
-    value: Int,
-    onValueChange: (String) -> Unit,
+    settingsDataStore: SettingsDataStore,
+    modifier: Modifier = Modifier
 ) {
-    var sliderPosition by remember { mutableIntStateOf(value) }
-    Column {
+    // Collect the max pages value from DataStore
+    val maxPagesSetting by settingsDataStore.maxPagesFlow.collectAsState(initial = 3)
+
+    var sliderPosition by remember(maxPagesSetting) {
+        mutableIntStateOf(maxPagesSetting)
+    }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(modifier = modifier) {
         Slider(
-            value = sliderPosition.toFloat(), onValueChange = {
-                sliderPosition = it.toInt()
-                onValueChange
-            }, colors = SliderDefaults.colors(
+            value = sliderPosition.toFloat(),
+            onValueChange = { newValue ->
+                val newMaxPages = newValue.toInt()
+                sliderPosition = newMaxPages
+
+                // Save to DataStore with a small delay to reduce unnecessary writes
+                coroutineScope.launch {
+                    delay(300) // Debounce for 300ms
+                    settingsDataStore.setMaxPages(newMaxPages)
+                }
+            },
+            colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.secondary,
                 activeTrackColor = MaterialTheme.colorScheme.secondary,
                 inactiveTrackColor = MaterialTheme.colorScheme.secondaryContainer,
-            ), valueRange = 1f..10f, thumb = {
+            ),
+            valueRange = 1f..10f,
+            thumb = {
                 Icon(
-                    imageVector = Icons.Default.Pages, // Custom Icon
+                    imageVector = Icons.Default.Pages,
                     contentDescription = "Pages Thumb",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .size(32.dp)
-                        .graphicsLayer { shadowElevation = 8f } // Add shadow for depth
+                        .graphicsLayer { shadowElevation = 8f }
                 )
-            })
+            }
+        )
+
         val results = sliderPosition * 10
         Text(text = "Maximale Anzahl an Suchergebnissen: $results")
     }
@@ -720,14 +740,18 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
                 delay(500) // Wait 500ms before saving
                 settingsDataStore.setDefaultSearchTerm(text)
             }
-            Row (modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
-            ){
+            ) {
                 OutlinedIconToggleButton(
                     checked = enableDefaultSearchTerm,
-                    modifier = Modifier.width(100.dp).height(60.dp).offset(y = 3.dp),
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(60.dp)
+                        .offset(y = 3.dp),
                     onCheckedChange = { isChecked ->
                         coroutineScope.launch {
                             settingsDataStore.enableDefaultSearchTerm(isChecked)
@@ -754,25 +778,15 @@ fun SettingsScreen(settingsDataStore: SettingsDataStore, onBackPress: () -> Unit
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Standard Suchbegriff") },
                     singleLine = true,
-                    enabled = enableDefaultSearchTerm // Disable the field when toggle is off
+                    enabled = enableDefaultSearchTerm
                 )
 
-            }
-
-
-            LaunchedEffect(maxPages) {
-                // Debounce the save operation
-                delay(500) // Wait 500ms before saving
-                settingsDataStore.setMaxPages(maxPages)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             MaxPagesSlider(
-                value = maxPages, onValueChange = { newMaxPages ->
-                    maxPages = newMaxPages.toIntOrNull() ?: 3
-                })
-
+                settingsDataStore)
         }
     }
 }
