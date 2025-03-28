@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pages
 import androidx.compose.material.icons.filled.PowerSettingsNew
@@ -42,6 +43,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButtonColors
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconToggleButton
 import androidx.compose.material3.OutlinedTextField
@@ -158,7 +160,15 @@ fun LibrarySearchScreen(
             SearchBar(
                 query = query,
                 onQueryChange = { query = it },
-                onSearch = { viewModel.searchLibrary(query, maxPagesSetting.toString().toIntOrNull()?:3) })
+                onSearch = {
+                    viewModel.searchLibrary(
+                        query,
+                        maxPagesSetting.toString().toIntOrNull() ?: 3
+                    )
+                },
+                onFilterClick = {  },
+                showFilter = true
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -472,7 +482,11 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
 
 @Composable
 fun SearchBar(
-    query: String, onQueryChange: (String) -> Unit, onSearch: () -> Unit
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onSearch: () -> Unit,
+    onFilterClick: () -> Unit,
+    showFilter: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -496,7 +510,15 @@ fun SearchBar(
                 },
                 modifier = Modifier.weight(1f)
             )
+            Spacer(modifier = Modifier.width(8.dp))
 
+            IconButton(onClick = onFilterClick) {
+                Icon(
+                    imageVector = Icons.Default.FilterList,
+                    contentDescription = "Filter",
+                    tint = if (showFilter) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                )
+            }
             Spacer(modifier = Modifier.width(8.dp))
 
             Button(
@@ -509,9 +531,29 @@ fun SearchBar(
             ) {
                 Text("Suchen")
             }
+
+
         }
     }
+
+    if (showFilter) {
+        // Add your filter UI here
+        FilterOptions()
+    }
 }
+
+@Composable
+fun FilterOptions() {
+    // Implement your filter options UI here
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text("Filter Options")
+    }
+}
+
 
 @Composable
 fun SearchStatus(
