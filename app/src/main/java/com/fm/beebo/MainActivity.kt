@@ -30,13 +30,13 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navController, startDestination = "librarySearch") {
                     composable("librarySearch") {
                         LibrarySearchScreen(
-                            onSettingsClick = { navController.navigate("settings") }
+                            onSettingsClick = { navController.navigate("settings") },
+                            settingsViewModel = settingsViewModel
                         )
                     }
                     composable("settings") {
                         SettingsScreen(
                             settingsDataStore = settingsDataStore,
-                            settingsViewModel = settingsViewModel,
                             onShowLibraries = { navController.navigate("libraries") },
                             onBackPress = { navController.popBackStack() }
                         )

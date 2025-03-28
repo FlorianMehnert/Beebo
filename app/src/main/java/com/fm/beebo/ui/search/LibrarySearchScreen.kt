@@ -38,12 +38,14 @@ import com.fm.beebo.ui.profile.LoginDialog
 import com.fm.beebo.ui.search.details.ItemDetails
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.LoginViewModel
+import com.fm.beebo.viewmodels.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibrarySearchScreen(
     onSettingsClick: () -> Unit,
     viewModel: LibrarySearchViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel,
     loginViewModel: LoginViewModel = viewModel()
 ) {
     val settingsDataStore = SettingsDataStore(LocalContext.current)
@@ -118,7 +120,7 @@ fun LibrarySearchScreen(
                         maxPagesSetting.toString().toIntOrNull() ?: 3
                     )
                 },
-                onFilterClick = {  },
+                viewModel = settingsViewModel,
             )
 
             Spacer(modifier = Modifier.height(8.dp))

@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.ui.settings.MaxPagesSlider
-import com.fm.beebo.viewmodels.SettingsViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -45,7 +44,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     settingsDataStore: SettingsDataStore,
-    settingsViewModel: SettingsViewModel,
     onBackPress: () -> Unit,
     onShowLibraries: () -> Unit
 ) {
