@@ -10,8 +10,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.fm.beebo.ui.LibrariesScreen
-import com.fm.beebo.ui.LibrarySearchScreen
-import com.fm.beebo.ui.SettingsScreen
+import com.fm.beebo.ui.search.LibrarySearchScreen
+import com.fm.beebo.ui.settings.SettingsScreen
 import com.fm.beebo.ui.theme.BeeboTheme
 
 class MainActivity : ComponentActivity() {
