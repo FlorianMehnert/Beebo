@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.fm.beebo.viewmodels.SettingsViewModel
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -40,10 +43,11 @@ fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
-    onFilterClick: (String) -> Unit, // Pass selected filter option
+    viewModel: SettingsViewModel,
 ) {
     var filterExpanded by remember { mutableStateOf(false) }
-    val filterOptions = listOf("Alles", "Filme", "Bücher", "CDs")
+    val selectedFilterOption by viewModel.selectedFilterOption.collectAsState()
+    val filterOptions = viewModel.filterOptions
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -109,7 +113,7 @@ fun SearchBar(
                                 DropdownMenuItem(
                                     text = { Text(option) },
                                     onClick = {
-                                        onFilterClick(option)
+                                        viewModel.setSelectedFilterOption(filterOptions.indexOf(option))
                                         filterExpanded = false
                                     }
                                 )
@@ -130,4 +134,5 @@ fun SearchBar(
         }
     }
 }
+
 
