@@ -18,7 +18,7 @@ class LibrarySearchViewModel : ViewModel() {
 
     private val librarySearchService = LibrarySearchService()
 
-    fun searchLibrary(query: String, maxPages: Int = 3) {
+    fun searchLibrary(query: String, maxPages: Int = 3, settingsViewModel: SettingsViewModel) {
         if (query.isBlank()) return
         println("max pages is:" + maxPages)
 
@@ -28,7 +28,7 @@ class LibrarySearchViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val (searchResults, newCookies) = librarySearchService.search(query, maxPages)
+                val (searchResults, newCookies) = librarySearchService.search(query, maxPages, settingsViewModel)
                 results = searchResults
                 SessionRepository.getInstance()
                     .updateCookies(newCookies)

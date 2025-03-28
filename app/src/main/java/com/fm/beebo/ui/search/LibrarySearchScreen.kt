@@ -117,7 +117,8 @@ fun LibrarySearchScreen(
                 onSearch = {
                     viewModel.searchLibrary(
                         query,
-                        maxPagesSetting.toString().toIntOrNull() ?: 3
+                        maxPagesSetting.toString().toIntOrNull() ?: 3,
+                        settingsViewModel
                     )
                 },
                 viewModel = settingsViewModel,
