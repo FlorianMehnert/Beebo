@@ -49,7 +49,7 @@ fun MaxPagesSlider(
                 activeTrackColor = MaterialTheme.colorScheme.secondary,
                 inactiveTrackColor = MaterialTheme.colorScheme.secondaryContainer,
             ),
-            valueRange = 1f..10f,
+            valueRange = 1f..50f,
             thumb = {
                 Icon(
                     imageVector = Icons.Default.Pages,
