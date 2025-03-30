@@ -85,7 +85,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
 
             if (!itemDetails.isAvailable && itemDetails.dueDates.isNotEmpty()) {
                 Text(
-                    text = "Due Date: ${itemDetails.dueDates[0]}",
+                    text = "Entliehen bis: ${itemDetails.dueDates[0]}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

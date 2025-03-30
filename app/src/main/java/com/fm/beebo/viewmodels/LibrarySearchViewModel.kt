@@ -27,6 +27,7 @@ class LibrarySearchViewModel : ViewModel() {
         results = emptyList()
 
         viewModelScope.launch {
+
             try {
                 val (searchResultInfo, newCookies) = librarySearchService.search(query, maxPages, settingsViewModel)
                 val (searchResults, totalPages) = searchResultInfo
@@ -34,7 +35,12 @@ class LibrarySearchViewModel : ViewModel() {
                 SessionRepository.getInstance()
                     .updateCookies(newCookies)
                 statusMessage =
-                    if (searchResults.isEmpty()) "Keine Ergebnisse gefunden" else "Zeige ${searchResults.size} Treffer von insgesamt ${totalPages*10} Treffern."
+                    if (searchResults.isEmpty())
+                        "Keine Ergebnisse gefunden"
+                    else if (totalPages > 1)
+                        "${searchResults.size} Treffer von ungefähr ${totalPages*10 } Treffern."
+                    else
+                        "${searchResults.size} Treffer"
             } catch (e: Exception) {
                 statusMessage = "Error: ${e.message}"
             } finally {
@@ -52,7 +58,7 @@ class LibrarySearchViewModel : ViewModel() {
             try {
                 val itemDetails = librarySearchService.getItemDetails(
                     itemUrl, SessionRepository.getInstance()
-                        .cookies, available
+                        .cookies
                 )
                 selectedItemDetails = itemDetails
                 statusMessage = "Details aktualisiert"

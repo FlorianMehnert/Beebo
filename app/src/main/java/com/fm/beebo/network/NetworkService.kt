@@ -84,7 +84,7 @@ class LibrarySearchService {
                     if (result != null) {
                         changeDetailsTab(searchDoc)
                         result.url = searchResponse.url().toString()
-                        val details: LibraryMedia? = getItemDetails2(searchDoc, result.url, cookies)
+                        val details: LibraryMedia? = getItemDetails(result.url, cookies)
                         if (details != null) {
                             results.add(details)
                         }
@@ -126,11 +126,9 @@ class LibrarySearchService {
         }
     }
 
-
     suspend fun getItemDetails(
         itemUrl: String,
-        cookies: Map<String, String>,
-        isAvailable: Boolean
+        cookies: Map<String, String>
     ): LibraryMedia? {
         return withContext(Dispatchers.IO) {
             val response = Jsoup.connect(itemUrl)
@@ -139,164 +137,55 @@ class LibrarySearchService {
                 .execute()
 
             val doc = response.parse()
-
-            // Check for session expiry
-            if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
-                // Handle session expiry
-                println("Session expired. Please log in again.")
-                return@withContext null
-            }
-
-
-            val extraDetailsTabUrl = changeDetailsTab(doc)
-            var extendedMedia: LibraryMedia? = LibraryMedia()
-            if (extraDetailsTabUrl.isNotEmpty()) {
-                extendedMedia = parseDetailsTab(BASE_LOGGED_IN_URL + extraDetailsTabUrl, cookies)
-            }
-
-            // Extract title
-            val title = doc.select("h1").text()
-            var language = ""
-            var publisher = ""
-            var direction = ""
-            var actors: List<String> = emptyList()
-            var author = ""
-            var isbn = ""
-            var year = ""
-
-            if (extendedMedia != null) {
-                if (extendedMedia.language.isNotEmpty()) {
-                    language = extendedMedia.language
-                }
-                if (extendedMedia.publisher.isNotEmpty()) {
-                    publisher = extendedMedia.publisher
-                }
-                if (extendedMedia.direction.isNotEmpty()) {
-                    direction = extendedMedia.direction
-                }
-                if (extendedMedia.actors.isNotEmpty()) {
-                    actors = extendedMedia.actors
-                }
-                if (extendedMedia.author.isNotEmpty()) {
-                    author = extendedMedia.author
-                }
-                if (extendedMedia.isbn.isNotEmpty()) {
-                    isbn = extendedMedia.isbn
-                }
-                if (extendedMedia.year.isNotEmpty()) {
-                    year = extendedMedia.year.replace("[", "").replace("]", "")
-                }
-            }
-
-            // Extract availability and due dates
-
-            val dueDates = doc.select("td:contains(entliehen bis)").eachText()
-                .map { it.replace("entliehen bis ", "") }
-
-
-            // Extract kind of medium
-            val kindOfMedium = doc.select("div.teaser").text().let {
-                if (it.contains("DVD")) "DVD"
-                else if (it.contains("Blu-ray")) "Blu-ray Disc"
-                else if (it.contains("CD")) "CD"
-                else if (it.contains("Buch")) "Buch"
-                else ""
-            }
-
-            LibraryMedia(
-                url = itemUrl,
-                isAvailable = isAvailable,
-                year = year,
-                title = title,
-                dueDates = dueDates,
-                kindOfMedium = kindOfMedium,
-                author = author,
-                actors = actors,
-                language = language,
-                isbn = isbn,
-                publisher = publisher,
-                direction = direction
-            )
+            parseItemDetails(doc, itemUrl, cookies)
         }
     }
 
-    suspend fun getItemDetails2(
+    suspend fun parseItemDetails(
         doc: Document,
         url: String,
         cookies: Map<String, String>
     ): LibraryMedia? {
         return withContext(Dispatchers.IO) {
-
             // Check for session expiry
             if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
-                // Handle session expiry
                 println("Session expired. Please log in again.")
                 return@withContext null
             }
 
             val extraDetailsTabUrl = changeDetailsTab(doc)
-            var extendedMedia: LibraryMedia? = LibraryMedia()
-            if (extraDetailsTabUrl.isNotEmpty()) {
-                extendedMedia = parseDetailsTab(BASE_LOGGED_IN_URL + extraDetailsTabUrl, cookies)
+            val extendedMedia: LibraryMedia? = if (extraDetailsTabUrl.isNotEmpty()) {
+                parseDetailsTab(BASE_LOGGED_IN_URL + extraDetailsTabUrl, cookies)
+            } else {
+                null
             }
 
-            // Extract title
             val title = doc.select("h1").text()
-            var language = ""
-            var publisher = ""
-            var direction = ""
-            var actors: List<String> = emptyList()
-            var author = ""
-            var isAvailable: Boolean? = null
-            var isbn = ""
-            var year = ""
-            var kindOfMedium = ""
-
-            if (extendedMedia != null) {
-                if (extendedMedia.language.isNotEmpty()) {
-                    language = extendedMedia.language
-                }
-                if (extendedMedia.publisher.isNotEmpty()) {
-                    publisher = extendedMedia.publisher
-                }
-                if (extendedMedia.direction.isNotEmpty()) {
-                    direction = extendedMedia.direction
-                }
-                if (extendedMedia.actors.isNotEmpty()) {
-                    actors = extendedMedia.actors
-                }
-                if (extendedMedia.author.isNotEmpty()) {
-                    author = extendedMedia.author
-                }
-                if (extendedMedia.isbn.isNotEmpty()) {
-                    isbn = extendedMedia.isbn
-                }
-                isAvailable = extendedMedia.isAvailable
-                if (extendedMedia.year.isNotEmpty()) {
-                    year = extendedMedia.year.replace("[", "").replace("]", "")
-                }
-                if (extendedMedia.kindOfMedium.isNotEmpty()) {
-                    kindOfMedium = extendedMedia.kindOfMedium
-                }
-            }
-
-            // Extract availability and due dates
-
             val dueDates = doc.select("td:contains(entliehen bis)").eachText()
                 .map { it.replace("entliehen bis ", "") }
+            val kindOfMedium = doc.select("div.teaser").text().let {
+                when {
+                    it.contains("DVD") -> "DVD"
+                    it.contains("Blu-ray") -> "Blu-ray Disc"
+                    it.contains("CD") -> "CD"
+                    it.contains("Buch") -> "Buch"
+                    else -> ""
+                }
+            }
+
             LibraryMedia(
                 url = url,
-                isAvailable = false,
-                year = year,
+                isAvailable = extendedMedia?.isAvailable ?: false,
+                year = extendedMedia?.year?.replace("[", "")?.replace("]", "") ?: "",
                 title = title,
                 dueDates = dueDates,
-                kindOfMedium = kindOfMedium,
-                author = author,
-                actors = actors,
-                language = language,
-                isbn = isbn,
-                publisher = publisher,
-                direction = direction
+                kindOfMedium = extendedMedia?.kindOfMedium ?: kindOfMedium,
+                author = extendedMedia?.author ?: "",
+                actors = extendedMedia?.actors ?: emptyList(),
+                language = extendedMedia?.language ?: "",
+                isbn = extendedMedia?.isbn ?: "",
+                publisher = extendedMedia?.publisher ?: "",
+                direction = extendedMedia?.direction ?: ""
             )
         }
     }
