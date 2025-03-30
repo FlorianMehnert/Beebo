@@ -69,7 +69,7 @@ fun LibrarySearchScreen(
         value = query,
         onValueChange = { newQuery -> query = newQuery },
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("Standard Suchbegriff") },
+        label = { Text("Suchbegriff") },
         singleLine = true,
     )
     var selectedItem by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
