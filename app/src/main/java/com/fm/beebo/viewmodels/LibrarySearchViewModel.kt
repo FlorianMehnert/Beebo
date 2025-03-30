@@ -28,12 +28,13 @@ class LibrarySearchViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val (searchResults, newCookies) = librarySearchService.search(query, maxPages, settingsViewModel)
+                val (searchResultInfo, newCookies) = librarySearchService.search(query, maxPages, settingsViewModel)
+                val (searchResults, totalPages) = searchResultInfo
                 results = searchResults
                 SessionRepository.getInstance()
                     .updateCookies(newCookies)
                 statusMessage =
-                    if (searchResults.isEmpty()) "Keine Ergebnisse gefunden" else "${searchResults.size} Treffer"
+                    if (searchResults.isEmpty()) "Keine Ergebnisse gefunden" else "Zeige ${searchResults.size} Treffer von insgesamt ${totalPages*10} Treffern."
             } catch (e: Exception) {
                 statusMessage = "Error: ${e.message}"
             } finally {
