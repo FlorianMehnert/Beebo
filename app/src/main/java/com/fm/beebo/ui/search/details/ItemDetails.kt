@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -60,13 +59,12 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                 title = {
                     Text(
                         text = itemDetails?.title?.replace("¬", "") ?: "Katalog",
-                        Modifier
-                            .clickable(onClick = {
-                                if (itemDetails?.url != null){
-                                    uriHandler.openUri(itemDetails.url)
-                                }
-                            }),
-                        )
+                        modifier = Modifier.clickable {
+                            itemDetails?.url?.let { url ->
+                                uriHandler.openUri(url)
+                            }
+                        }
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
