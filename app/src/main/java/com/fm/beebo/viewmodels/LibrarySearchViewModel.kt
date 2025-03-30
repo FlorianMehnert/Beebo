@@ -20,7 +20,7 @@ class LibrarySearchViewModel : ViewModel() {
 
     fun searchLibrary(query: String, maxPages: Int = 3, settingsViewModel: SettingsViewModel) {
         if (query.isBlank()) return
-        println("max pages is:" + maxPages)
+        println("max pages is:$maxPages")
 
         isLoading = true
         statusMessage = "Suche..."

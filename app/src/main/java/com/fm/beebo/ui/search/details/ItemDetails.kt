@@ -89,6 +89,24 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+            if (itemDetails.availableLibraries.isNotEmpty()) {
+                Text(
+                    text = "Verfügbar in: ${itemDetails.availableLibraries.joinToString(", ")}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            if (itemDetails.unavailableLibraries.isNotEmpty()) {
+                Text(
+                    text = "Nicht verfügbar in: ${itemDetails.unavailableLibraries.joinToString(", ")}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            if (itemDetails.orderableLibraries.isNotEmpty()) {
+                Text(
+                    text = "Bestellbar in: ${itemDetails.orderableLibraries.joinToString(", ")}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         } else {
             Text(
                 text = "Keine Details verfügbar"

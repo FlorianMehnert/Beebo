@@ -108,12 +108,6 @@ fun LibraryResultListItem(text: String, isAvailable: Boolean, onClick: () -> Uni
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    } else {
-                        Text(
-                            text = "No year found",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
 
                     if (dueDate.isNotEmpty()) {
