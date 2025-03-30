@@ -124,7 +124,7 @@ fun LibraryResultListItem(text: String, isAvailable: Boolean, onClick: () -> Uni
 
                         Text(
                             text = buildAnnotatedString {
-                                append("Due: ")
+                                append("Entliehen bis: ")
                                 withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
                                     append(dueDate)
                                 }
