@@ -126,6 +126,9 @@ class LibrarySearchService {
         }
     }
 
+    /**
+     * connects to the item url and invokes the dom parser for mediaDetails
+     */
     suspend fun getItemDetails(
         itemUrl: String,
         cookies: Map<String, String>
@@ -173,9 +176,27 @@ class LibrarySearchService {
                 }
             }
 
+            val librariesAvailable = mutableListOf<String>()
+            val librariesUnavailable = mutableListOf<Pair<String, String>>() // Library name and due date
+            val librariesOrderable = mutableListOf<String>()
+
+            doc.select("table.data tbody tr").forEach { row ->
+                val library = row.select("td").getOrNull(2)?.text()?.trim() ?: ""
+                val statusText = row.select("td").getOrNull(3)?.text()?.trim() ?: ""
+
+                when {
+                    statusText.contains("ausleihbar") -> librariesAvailable.add(library)
+                    statusText.contains("entliehen bis") -> {
+                        val dueDate = statusText.substringAfter("entliehen bis ").substringBefore(" (")
+                        librariesUnavailable.add(library to dueDate)
+                    }
+                    statusText.contains("bestellbar") -> librariesOrderable.add(library)
+                }
+            }
+
             LibraryMedia(
                 url = url,
-                isAvailable = extendedMedia?.isAvailable ?: false,
+                isAvailable = extendedMedia?.isAvailable ?: librariesAvailable.isNotEmpty(),
                 year = extendedMedia?.year?.replace("[", "")?.replace("]", "") ?: "",
                 title = title,
                 dueDates = dueDates,
@@ -185,10 +206,15 @@ class LibrarySearchService {
                 language = extendedMedia?.language ?: "",
                 isbn = extendedMedia?.isbn ?: "",
                 publisher = extendedMedia?.publisher ?: "",
-                direction = extendedMedia?.direction ?: ""
+                direction = extendedMedia?.direction ?: "",
+                availableLibraries = librariesAvailable,
+                unavailableLibraries = librariesUnavailable,
+                orderableLibraries = librariesOrderable
             )
         }
     }
+
+
 
     suspend fun parseDetailsTab(
         detailsTabUrl: String,
@@ -243,7 +269,7 @@ class LibrarySearchService {
                 attributes[fieldMappings[key]!!] = value
             }
         }
-
+        println(attributes["kindOfMedium"])
         // Construct LibraryMedia object with mapped values
         return LibraryMedia(
             url = attributes["url"] ?: "",
