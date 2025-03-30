@@ -84,7 +84,7 @@ class LibrarySearchService {
                     if (result != null) {
                         changeDetailsTab(searchDoc)
                         result.url = searchResponse.url().toString()
-                        val details: LibraryMedia? = getItemDetails(result.url, cookies)
+                        val details: LibraryMedia? = getItemDetails(result.url, cookies, false)
                         if (details != null) {
                             results.add(details)
                         }
@@ -131,7 +131,8 @@ class LibrarySearchService {
      */
     suspend fun getItemDetails(
         itemUrl: String,
-        cookies: Map<String, String>
+        cookies: Map<String, String>,
+        available: Boolean
     ): LibraryMedia? {
         return withContext(Dispatchers.IO) {
             val response = Jsoup.connect(itemUrl)
@@ -140,14 +141,15 @@ class LibrarySearchService {
                 .execute()
 
             val doc = response.parse()
-            parseItemDetails(doc, itemUrl, cookies)
+            parseItemDetails(doc, itemUrl, cookies, available)
         }
     }
 
     suspend fun parseItemDetails(
         doc: Document,
         url: String,
-        cookies: Map<String, String>
+        cookies: Map<String, String>,
+        available: Boolean
     ): LibraryMedia? {
         return withContext(Dispatchers.IO) {
             // Check for session expiry
@@ -196,7 +198,7 @@ class LibrarySearchService {
 
             LibraryMedia(
                 url = url,
-                isAvailable = extendedMedia?.isAvailable ?: librariesAvailable.isNotEmpty(),
+                isAvailable = available,
                 year = extendedMedia?.year?.replace("[", "")?.replace("]", "") ?: "",
                 title = title,
                 dueDates = dueDates,

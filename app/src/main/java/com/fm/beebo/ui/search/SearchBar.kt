@@ -1,9 +1,8 @@
 package com.fm.beebo.ui.search
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -13,15 +12,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowRight
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.ArrowRight
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -46,7 +39,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.fm.beebo.viewmodels.SettingsViewModel
-import kotlinx.coroutines.delay
 
 
 @Composable
@@ -136,18 +128,17 @@ fun SearchBar(
                     Text(
                         text = "Filteroptionen",
                         fontWeight = FontWeight(900),
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                     )
                     filterOptions.forEach { option ->
                         DropdownMenuItem(
-                            text = { Text(option) },
+                            text = { Text(text = option) },
                             onClick = {
-                                viewModel.setSelectedFilterOption(
-                                    filterOptions.indexOf(
-                                        option
-                                    )
-                                )
+                                viewModel.setSelectedFilterOption(filterOptions.indexOf(option))
                                 filterExpanded = false
+                            },
+                            modifier = Modifier.conditional(selectedFilterOption.toString(), option) {
+                                background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)) // Highlight selected item
                             }
                         )
                     }
@@ -157,4 +148,12 @@ fun SearchBar(
     }
 }
 
+@Composable
+fun Modifier.conditional(selectedOption: String, filterItem: String, modifier: @Composable Modifier.() -> Modifier): Modifier {
+    return if (selectedOption == filterItem) {
+        this.then(modifier())
+    } else {
+        this
+    }
+}
 
