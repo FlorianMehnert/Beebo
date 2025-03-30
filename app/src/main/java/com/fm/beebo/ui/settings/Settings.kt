@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -75,47 +77,39 @@ fun SettingsScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedIconToggleButton(
-                    checked = enableDefaultSearchTerm,
-                    modifier = Modifier
-                        .width(100.dp)
-                        .height(55.dp)
-                        .offset(y = 4.dp),
-                    onCheckedChange = { isChecked ->
+            OutlinedTextField(
+                value = text,
+                onValueChange = { newText -> text = newText },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Standard Suchbegriff") },
+                singleLine = true,
+                enabled = enableDefaultSearchTerm,
+                leadingIcon = {
+                    IconButton(onClick = {
                         coroutineScope.launch {
-                            settingsDataStore.enableDefaultSearchTerm(isChecked)
+                            settingsDataStore.enableDefaultSearchTerm(!enableDefaultSearchTerm)
                         }
-                    },
-                    content = { Icon(Icons.Default.PowerSettingsNew, contentDescription = "Back") },
-                    shape = RoundedCornerShape(4.dp),
-                    colors = IconToggleButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        disabledContainerColor = MaterialTheme.colorScheme.onPrimary,
-                        disabledContentColor = MaterialTheme.colorScheme.onPrimary,
-                        checkedContainerColor = MaterialTheme.colorScheme.primary,
-                        checkedContentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    border = BorderStroke(
-                        width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant
-                    )
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { newText -> text = newText },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Standard Suchbegriff") },
-                    singleLine = true,
-                    enabled = enableDefaultSearchTerm
-                )
-            }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.PowerSettingsNew,
+                            contentDescription = "Toggle Search Mode",
+                            tint = if (enableDefaultSearchTerm) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                trailingIcon = {
+                    if (text.isNotEmpty()) {
+                        IconButton(onClick = { text = "" }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Löschen"
+                            )
+                        }
+                    }
+                }
+            )
+
 
             LaunchedEffect(text) {
                 delay(500)
