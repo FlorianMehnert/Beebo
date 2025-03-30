@@ -11,6 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowRight
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.ArrowRight
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
@@ -138,13 +143,17 @@ fun SearchBar(
                         }
                     }
 
-                    Button(
-                        onClick = onSearch,
+                    IconButton(
+                        onClick =  onSearch,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
-                            .offset(x = (-10).dp)
+                            .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp))
+                            .width(40.dp)
                     ) {
-                        Text("Suchen")
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = "Filter",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 }
             }
