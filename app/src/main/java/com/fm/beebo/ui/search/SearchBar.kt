@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -39,7 +41,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.fm.beebo.viewmodels.SettingsViewModel
 import kotlinx.coroutines.delay
@@ -67,6 +71,7 @@ fun SearchBar(
                 .padding(16.dp)
                 .height(60.dp)
         ) {
+            val keyboardController = LocalSoftwareKeyboardController.current
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
@@ -88,7 +93,16 @@ fun SearchBar(
                         }
                     }
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done  // Set action to Done (Enter)
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        keyboardController?.hide() // Hide keyboard
+                        onSearch()
+                    }
+                )
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -101,58 +115,40 @@ fun SearchBar(
                 color = MaterialTheme.colorScheme.primary
             ) {
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+
+                IconButton(
+                    onClick = { filterExpanded = true },
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp))
+                        .width(40.dp)
                 ) {
-                    Box {
-                        IconButton(
-                            onClick = { filterExpanded = true },
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp))
-                                .width(40.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FilterList,
-                                contentDescription = "Filter",
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
+                    Icon(
+                        imageVector = Icons.Default.FilterList,
+                        contentDescription = "Filter",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
 
-                        DropdownMenu(
-                            expanded = filterExpanded,
-                            onDismissRequest = { filterExpanded = false },
-                        ) {
-                            Text(
-                                text = "Filteroptionen",
-                                fontWeight = FontWeight(900),
-                                modifier = Modifier.padding(8.dp)
-                            )
-                            filterOptions.forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text(option) },
-                                    onClick = {
-                                        viewModel.setSelectedFilterOption(
-                                            filterOptions.indexOf(
-                                                option
-                                            )
-                                        )
-                                        filterExpanded = false
-                                    }
+                DropdownMenu(
+                    expanded = filterExpanded,
+                    onDismissRequest = { filterExpanded = false },
+                ) {
+                    Text(
+                        text = "Filteroptionen",
+                        fontWeight = FontWeight(900),
+                        modifier = Modifier.padding(8.dp)
+                    )
+                    filterOptions.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                viewModel.setSelectedFilterOption(
+                                    filterOptions.indexOf(
+                                        option
+                                    )
                                 )
+                                filterExpanded = false
                             }
-                        }
-                    }
-
-                    IconButton(
-                        onClick =  onSearch,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp))
-                            .width(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = "Filter",
-                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
