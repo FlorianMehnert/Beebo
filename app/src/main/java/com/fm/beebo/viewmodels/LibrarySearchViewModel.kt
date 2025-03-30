@@ -37,7 +37,7 @@ class LibrarySearchViewModel : ViewModel() {
                 statusMessage =
                     if (searchResults.isEmpty())
                         "Keine Ergebnisse gefunden"
-                    else if (totalPages > 1)
+                    else if (totalPages > 1 && (totalPages * 10 - searchResults.size) >= 10)
                         "${searchResults.size} Treffer von ungefähr ${totalPages*10 } Treffern."
                     else
                         "${searchResults.size} Treffer"
@@ -58,7 +58,8 @@ class LibrarySearchViewModel : ViewModel() {
             try {
                 val itemDetails = librarySearchService.getItemDetails(
                     itemUrl, SessionRepository.getInstance()
-                        .cookies
+                        .cookies,
+                    available
                 )
                 selectedItemDetails = itemDetails
                 statusMessage = "Details aktualisiert"
