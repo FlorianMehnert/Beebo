@@ -26,11 +26,11 @@ class LibrarySearchService {
         searchTerm: String,
         maxPages: Int = 3,
         viewModel: SettingsViewModel
-    ): Pair<List<LibraryMedia>, Map<String, String>> {
+    ): Pair<Pair<List<LibraryMedia>, Int>, Map<String, String>> {
         return withContext(Dispatchers.IO) {
             val results = mutableListOf<LibraryMedia>()
             val cookies = HashMap<String, String>()
-
+            var totalPages = 0
             try {
                 // Initialize the session and get the CSId
                 val initialResponse = Jsoup.connect(BASE_URL)
@@ -42,7 +42,7 @@ class LibrarySearchService {
 
                 val initialDoc = initialResponse.parse()
                 val csidInput = initialDoc.select("input[name=CSId]").first()
-                    ?: return@withContext Pair(results, cookies)
+                    ?: return@withContext Pair(Pair(results, 0), cookies)
 
                 val csid = csidInput.attr("value")
 
@@ -50,15 +50,7 @@ class LibrarySearchService {
                 val searchUrl =
                     "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
 
-                // Execute the search
-                // selectedSearchBranchlib=
-                // searchRestrictionID[0]=8
-                // searchRestrictionValue1[0]=305
-                // searchRestrictionID[1]=6
-                // searchRestrictionValue1[1]=
-                // searchRestrictionID[2]=3
-                // searchRestrictionValue1[2]=
-                // searchRestrictionValue2[2]=
+
                 val searchResponse = Jsoup.connect(searchUrl)
                     .data("searchCategories[0]", "-1")
                     .data("searchString[0]", searchTerm)
@@ -83,7 +75,7 @@ class LibrarySearchService {
 
                 // Check if we have results
                 if (searchDoc.text().contains("keine Treffer")) {
-                    return@withContext Pair(results, cookies)
+                    return@withContext Pair(Pair(results, 0), cookies)
                 }
 
                 val currentTab = getCurrentTab(searchDoc)
@@ -101,7 +93,7 @@ class LibrarySearchService {
                     // Process first page results
                     val firstPageResults = extractMetadata(searchDoc)
                     results.addAll(firstPageResults)
-                    val totalPages = getMaxPages(searchDoc)
+                    totalPages = getMaxPages(searchDoc)
                     val pagesToFetch = minOf(totalPages, maxPages)
                     var currentPage = 1
                     var nextUrl = getNextPageLink(searchDoc)
@@ -130,7 +122,7 @@ class LibrarySearchService {
                 e.printStackTrace()
             }
 
-            return@withContext Pair(results, cookies)
+            return@withContext Pair(Pair(results, totalPages), cookies)
         }
     }
 
