@@ -47,7 +47,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
             Spacer(modifier = Modifier.width(8.dp))
             if (itemDetails != null) {
                 Text(
-                    text = itemDetails.title, style = MaterialTheme.typography.titleLarge
+                    text = itemDetails.title.replace("¬", ""), style = MaterialTheme.typography.titleLarge
                 )
             } else {
                 Text(
