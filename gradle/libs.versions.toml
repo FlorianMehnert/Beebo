@@ -11,12 +11,14 @@ espressoCore = "3.6.1"
 preference-ui = "1.1.1"
 lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.1"
-composeBom = "2025.03.00"
+composeBom = "2025.03.01"
 lifecycleViewmodelCompose = "2.8.7"
 ui = "1.7.8"
 datastoreCoreAndroid = "1.1.4"
 navigationCompose = "2.8.9"
 foundationAndroid = "1.7.8"
+androidx-appcompat = "1.7.0"
+androidx-activity = "1.10.1"
 
 
 [libraries]
@@ -48,6 +50,9 @@ accompanist-insets = { group = "com.google.accompanist", name = "accompanist-ins
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
 androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version = "1.4.0-alpha10" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
+androidx-activity = { module = "androidx.activity:activity-ktx", version.ref = "androidx-activity" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

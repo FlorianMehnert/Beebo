@@ -1,6 +1,8 @@
 package com.fm.beebo.network
 
 import com.fm.beebo.models.LibraryMedia
+import com.fm.beebo.network.NetworkConfig.BASE_LOGGED_IN_URL
+import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,11 +27,12 @@ class LibrarySearchService {
     suspend fun search(
         searchTerm: String,
         maxPages: Int = 3,
-        viewModel: SettingsViewModel
+        viewModel: SettingsViewModel,
+        searchViewModel: LibrarySearchViewModel
+
     ): Pair<Pair<List<LibraryMedia>, Int>, Map<String, String>> {
         return withContext(Dispatchers.IO) {
             val results = mutableListOf<LibraryMedia>()
-            val cookies = HashMap<String, String>()
             var totalPages = 0
             try {
                 // Initialize the session and get the CSId
@@ -38,18 +41,17 @@ class LibrarySearchService {
                     .execute()
 
                 // Store cookies
-                cookies.putAll(initialResponse.cookies())
+                searchViewModel.setCookies(initialResponse.cookies())
 
                 val initialDoc = initialResponse.parse()
                 val csidInput = initialDoc.select("input[name=CSId]").first()
-                    ?: return@withContext Pair(Pair(results, 0), cookies)
+                    ?: return@withContext Pair(Pair(results, 0), searchViewModel.cookies)
 
                 val csid = csidInput.attr("value")
 
                 // Prepare search URL
                 val searchUrl =
                     "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
-
 
                 val searchResponse = Jsoup.connect(searchUrl)
                     .data("searchCategories[0]", "-1")
@@ -58,33 +60,39 @@ class LibrarySearchService {
                     .data("selectedViewBranchlib", "0")
                     .data("selectedSearchBranchlib", "")
                     .data("searchRestrictionID[0]", "8") // search restriction
-                    .data("searchRestrictionValue1[0]", viewModel.selectedFilterOption.value.getSearchRestrictionValue1()) // kind of media
+                    .data(
+                        "searchRestrictionValue1[0]",
+                        viewModel.selectedFilterOption.value.getSearchRestrictionValue1()
+                    ) // kind of media
                     .data("searchRestrictionID[1]", "6")
                     .data("searchRestrictionValue1[1]", "")
                     .data("searchRestrictionID[2]", "3")
                     .data("searchRestrictionValue1[2]", "")
                     .data("searchRestrictionValue2[2]", "")
-                    .cookies(cookies)
+                    .cookies(searchViewModel.cookies)
                     .timeout(30000)
                     .execute()
 
                 // Update cookies
-                cookies.putAll(searchResponse.cookies())
+                searchViewModel.setCookies(searchResponse.cookies())
 
                 val searchDoc = searchResponse.parse()
 
                 // Check if we have results
                 if (searchDoc.text().contains("keine Treffer")) {
-                    return@withContext Pair(Pair(results, 0), cookies)
+                    return@withContext Pair(Pair(results, 0), searchViewModel.cookies)
                 }
 
                 val currentTab = getCurrentTab(searchDoc)
+
+                // Handle only one result
                 if (currentTab == "Detailanzeige") {
                     val result = parseDetails(doc = searchDoc)
                     if (result != null) {
-                        changeDetailsTab(searchDoc)
                         result.url = searchResponse.url().toString()
-                        val details: LibraryMedia? = getItemDetails(result.url, cookies, false)
+
+                        // TODO: Set availability properly
+                        val details: LibraryMedia? = getItemDetails(result.url, searchViewModel.cookies, false)
                         if (details != null) {
                             results.add(details)
                         }
@@ -102,11 +110,11 @@ class LibrarySearchService {
                         currentPage++
 
                         val nextPageResponse = Jsoup.connect(nextUrl)
-                            .cookies(cookies)
+                            .cookies(searchViewModel.cookies)
                             .timeout(30000)
                             .execute()
 
-                        cookies.putAll(nextPageResponse.cookies())
+                        searchViewModel.setCookies(nextPageResponse.cookies())
 
                         val nextPageDoc = nextPageResponse.parse()
                         val pageResults = extractMetadata(nextPageDoc)
@@ -122,7 +130,7 @@ class LibrarySearchService {
                 e.printStackTrace()
             }
 
-            return@withContext Pair(Pair(results, totalPages), cookies)
+            return@withContext Pair(Pair(results, totalPages), searchViewModel.cookies)
         }
     }
 
@@ -179,7 +187,8 @@ class LibrarySearchService {
             }
 
             val librariesAvailable = mutableListOf<String>()
-            val librariesUnavailable = mutableListOf<Pair<String, String>>() // Library name and due date
+            val librariesUnavailable =
+                mutableListOf<Pair<String, String>>() // Library name and due date
             val librariesOrderable = mutableListOf<String>()
 
             doc.select("table.data tbody tr").forEach { row ->
@@ -189,7 +198,8 @@ class LibrarySearchService {
                 when {
                     statusText.contains("ausleihbar") -> librariesAvailable.add(library)
                     statusText.contains("entliehen bis") -> {
-                        val dueDate = statusText.substringAfter("entliehen bis ").substringBefore(" (")
+                        val dueDate =
+                            statusText.substringAfter("entliehen bis ").substringBefore(" (")
                         librariesUnavailable.add(library to dueDate)
                     }
                     statusText.contains("bestellbar") -> librariesOrderable.add(library)

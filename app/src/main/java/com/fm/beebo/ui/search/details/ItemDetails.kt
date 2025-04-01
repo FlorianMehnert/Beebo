@@ -1,5 +1,6 @@
 package com.fm.beebo.ui.search.details
 
+import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,16 +43,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import com.fm.beebo.ui.CustomWebViewClient
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
     val itemDetails = viewModel.selectedItemDetails
-    val uriHandler = LocalUriHandler.current
+    val cookies = viewModel.cookies // Assuming you have a way to access cookies from the ViewModel
     BackHandler { onBack() }
 
     Scaffold(
@@ -60,9 +63,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                     Text(
                         text = itemDetails?.title?.replace("¬", "") ?: "Katalog",
                         modifier = Modifier.clickable {
-                            itemDetails?.url?.let { url ->
-                                uriHandler.openUri(url)
-                            }
+
                         }
                     )
                 },
@@ -85,7 +86,20 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        ) {
+        ) {if (true){
+            Button(onClick = {
+                viewModel.clearCookies()
+            }, shape = RoundedCornerShape(4.dp)) { }
+            AndroidView(factory = { context ->
+                WebView(context).apply {
+                    webViewClient = CustomWebViewClient(cookies)
+                    settings.javaScriptEnabled = true
+                    loadUrl(itemDetails?.url ?: "")
+                }
+            })
+            println("Sending cookies: ${viewModel.cookies}")
+        }else{
+            println("Sending cookies: ${viewModel.cookies}")
             if (itemDetails != null) {
                 LazyColumn(
                     modifier = Modifier
@@ -141,9 +155,10 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                     CircularProgressIndicator()
                 }
             }
-        }
+        }}
     }
 }
+
 
 @Composable
 fun DetailRow(label: String, value: String, icon: ImageVector, iconColor: Color = Color.Unspecified) {
