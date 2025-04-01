@@ -16,6 +16,7 @@ class LoginService{
     suspend fun login(username: String, password: String): Map<String, String>? {
         return withContext(Dispatchers.IO) {
             val cookies = mutableMapOf<String, String>()
+            cookies.putAll(initialResponse.cookies())
 
             try {
                 val initialResponse = Jsoup.connect(BASE_URL)

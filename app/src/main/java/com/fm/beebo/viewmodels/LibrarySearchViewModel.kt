@@ -1,6 +1,7 @@
 package com.fm.beebo.viewmodels
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -17,6 +18,16 @@ class LibrarySearchViewModel : ViewModel() {
 
 
     private val librarySearchService = LibrarySearchService()
+    private val _cookies = mutableStateMapOf<String, String>()
+    val cookies: Map<String, String> get() = _cookies
+
+    fun setCookies(cookies: Map<String, String>) {
+        _cookies.putAll(cookies)
+    }
+
+    fun clearCookies() {
+        _cookies.clear()
+    }
 
     fun searchLibrary(query: String, maxPages: Int = 3, settingsViewModel: SettingsViewModel) {
         if (query.isBlank()) return
@@ -29,7 +40,7 @@ class LibrarySearchViewModel : ViewModel() {
         viewModelScope.launch {
 
             try {
-                val (searchResultInfo, newCookies) = librarySearchService.search(query, maxPages, settingsViewModel)
+                val (searchResultInfo, newCookies) = librarySearchService.search(query, maxPages, settingsViewModel, this@LibrarySearchViewModel)
                 val (searchResults, totalPages) = searchResultInfo
                 results = searchResults
                 SessionRepository.getInstance()
