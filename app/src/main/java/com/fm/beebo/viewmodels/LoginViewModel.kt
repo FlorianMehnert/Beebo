@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.fm.beebo.network.LoginService
 import kotlinx.coroutines.launch
 
+
 class LoginViewModel : ViewModel() {
     var isLoggedIn by mutableStateOf(false)
     var username by mutableStateOf("")
@@ -19,13 +20,8 @@ class LoginViewModel : ViewModel() {
 
     fun login() {
         viewModelScope.launch {
-            // Update repository with new session cookies
-            var newCookies = loginService.login(username, password)
-            if (newCookies != null){
-                SessionRepository.getInstance()
-                    .updateCookies(newCookies)
-                isLoggedIn = true
-            }
+            loginService.login(username, password)
+            isLoggedIn = true
         }
     }
 

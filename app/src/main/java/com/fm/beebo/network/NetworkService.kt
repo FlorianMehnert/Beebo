@@ -1,8 +1,7 @@
 package com.fm.beebo.network
 
+import android.webkit.CookieManager
 import com.fm.beebo.models.LibraryMedia
-import com.fm.beebo.network.NetworkConfig.BASE_LOGGED_IN_URL
-import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,7 +16,6 @@ object NetworkConfig {
     const val BASE_LOGGED_IN_URL = "https://katalog.bibo-dresden.de"
 }
 
-
 class LibrarySearchService {
     companion object {
         private const val BASE_URL = NetworkConfig.BASE_URL
@@ -28,12 +26,12 @@ class LibrarySearchService {
         searchTerm: String,
         maxPages: Int = 3,
         viewModel: SettingsViewModel,
-        searchViewModel: LibrarySearchViewModel
-
-    ): Pair<Pair<List<LibraryMedia>, Int>, Map<String, String>> {
+    ): Pair<Pair<List<LibraryMedia>, Int>, Boolean> {
         return withContext(Dispatchers.IO) {
             val results = mutableListOf<LibraryMedia>()
             var totalPages = 0
+            val cookieManager = CookieManager.getInstance()
+
             try {
                 // Initialize the session and get the CSId
                 val initialResponse = Jsoup.connect(BASE_URL)
@@ -41,11 +39,11 @@ class LibrarySearchService {
                     .execute()
 
                 // Store cookies
-                searchViewModel.setCookies(initialResponse.cookies())
+                cookieManager.setCookies(BASE_LOGGED_IN_URL, initialResponse.cookies())
 
                 val initialDoc = initialResponse.parse()
                 val csidInput = initialDoc.select("input[name=CSId]").first()
-                    ?: return@withContext Pair(Pair(results, 0), searchViewModel.cookies)
+                    ?: return@withContext Pair(Pair(results, 0), false)
 
                 val csid = csidInput.attr("value")
 
@@ -69,18 +67,18 @@ class LibrarySearchService {
                     .data("searchRestrictionID[2]", "3")
                     .data("searchRestrictionValue1[2]", "")
                     .data("searchRestrictionValue2[2]", "")
-                    .cookies(searchViewModel.cookies)
+                    .cookies(cookieManager.getCookies())
                     .timeout(30000)
                     .execute()
 
                 // Update cookies
-                searchViewModel.setCookies(searchResponse.cookies())
+                cookieManager.setCookies(BASE_LOGGED_IN_URL, searchResponse.cookies())
 
                 val searchDoc = searchResponse.parse()
 
                 // Check if we have results
                 if (searchDoc.text().contains("keine Treffer")) {
-                    return@withContext Pair(Pair(results, 0), searchViewModel.cookies)
+                    return@withContext Pair(Pair(results, 0), false)
                 }
 
                 val currentTab = getCurrentTab(searchDoc)
@@ -92,7 +90,7 @@ class LibrarySearchService {
                         result.url = searchResponse.url().toString()
 
                         // TODO: Set availability properly
-                        val details: LibraryMedia? = getItemDetails(result.url, searchViewModel.cookies, false)
+                        val details: LibraryMedia? = getItemDetails(result.url, false)
                         if (details != null) {
                             results.add(details)
                         }
@@ -110,11 +108,11 @@ class LibrarySearchService {
                         currentPage++
 
                         val nextPageResponse = Jsoup.connect(nextUrl)
-                            .cookies(searchViewModel.cookies)
+                            .cookies(cookieManager.getCookies())
                             .timeout(30000)
                             .execute()
 
-                        searchViewModel.setCookies(nextPageResponse.cookies())
+                        cookieManager.setCookies(BASE_LOGGED_IN_URL, nextPageResponse.cookies())
 
                         val nextPageDoc = nextPageResponse.parse()
                         val pageResults = extractMetadata(nextPageDoc)
@@ -130,35 +128,35 @@ class LibrarySearchService {
                 e.printStackTrace()
             }
 
-            return@withContext Pair(Pair(results, totalPages), searchViewModel.cookies)
+            return@withContext Pair(Pair(results, totalPages), true)
         }
     }
 
     /**
-     * connects to the item url and invokes the dom parser for mediaDetails
+     * Connects to the item URL and invokes the DOM parser for media details.
      */
     suspend fun getItemDetails(
         itemUrl: String,
-        cookies: Map<String, String>,
         available: Boolean
     ): LibraryMedia? {
+        val cookieManager = CookieManager.getInstance()
         return withContext(Dispatchers.IO) {
             val response = Jsoup.connect(itemUrl)
-                .cookies(cookies)
+                .cookies(cookieManager.getCookies())
                 .timeout(30000)
                 .execute()
 
             val doc = response.parse()
-            parseItemDetails(doc, itemUrl, cookies, available)
+            parseItemDetails(doc, itemUrl, available)
         }
     }
 
     suspend fun parseItemDetails(
         doc: Document,
         url: String,
-        cookies: Map<String, String>,
         available: Boolean
     ): LibraryMedia? {
+        val cookieManager = CookieManager.getInstance()
         return withContext(Dispatchers.IO) {
             // Check for session expiry
             if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
@@ -168,7 +166,7 @@ class LibrarySearchService {
 
             val extraDetailsTabUrl = changeDetailsTab(doc)
             val extendedMedia: LibraryMedia? = if (extraDetailsTabUrl.isNotEmpty()) {
-                parseDetailsTab(BASE_LOGGED_IN_URL + extraDetailsTabUrl, cookies)
+                parseDetailsTab(BASE_LOGGED_IN_URL + extraDetailsTabUrl)
             } else {
                 null
             }
@@ -226,15 +224,13 @@ class LibrarySearchService {
         }
     }
 
-
-
     suspend fun parseDetailsTab(
-        detailsTabUrl: String,
-        cookies: Map<String, String>
+        detailsTabUrl: String
     ): LibraryMedia? {
+        val cookieManager = CookieManager.getInstance()
         return withContext(Dispatchers.IO) {
             val response = Jsoup.connect(detailsTabUrl)
-                .cookies(cookies)
+                .cookies(cookieManager.getCookies())
                 .timeout(30000)
                 .execute()
 
@@ -297,7 +293,6 @@ class LibrarySearchService {
             dueDates = emptyList()
         )
     }
-
 
     private fun getMaxPages(doc: Document): Int {
         val lastPageLink = doc.select("a[title='Letzte Seite']").firstOrNull()

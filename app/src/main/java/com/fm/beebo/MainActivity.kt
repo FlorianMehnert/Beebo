@@ -2,6 +2,7 @@ package com.fm.beebo
 
 import SettingsScreen
 import android.os.Bundle
+import android.webkit.CookieManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -10,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.fm.beebo.datastore.SettingsDataStore
+import com.fm.beebo.network.configure
 import com.fm.beebo.ui.LibrariesScreen
 import com.fm.beebo.ui.search.LibrarySearchScreen
 import com.fm.beebo.ui.theme.BeeboTheme
@@ -22,6 +24,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val settingsDataStore = SettingsDataStore(applicationContext)
         val settingsViewModel = SettingsViewModel()
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.configure()
 
         setContent {
             BeeboTheme {
@@ -44,7 +48,6 @@ class MainActivity : ComponentActivity() {
                     composable("libraries") {
                         LibrariesScreen(onBackPress = { navController.popBackStack() })
                     }
-
                 }
             }
         }

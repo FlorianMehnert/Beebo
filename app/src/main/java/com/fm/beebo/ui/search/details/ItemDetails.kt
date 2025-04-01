@@ -1,5 +1,6 @@
 package com.fm.beebo.ui.search.details
 
+import android.webkit.CookieManager
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,9 +25,9 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EventBusy
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,6 +41,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,6 +52,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.fm.beebo.network.getCookies
 import com.fm.beebo.ui.CustomWebViewClient
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 
@@ -53,19 +60,33 @@ import com.fm.beebo.viewmodels.LibrarySearchViewModel
 @Composable
 fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
     val itemDetails = viewModel.selectedItemDetails
-    val cookies = viewModel.cookies // Assuming you have a way to access cookies from the ViewModel
+    var isWebViewVisible by remember { mutableStateOf(false) }
+
     BackHandler { onBack() }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = itemDetails?.title?.replace("¬", "") ?: "Katalog",
-                        modifier = Modifier.clickable {
-
-                        }
+                    Row (horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()){
+                        Text(
+                            text = "",
+                        )
+                        Text(
+                        text = itemDetails?.title?.replace("¬", "")?.replace("\n", "") ?: "Katalog",
                     )
+                        Column (verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.CenterHorizontally){
+                            ToggleIconButton(
+                                checked = isWebViewVisible,
+                                onCheckedChange = {
+                                    isWebViewVisible = it
+                                }
+                            )
+                        }
+
+
+                    }
+
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -86,82 +107,96 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        ) {if (true){
-            Button(onClick = {
-                viewModel.clearCookies()
-            }, shape = RoundedCornerShape(4.dp)) { }
-            AndroidView(factory = { context ->
-                WebView(context).apply {
-                    webViewClient = CustomWebViewClient(cookies)
-                    settings.javaScriptEnabled = true
-                    loadUrl(itemDetails?.url ?: "")
-                }
-            })
-            println("Sending cookies: ${viewModel.cookies}")
-        }else{
-            println("Sending cookies: ${viewModel.cookies}")
-            if (itemDetails != null) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            elevation = CardDefaults.elevatedCardElevation()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                DetailRow("Erscheinungsjahr", itemDetails.year.toString(), Icons.Filled.CalendarToday)
-                                if (itemDetails.author.isNotEmpty()) {
-                                    DetailRow("Autor", itemDetails.author, Icons.Filled.Person)
-                                }
-                                DetailRow(
-                                    "Verfügbarkeit",
-                                    if (itemDetails.isAvailable) "Ausleihbar" else "Nicht verfügbar",
-                                    if (itemDetails.isAvailable) Icons.Filled.CheckCircle else Icons.Filled.Cancel,
-                                    if (itemDetails.isAvailable) Color.Green else Color.Red
-                                )
-                                DetailRow("ISBN", itemDetails.isbn, Icons.Filled.Book)
-                                DetailRow("Sprache", itemDetails.language, Icons.Filled.Translate)
-                                if (!itemDetails.isAvailable && itemDetails.dueDates.isNotEmpty()) {
-                                    DetailRow("Entliehen bis", itemDetails.dueDates[0], Icons.Filled.EventBusy)
+        ) {
+            if (isWebViewVisible) {
+                AndroidView(factory = { context ->
+                    WebView(context).apply {
+                        webViewClient = CustomWebViewClient(CookieManager.getInstance().getCookies())
+                        settings.javaScriptEnabled = true
+                        loadUrl(itemDetails?.url ?: "")
+                    }
+                })
+            }else {
+                if (itemDetails != null) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                elevation = CardDefaults.elevatedCardElevation()
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    DetailRow(
+                                        "Erscheinungsjahr",
+                                        itemDetails.year.toString(),
+                                        Icons.Filled.CalendarToday
+                                    )
+                                    if (itemDetails.author.isNotEmpty()) {
+                                        DetailRow("Autor", itemDetails.author, Icons.Filled.Person)
+                                    }
+                                    DetailRow(
+                                        "Verfügbarkeit",
+                                        if (itemDetails.isAvailable) "Ausleihbar" else "Nicht verfügbar",
+                                        if (itemDetails.isAvailable) Icons.Filled.CheckCircle else Icons.Filled.Cancel,
+                                        if (itemDetails.isAvailable) Color.Green else Color.Red
+                                    )
+                                    DetailRow("ISBN", itemDetails.isbn, Icons.Filled.Book)
+                                    DetailRow("Sprache", itemDetails.language, Icons.Filled.Translate)
+                                    if (!itemDetails.isAvailable && itemDetails.dueDates.isNotEmpty()) {
+                                        DetailRow(
+                                            "Entliehen bis",
+                                            itemDetails.dueDates[0],
+                                            Icons.Filled.EventBusy
+                                        )
+                                    }
                                 }
                             }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (itemDetails.availableLibraries.isNotEmpty()) {
+                                Section("Verfügbar in", itemDetails.availableLibraries)
+                            }
+                            if (itemDetails.unavailableLibraries.isNotEmpty()) {
+                                Section_unavailable(
+                                    "Nicht verfügbar in",
+                                    itemDetails.unavailableLibraries
+                                )
+                            }
+                            if (itemDetails.orderableLibraries.isNotEmpty()) {
+                                Section("Bestellbar in", itemDetails.orderableLibraries)
+                            }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        if (itemDetails.availableLibraries.isNotEmpty()) {
-                            Section("Verfügbar in", itemDetails.availableLibraries)
-                        }
-                        if (itemDetails.unavailableLibraries.isNotEmpty()) {
-                            Section_unavailable("Nicht verfügbar in", itemDetails.unavailableLibraries)
-                        }
-                        if (itemDetails.orderableLibraries.isNotEmpty()) {
-                            Section("Bestellbar in", itemDetails.orderableLibraries)
-                        }
-                    }
 
-                }
-            } else {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text("Keine Details verfügbar", style = MaterialTheme.typography.bodyLarge)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    CircularProgressIndicator()
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("Keine Details verfügbar", style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        CircularProgressIndicator()
+                    }
                 }
             }
-        }}
+        }
     }
 }
 
 
+
 @Composable
-fun DetailRow(label: String, value: String, icon: ImageVector, iconColor: Color = Color.Unspecified) {
+fun DetailRow(
+    label: String,
+    value: String,
+    icon: ImageVector,
+    iconColor: Color = Color.Unspecified
+) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Icon(icon, contentDescription = label, tint = iconColor, modifier = Modifier.width(20.dp))
         Spacer(modifier = Modifier.width(8.dp))
@@ -200,4 +235,21 @@ fun Section_unavailable(title: String, items: List<Pair<String, String>>) {
         }
         Divider(modifier = Modifier.padding(vertical = 8.dp))
     }
+}
+
+@Composable
+fun ToggleIconButton(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Icon(
+        imageVector = Icons.Filled.Explore,
+        contentDescription = "Toggle Icon",
+        tint = if (checked) MaterialTheme.colorScheme.primary else Color.Gray,
+        modifier = Modifier
+            .size(28.dp)
+            .clickable {
+                onCheckedChange(!checked)
+            }
+    )
 }
