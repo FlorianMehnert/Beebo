@@ -17,6 +17,8 @@ class LibrarySearchViewModel : ViewModel() {
     var isLoading by mutableStateOf(false)
     var statusMessage by mutableStateOf("")
     var selectedItemDetails by mutableStateOf<LibraryMedia?>(null)
+    var progress by mutableStateOf(0f)
+    var totalPages by mutableStateOf(0)
 
 
     private val librarySearchService = LibrarySearchService()
@@ -40,6 +42,9 @@ class LibrarySearchViewModel : ViewModel() {
                             results = searchResult.results
 
                             statusMessage = searchResult.message
+                            progress = searchResult.progress
+                            totalPages = searchResult.totalPages
+                            println("progress is:$progress")
 
                             // Only set isLoading to false after we've received the final page
                             // or if there was an error
