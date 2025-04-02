@@ -121,7 +121,8 @@ fun LibrarySearchScreen(
 
             SearchStatus(
                 isLoading = viewModel.isLoading,
-                statusMessage = viewModel.statusMessage,
+                totalResults = viewModel.totalPages * 10,
+                progress = viewModel.progress,
                 resultCount = viewModel.results.size
             )
 

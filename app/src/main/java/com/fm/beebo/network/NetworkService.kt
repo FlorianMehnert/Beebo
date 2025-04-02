@@ -30,6 +30,7 @@ class LibrarySearchService {
         maxPages: Int = 3,
         viewModel: SettingsViewModel
     ): Flow<SearchResult> = flow {
+        var currentPage = 1
         val results = mutableListOf<LibraryMedia>()
         var totalPages = 0
         val cookieManager = CookieManager.getInstance()
@@ -113,11 +114,12 @@ class LibrarySearchService {
                     totalPages = totalPages,
                     success = true,
                     message = if (results.isEmpty()) "Keine Treffer gefunden" else
-                        "Erste Seite: ${results.size} Treffer von ungefähr ${totalPages*10} Treffern"
+                        "Erste Seite: ${results.size} Treffer von ungefähr ${totalPages*10} Treffern",
+                    progress = currentPage.toFloat()*10 / totalPages
                 ))
 
                 val pagesToFetch = minOf(totalPages, maxPages)
-                var currentPage = 1
+
                 if (currentPage >= pagesToFetch || currentPage == 3){
 
                 }
@@ -143,6 +145,7 @@ class LibrarySearchService {
                             totalPages = totalPages,
                             success = true,
                             message = "Seite $currentPage: ${results.size} Treffer von ungefähr ${totalPages*10} Treffern",
+                            progress = currentPage.toFloat()*10 / totalPages
                         ))
 
                         // Get next page URL
@@ -156,7 +159,8 @@ class LibrarySearchService {
                             totalPages = totalPages,
                             success = true,
                             message = "Teilweise Ergebnisse (${results.size}): Fehler bei Seite $currentPage",
-                            isComplete = true
+                            isComplete = true,
+                            progress = currentPage.toFloat() / totalPages
                         ))
                         break
                     }
@@ -172,7 +176,8 @@ class LibrarySearchService {
                             "${results.size} Treffer von ungefähr ${totalPages*10} Treffern."
                         else
                             "${results.size} Treffer",
-                        isComplete = true
+                        isComplete = true,
+                        progress = currentPage.toFloat()*10 / totalPages
                     ))
                 }
             }
@@ -183,7 +188,8 @@ class LibrarySearchService {
                 results = results.toList(),
                 totalPages = totalPages,
                 success = false,
-                message = "Error: $errorMessage"
+                message = "Error: $errorMessage",
+                progress = currentPage.toFloat()*10 / totalPages
             ))
         }
     }
@@ -195,7 +201,8 @@ data class SearchResult(
     val totalPages: Int,
     val success: Boolean,
     val message: String,
-    val isComplete: Boolean = false
+    val isComplete: Boolean = false,
+    val progress: Float = 0f
 )
 
     /**
