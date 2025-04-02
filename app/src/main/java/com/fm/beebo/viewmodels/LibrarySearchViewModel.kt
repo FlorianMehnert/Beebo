@@ -49,8 +49,6 @@ class LibrarySearchViewModel : ViewModel() {
 
     fun fetchItemDetails(itemUrl: String, available: Boolean) {
         isLoading = true
-        statusMessage = "Aktualisiere Details..."
-
         viewModelScope.launch {
             try {
                 val itemDetails = librarySearchService.getItemDetails(
@@ -58,7 +56,6 @@ class LibrarySearchViewModel : ViewModel() {
                     available
                 )
                 selectedItemDetails = itemDetails
-                statusMessage = "Details aktualisiert"
             } catch (e: Exception) {
                 statusMessage = "Error: ${e.message}"
             } finally {

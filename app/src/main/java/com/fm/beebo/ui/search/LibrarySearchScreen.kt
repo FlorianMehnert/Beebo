@@ -15,7 +15,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -33,10 +32,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fm.beebo.datastore.SettingsDataStore
-import com.fm.beebo.ui.profile.LoginDialog
-import com.fm.beebo.ui.search.details.ItemDetails
+import com.fm.beebo.ui.search.details.ItemDetailsScreen
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
-import com.fm.beebo.viewmodels.LoginViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,7 +42,6 @@ fun LibrarySearchScreen(
     onSettingsClick: () -> Unit,
     viewModel: LibrarySearchViewModel = viewModel(),
     settingsViewModel: SettingsViewModel,
-    loginViewModel: LoginViewModel = viewModel()
 ) {
     val settingsDataStore = SettingsDataStore(LocalContext.current)
     val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
@@ -61,22 +57,18 @@ fun LibrarySearchScreen(
         }
     }
 
-
-    OutlinedTextField(
-        value = query,
-        onValueChange = { newQuery -> query = newQuery },
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text("Suchbegriff") },
-        singleLine = true,
-    )
     var selectedItem by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
-    var showLoginDialog by remember { mutableStateOf(false) }
 
-    // Handle login dialog
-    if (showLoginDialog) {
-        LoginDialog(
-            loginViewModel = loginViewModel, onDismiss = { showLoginDialog = false })
+    // Handle the ItemDetails screen as a completely separate UI state
+    if (selectedItem != null) {
+        ItemDetailsScreen(
+            viewModel = viewModel,
+            onBack = { selectedItem = null }
+        )
+        return
     }
+
+    // Main search screen
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,13 +79,6 @@ fun LibrarySearchScreen(
                 ),
                 actions = {
                     Row {
-//                        IconButton(onClick = { showLoginDialog = true }) {
-//                            Icon(
-//                                imageVector = Icons.Filled.AccountCircle,
-//                                contentDescription = "Login",
-//                                tint = MaterialTheme.colorScheme.onPrimary
-//                            )
-//                        }
                         IconButton(onClick = onSettingsClick) {
                             Icon(
                                 Icons.Filled.Settings,
@@ -103,13 +88,16 @@ fun LibrarySearchScreen(
                         }
                     }
                 })
-        }) { paddingValues ->
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
+            Spacer(modifier = Modifier.height(8.dp))
+
             SearchBar(
                 query = query,
                 onQueryChange = { query = it },
@@ -132,6 +120,7 @@ fun LibrarySearchScreen(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+
             if (viewModel.isLoading) {
                 Box(
                     modifier = Modifier
@@ -142,18 +131,14 @@ fun LibrarySearchScreen(
                     CircularProgressIndicator()
                 }
             } else {
-                if (selectedItem != null) {
-                    ItemDetails(viewModel) {
-                        selectedItem = null
-                    }
-                } else {
-                    SearchResultsList(
-                        results = viewModel.results, onItemClick = { item ->
-                            selectedItem = Pair(item.title, item.isAvailable)
-                            viewModel.fetchItemDetails(item.url, item.isAvailable)
-                        }, searchQuery = query
-                    )
-                }
+                SearchResultsList(
+                    results = viewModel.results,
+                    onItemClick = { item ->
+                        selectedItem = Pair(item.title, item.isAvailable)
+                        viewModel.fetchItemDetails(item.url, item.isAvailable)
+                    },
+                    searchQuery = query
+                )
             }
         }
     }
