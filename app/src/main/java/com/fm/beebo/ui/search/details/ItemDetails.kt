@@ -68,6 +68,7 @@ import com.fm.beebo.viewmodels.LibrarySearchViewModel
 fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
     val itemDetails = viewModel.selectedItemDetails
     var isWebViewVisible by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(false) }
 
     BackHandler { onBack() }
 
@@ -80,16 +81,15 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-
-
-                        // Title with ellipsis if too long
+                        // Title with expandable behavior
                         Text(
                             text = itemDetails?.title?.replace("¬", "")?.replace("\n", "") ?: "Katalog",
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(horizontal = 8.dp), // Adds padding to avoid clipping
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                                .padding(horizontal = 8.dp)
+                                .clickable { isExpanded = !isExpanded }, // Toggle expand/collapse
+                            maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                            overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
                         )
 
                         // Toggle Button (Always visible)
@@ -100,8 +100,6 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                             }
                         )
                     }
-
-
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -117,7 +115,8 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                 )
             )
         },
-    ) { paddingValues ->
+    )
+    { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
