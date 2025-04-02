@@ -61,6 +61,7 @@ fun SearchBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
+                // TODO: adjust based on font size
                 .height(60.dp)
         ) {
             val keyboardController = LocalSoftwareKeyboardController.current
@@ -85,6 +86,7 @@ fun SearchBar(
                         }
                     }
                 },
+                // TODO: adjust based on font size
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done  // Set action to Done (Enter)
