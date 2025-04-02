@@ -10,18 +10,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Cancel
@@ -65,7 +62,10 @@ import com.fm.beebo.viewmodels.LibrarySearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
+fun ItemDetailsScreen(
+    viewModel: LibrarySearchViewModel,
+    onBack: () -> Unit
+) {
     val itemDetails = viewModel.selectedItemDetails
     var isWebViewVisible by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
@@ -76,30 +76,14 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Title with expandable behavior
-                        Text(
-                            text = itemDetails?.title?.replace("¬", "")?.replace("\n", "") ?: "Katalog",
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 8.dp)
-                                .clickable { isExpanded = !isExpanded }, // Toggle expand/collapse
-                            maxLines = if (isExpanded) Int.MAX_VALUE else 1,
-                            overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
-                        )
-
-                        // Toggle Button (Always visible)
-                        ToggleIconButton(
-                            checked = isWebViewVisible,
-                            onCheckedChange = {
-                                isWebViewVisible = it
-                            }
-                        )
-                    }
+                    Text(
+                        text = itemDetails?.title?.replace("¬", "")?.replace("\n", "") ?: "Katalog",
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .clickable { isExpanded = !isExpanded },
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                        overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -109,17 +93,25 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                         )
                     }
                 },
-                windowInsets = WindowInsets(0, 0, 0, 0),
+                actions = {
+                    ToggleIconButton(
+                        checked = isWebViewVisible,
+                        onCheckedChange = { isWebViewVisible = it },
+
+
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
-        },
-    )
-    { paddingValues ->
+        }
+    ) { paddingValues ->
         Box(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(paddingValues)
         ) {
             if (isWebViewVisible) {
@@ -150,12 +142,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                                     Icons.Filled.CalendarToday
                                 )
                                 if (itemDetails.author.isNotEmpty()) {
-                                    var cardTitle = ""
-                                    if (itemDetails.kindOfMedium == "DVD") {
-                                        cardTitle = "Mitwirkende"
-                                    }else {
-                                        cardTitle = "Autor/in"
-                                    }
+                                    val cardTitle = if (itemDetails.kindOfMedium == "DVD") "Mitwirkende" else "Autor/in"
                                     DetailCard(cardTitle, itemDetails.author.replace(";", ""), Icons.Filled.Person)
                                 }
 
@@ -198,7 +185,6 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
                                 Section("Bestellbar in", itemDetails.orderableLibraries)
                             }
                         }
-
                     }
                 } else {
                     Column(
@@ -215,6 +201,7 @@ fun ItemDetails(viewModel: LibrarySearchViewModel, onBack: () -> Unit) {
         }
     }
 }
+
 
 
 @Composable
@@ -272,7 +259,7 @@ fun DetailCard(
 
 @Composable
 fun Section(title: String, items: List<String>) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
@@ -288,7 +275,7 @@ fun Section(title: String, items: List<String>) {
 
 @Composable
 fun Section_unavailable(title: String, items: List<Pair<String, String>>) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
@@ -309,7 +296,7 @@ fun ToggleIconButton(
     Icon(
         imageVector = Icons.Filled.Explore,
         contentDescription = "Toggle Icon",
-        tint = if (checked) MaterialTheme.colorScheme.primary else Color.Gray,
+        tint = if (checked) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary,
         modifier = Modifier
             .size(28.dp)
             .clickable {
