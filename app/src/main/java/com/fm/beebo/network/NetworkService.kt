@@ -282,8 +282,8 @@ class LibrarySearchService {
         return LibraryMedia(
             url = attributes["url"] ?: "",
             title = attributes["title"] ?: "Unbekannter Titel",
-            year = attributes["year"] ?: "kein Jahr",
-            isbn = attributes["isbn"] ?: "keine ISBN gefunden",
+            year = attributes["year"] ?: "",
+            isbn = attributes["isbn"] ?: "",
             kindOfMedium = attributes["kindOfMedium"] ?: "",
             author = attributes["author"] ?: "",
             language = attributes["language"] ?: "",
