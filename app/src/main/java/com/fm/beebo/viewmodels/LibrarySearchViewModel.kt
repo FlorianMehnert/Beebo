@@ -44,13 +44,12 @@ class LibrarySearchViewModel : ViewModel() {
                             statusMessage = searchResult.message
                             progress = searchResult.progress
                             totalPages = searchResult.totalPages
-                            println("progress is:$progress")
 
                             // Only set isLoading to false after we've received the final page
                             // or if there was an error
                             if (!searchResult.success ||
-                                searchResult.results.size >= searchResult.totalPages ||
-                                searchResult.totalPages <= 1) {
+                                searchResult.results.size >= searchResult.totalPages * 10 ||
+                                searchResult.totalPages <= 1 || searchResult.isComplete) {
                                 isLoading = false
                             }
                         }
