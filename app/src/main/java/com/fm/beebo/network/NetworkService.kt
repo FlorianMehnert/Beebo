@@ -34,6 +34,7 @@ class LibrarySearchService {
         val results = mutableListOf<LibraryMedia>()
         var totalPages = 0
         val cookieManager = CookieManager.getInstance()
+        var pagesToFetch = maxPages
 
         try {
             // Initialize the session and get the CSId
@@ -107,7 +108,7 @@ class LibrarySearchService {
                 val firstPageResults = extractMetadata(searchDoc)
                 results.addAll(firstPageResults)
                 totalPages = getMaxPages(searchDoc)
-
+                pagesToFetch = minOf(totalPages, maxPages)
                 // Emit first page results immediately
                 emit(SearchResult(
                     results = results.toList(),
@@ -115,7 +116,7 @@ class LibrarySearchService {
                     success = true,
                     message = if (results.isEmpty()) "Keine Treffer gefunden" else
                         "Erste Seite: ${results.size} Treffer von ungefähr ${totalPages*10} Treffern",
-                    progress = currentPage.toFloat()*10 / totalPages
+                    progress = currentPage.toFloat() / totalPages
                 ))
 
                 val pagesToFetch = minOf(totalPages, maxPages)
@@ -145,7 +146,7 @@ class LibrarySearchService {
                             totalPages = totalPages,
                             success = true,
                             message = "Seite $currentPage: ${results.size} Treffer von ungefähr ${totalPages*10} Treffern",
-                            progress = currentPage.toFloat()*10 / totalPages
+                            progress = currentPage.toFloat() / pagesToFetch
                         ))
 
                         // Get next page URL
@@ -160,7 +161,7 @@ class LibrarySearchService {
                             success = true,
                             message = "Teilweise Ergebnisse (${results.size}): Fehler bei Seite $currentPage",
                             isComplete = true,
-                            progress = currentPage.toFloat() / totalPages
+                            progress = currentPage.toFloat() / pagesToFetch
                         ))
                         break
                     }
@@ -173,12 +174,13 @@ class LibrarySearchService {
                         totalPages = totalPages,
                         success = true,
                         message = if (totalPages > 1 && (totalPages * 10 - results.size) >= 10)
-                            "${results.size} Treffer von ungefähr ${totalPages*10} Treffern."
+                            "${results.size} Treffer von ungefähr ${totalPages} Treffern."
                         else
                             "${results.size} Treffer",
                         isComplete = true,
-                        progress = currentPage.toFloat()*10 / totalPages
+                        progress = currentPage.toFloat() / pagesToFetch
                     ))
+
                 }
             }
         } catch (e: Exception) {
@@ -189,7 +191,7 @@ class LibrarySearchService {
                 totalPages = totalPages,
                 success = false,
                 message = "Error: $errorMessage",
-                progress = currentPage.toFloat()*10 / totalPages
+                progress = currentPage.toFloat() / pagesToFetch
             ))
         }
     }
@@ -229,7 +231,7 @@ data class SearchResult(
         url: String,
         available: Boolean
     ): LibraryMedia? {
-        val cookieManager = CookieManager.getInstance()
+        CookieManager.getInstance()
         return withContext(Dispatchers.IO) {
             // Check for session expiry
             if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
