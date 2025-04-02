@@ -8,6 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.LibrarySearchService
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
 class LibrarySearchViewModel : ViewModel() {
     var results by mutableStateOf(listOf<LibraryMedia>())
@@ -28,20 +31,30 @@ class LibrarySearchViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val (searchResultInfo, _) = librarySearchService.search(query, maxPages, settingsViewModel)
-                val (searchResults, totalPages) = searchResultInfo
-                results = searchResults
-                statusMessage =
-                    if (searchResults.isEmpty())
-                        "Keine Ergebnisse gefunden"
-                    else if (totalPages > 1 && (totalPages * 10 - searchResults.size) >= 10)
-                        "${searchResults.size} Treffer von ungefähr ${totalPages*10 } Treffern."
-                    else
-                        "${searchResults.size} Treffer"
+                // The flow must collect on a background dispatcher to avoid NetworkOnMainThreadException
+                librarySearchService.searchWithFlow(query, maxPages, settingsViewModel)
+                    .flowOn(Dispatchers.IO) // This ensures all upstream flow operations run on the IO dispatcher
+                    .collect { searchResult ->
+                        withContext(Dispatchers.Main) {
+                            // Update UI with each emission from the Flow
+                            results = searchResult.results
+
+                            statusMessage = searchResult.message
+
+                            // Only set isLoading to false after we've received the final page
+                            // or if there was an error
+                            if (!searchResult.success ||
+                                searchResult.results.size >= searchResult.totalPages ||
+                                searchResult.totalPages <= 1) {
+                                isLoading = false
+                            }
+                        }
+                    }
             } catch (e: Exception) {
-                statusMessage = "Error: ${e.message}"
-            } finally {
-                isLoading = false
+                withContext(Dispatchers.Main) {
+                    statusMessage = "Error: ${e.message ?: "Unknown error"}"
+                    isLoading = false
+                }
             }
         }
     }

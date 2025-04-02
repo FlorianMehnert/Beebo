@@ -9,6 +9,9 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.util.regex.Pattern
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+
 
 object NetworkConfig {
     const val BASE_URL =
@@ -22,91 +25,107 @@ class LibrarySearchService {
         private const val BASE_LOGGED_IN_URL = NetworkConfig.BASE_LOGGED_IN_URL
     }
 
-    suspend fun search(
+    fun searchWithFlow(
         searchTerm: String,
         maxPages: Int = 3,
-        viewModel: SettingsViewModel,
-    ): Pair<Pair<List<LibraryMedia>, Int>, Boolean> {
-        return withContext(Dispatchers.IO) {
-            val results = mutableListOf<LibraryMedia>()
-            var totalPages = 0
-            val cookieManager = CookieManager.getInstance()
+        viewModel: SettingsViewModel
+    ): Flow<SearchResult> = flow {
+        val results = mutableListOf<LibraryMedia>()
+        var totalPages = 0
+        val cookieManager = CookieManager.getInstance()
 
-            try {
-                // Initialize the session and get the CSId
-                val initialResponse = Jsoup.connect(BASE_URL)
-                    .timeout(30000)
-                    .execute()
+        try {
+            // Initialize the session and get the CSId
+            val initialResponse = Jsoup.connect(BASE_URL)
+                .timeout(30000)
+                .execute()
 
-                // Store cookies
-                cookieManager.setCookies(BASE_LOGGED_IN_URL, initialResponse.cookies())
+            // Store cookies
+            cookieManager.setCookies(BASE_LOGGED_IN_URL, initialResponse.cookies())
 
-                val initialDoc = initialResponse.parse()
-                val csidInput = initialDoc.select("input[name=CSId]").first()
-                    ?: return@withContext Pair(Pair(results, 0), false)
-
-                val csid = csidInput.attr("value")
-
-                // Prepare search URL
-                val searchUrl =
-                    "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
-
-                val searchResponse = Jsoup.connect(searchUrl)
-                    .data("searchCategories[0]", "-1")
-                    .data("searchString[0]", searchTerm)
-                    .data("callingPage", "searchParameters")
-                    .data("selectedViewBranchlib", "0")
-                    .data("selectedSearchBranchlib", "")
-                    .data("searchRestrictionID[0]", "8") // search restriction
-                    .data(
-                        "searchRestrictionValue1[0]",
-                        viewModel.selectedFilterOption.value.getSearchRestrictionValue1()
-                    ) // kind of media
-                    .data("searchRestrictionID[1]", "6")
-                    .data("searchRestrictionValue1[1]", "")
-                    .data("searchRestrictionID[2]", "3")
-                    .data("searchRestrictionValue1[2]", "")
-                    .data("searchRestrictionValue2[2]", "")
-                    .cookies(cookieManager.getCookies())
-                    .timeout(30000)
-                    .execute()
-
-                // Update cookies
-                cookieManager.setCookies(BASE_LOGGED_IN_URL, searchResponse.cookies())
-
-                val searchDoc = searchResponse.parse()
-
-                // Check if we have results
-                if (searchDoc.text().contains("keine Treffer")) {
-                    return@withContext Pair(Pair(results, 0), false)
+            val initialDoc = initialResponse.parse()
+            val csidInput = initialDoc.select("input[name=CSId]").first()
+                ?: run {
+                    emit(SearchResult(emptyList(), 0, false, "Session initialization failed"))
+                    return@flow
                 }
 
-                val currentTab = getCurrentTab(searchDoc)
+            val csid = csidInput.attr("value")
 
-                // Handle only one result
-                if (currentTab == "Detailanzeige") {
-                    val result = parseDetails(doc = searchDoc)
-                    if (result != null) {
-                        result.url = searchResponse.url().toString()
+            // Prepare search URL
+            val searchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
 
-                        // TODO: Set availability properly
-                        val details: LibraryMedia? = getItemDetails(result.url, false)
-                        if (details != null) {
-                            results.add(details)
-                        }
+            val searchResponse = Jsoup.connect(searchUrl)
+                .data("searchCategories[0]", "-1")
+                .data("searchString[0]", searchTerm)
+                .data("callingPage", "searchParameters")
+                .data("selectedViewBranchlib", "0")
+                .data("selectedSearchBranchlib", "")
+                .data("searchRestrictionID[0]", "8")
+                .data("searchRestrictionValue1[0]", viewModel.selectedFilterOption.value.getSearchRestrictionValue1())
+                .data("searchRestrictionID[1]", "6")
+                .data("searchRestrictionValue1[1]", "")
+                .data("searchRestrictionID[2]", "3")
+                .data("searchRestrictionValue1[2]", "")
+                .data("searchRestrictionValue2[2]", "")
+                .cookies(cookieManager.getCookies())
+                .timeout(30000)
+                .execute()
+
+            // Update cookies
+            cookieManager.setCookies(BASE_LOGGED_IN_URL, searchResponse.cookies())
+
+            val searchDoc = searchResponse.parse()
+
+            // Check if we have results
+            if (searchDoc.text().contains("keine Treffer")) {
+                emit(SearchResult(emptyList(), 0, true, "Keine Treffer gefunden"))
+                return@flow
+            }
+
+            val currentTab = getCurrentTab(searchDoc)
+
+            // Handle only one result
+            if (currentTab == "Detailanzeige") {
+                val result = parseDetails(doc = searchDoc)
+                if (result != null) {
+                    result.url = searchResponse.url().toString()
+
+                    val details: LibraryMedia? = getItemDetails(result.url, false)
+                    if (details != null) {
+                        results.add(details)
+                        emit(SearchResult(results.toList(), 1, true, "1 Treffer"))
+                    } else {
+                        emit(SearchResult(emptyList(), 0, false, "Konnte Details nicht abrufen"))
                     }
-                } else if (currentTab == "Suchergebnis") {
-                    // Process first page results
-                    val firstPageResults = extractMetadata(searchDoc)
-                    results.addAll(firstPageResults)
-                    totalPages = getMaxPages(searchDoc)
-                    val pagesToFetch = minOf(totalPages, maxPages)
-                    var currentPage = 1
-                    var nextUrl = getNextPageLink(searchDoc)
+                } else {
+                    emit(SearchResult(emptyList(), 0, false, "Konnte Details nicht parsen"))
+                }
+            } else if (currentTab == "Suchergebnis") {
+                // Process first page results
+                val firstPageResults = extractMetadata(searchDoc)
+                results.addAll(firstPageResults)
+                totalPages = getMaxPages(searchDoc)
 
-                    while (nextUrl != null && currentPage < pagesToFetch) {
-                        currentPage++
+                // Emit first page results immediately
+                emit(SearchResult(
+                    results = results.toList(),
+                    totalPages = totalPages,
+                    success = true,
+                    message = if (results.isEmpty()) "Keine Treffer gefunden" else
+                        "Erste Seite: ${results.size} Treffer von ungefähr ${totalPages*10} Treffern"
+                ))
 
+                val pagesToFetch = minOf(totalPages, maxPages)
+                var currentPage = 1
+                if (currentPage >= pagesToFetch || currentPage == 3){
+
+                }
+                var nextUrl = getNextPageLink(searchDoc)
+
+                while (nextUrl != null && currentPage < pagesToFetch) {
+                    currentPage++
+                    try {
                         val nextPageResponse = Jsoup.connect(nextUrl)
                             .cookies(cookieManager.getCookies())
                             .timeout(30000)
@@ -118,19 +137,66 @@ class LibrarySearchService {
                         val pageResults = extractMetadata(nextPageDoc)
                         results.addAll(pageResults)
 
+                        // Emit updated results after each page
+                        emit(SearchResult(
+                            results = results.toList(),
+                            totalPages = totalPages,
+                            success = true,
+                            message = "Seite $currentPage: ${results.size} Treffer von ungefähr ${totalPages*10} Treffern",
+                        ))
+
                         // Get next page URL
                         nextUrl = getNextPageLink(nextPageDoc)
                         if (currentPage >= totalPages) break
+                    } catch (e: Exception) {
+                        // Handle page-specific errors but continue with results we have
+                        println("Error loading page $currentPage: ${e.message ?: "Unknown error"}")
+                        emit(SearchResult(
+                            results = results.toList(),
+                            totalPages = totalPages,
+                            success = true,
+                            message = "Teilweise Ergebnisse (${results.size}): Fehler bei Seite $currentPage",
+                            isComplete = true
+                        ))
+                        break
                     }
                 }
 
-            } catch (e: Exception) {
-                e.printStackTrace()
+                // Final results summary if we have results
+                if (results.isNotEmpty()) {
+                    emit(SearchResult(
+                        results = results.toList(),
+                        totalPages = totalPages,
+                        success = true,
+                        message = if (totalPages > 1 && (totalPages * 10 - results.size) >= 10)
+                            "${results.size} Treffer von ungefähr ${totalPages*10} Treffern."
+                        else
+                            "${results.size} Treffer",
+                        isComplete = true
+                    ))
+                }
             }
-
-            return@withContext Pair(Pair(results, totalPages), true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            val errorMessage = e.message ?: "Unbekannter Fehler bei der Suche"
+            emit(SearchResult(
+                results = results.toList(),
+                totalPages = totalPages,
+                success = false,
+                message = "Error: $errorMessage"
+            ))
         }
     }
+
+
+// Create a data class to hold search results and metadata
+data class SearchResult(
+    val results: List<LibraryMedia>,
+    val totalPages: Int,
+    val success: Boolean,
+    val message: String,
+    val isComplete: Boolean = false
+)
 
     /**
      * Connects to the item URL and invokes the DOM parser for media details.
