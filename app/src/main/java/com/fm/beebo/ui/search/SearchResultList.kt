@@ -16,11 +16,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.fm.beebo.models.LibraryMedia
+import com.fm.beebo.ui.settings.FilterBy
+import kotlinx.coroutines.flow.StateFlow
 
 
 // Function to calculate Levenshtein distance between two strings
@@ -43,26 +46,37 @@ fun levenshteinDistance(s1: String, s2: String): Int {
 
 @Composable
 fun SearchResultsList(
-    results: List<LibraryMedia>, searchQuery: String, onItemClick: (LibraryMedia) -> Unit
+    results: List<LibraryMedia>,
+    searchQuery: String,
+    filter: StateFlow<FilterBy>,
+    onItemClick: (LibraryMedia) -> Unit
 ) {
+    // Apply filter
+    val filteredResults = if (filter.collectAsState().value == FilterBy.Alles) {
+        results
+    } else {
+        results.filter { filter.value.getKindOfMedium().contains(it.kindOfMedium) }
+    }
+
     // Sort results by similarity to the search query
     val sortedResults = if (searchQuery.isNotEmpty()) {
-        results.sortedBy { item ->
+        filteredResults.sortedBy { item ->
             // Calculate similarity - lower value means closer match
             levenshteinDistance(item.title.lowercase(), searchQuery.lowercase())
         }
     } else {
-        results
+        filteredResults
     }
 
     if (sortedResults.isEmpty()) {
         EmptyResults()
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(sortedResults) { item ->
-                LibraryResultListItem(
+                SearchResultItem(
                     text = item.toString(),
                     isAvailable = item.isAvailable,
                     onClick = { onItemClick(item) },
