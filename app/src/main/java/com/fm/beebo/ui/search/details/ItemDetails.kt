@@ -291,7 +291,7 @@ fun DetailCard(
         val extractedDate = dateRegex.find(content)?.value ?: content
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Add Reminder") },
+            title = { Text("Erinnerung zum Kalender hinzufügen") },
             text = { Text("Erinnerung am Datum ${extractedDate} einfügen?") },
             confirmButton = {
                 TextButton(onClick = {

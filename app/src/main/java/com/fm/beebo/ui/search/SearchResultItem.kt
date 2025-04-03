@@ -217,14 +217,14 @@ fun addReminderToCalendar(context: Context, title: String, dueDate: String) {
                 }
                 context.contentResolver.insert(CalendarContract.Reminders.CONTENT_URI, reminderValues)
 
-                Toast.makeText(context, "Reminder added to calendar for 8:00 AM", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Erinnerung um 8 Uhr hinzugefügt", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(context, "Failed to add reminder", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Konnte die Erinnerung nicht hinzufügen", Toast.LENGTH_SHORT).show()
             }
         }
     } catch (e: Exception) {
         e.printStackTrace()
-        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Fehler: ${e.message}", Toast.LENGTH_SHORT).show()
     }
 }
 
