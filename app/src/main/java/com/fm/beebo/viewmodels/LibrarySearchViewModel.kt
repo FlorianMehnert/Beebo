@@ -25,7 +25,6 @@ class LibrarySearchViewModel : ViewModel() {
 
     fun searchLibrary(query: String, maxPages: Int = 3, settingsViewModel: SettingsViewModel) {
         if (query.isBlank()) return
-        println("max pages is:$maxPages")
 
         isLoading = true
         results = emptyList()
@@ -53,6 +52,7 @@ class LibrarySearchViewModel : ViewModel() {
                             }
                         }
                     }
+                progress = 0f
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     statusMessage = "Error: ${e.message ?: "Unknown error"}"
