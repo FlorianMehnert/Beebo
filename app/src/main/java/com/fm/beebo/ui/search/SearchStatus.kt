@@ -1,8 +1,10 @@
 package com.fm.beebo.ui.search
 
-import androidx.compose.animation.core.EaseIn
+import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -18,12 +20,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
@@ -34,39 +37,45 @@ fun SearchStatus(
     isLoading: Boolean,
     progress: Float, // Progress in range [0,1] or -1 for indeterminate
     resultCount: Int,
-    totalResults: Int
+    totalResults: Int,
+    message: String
 ) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = if (progress >= 0f) progress else 0f, // Avoid animating indeterminate state
+        animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
+        label = "Progress Animation"
+    )
+
     val infiniteTransition = rememberInfiniteTransition()
-    val pulseAlpha = infiniteTransition.animateFloat(
+    val pulseAlpha by infiniteTransition.animateFloat(
         initialValue = 0.3f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = EaseIn),
+            animation = tween(durationMillis = 800, easing = EaseInOut),
             repeatMode = RepeatMode.Reverse
-        )
+        ),
+        label = "Pulsating Alpha"
     )
-
-
+    val processingResults = resultCount == 0
     Column(modifier = Modifier.fillMaxWidth()) {
-        if (isLoading){
+        if (isLoading) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 // Foreground Progress (Completed)
                 LinearProgressIndicator(
-                    progress = { if (progress >= 0f) progress else -1f },
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = pulseAlpha.value),
-                    trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = pulseAlpha.value),
+                    progress = { animatedProgress }, // Use animated progress
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = if (processingResults) pulseAlpha else 1f),
+                    trackColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = if (processingResults) pulseAlpha else 1f),
                     strokeCap = StrokeCap.Round,
                 )
 
-                // Pulsating Animation Overlay
+                // Pulsating Animation Overlay for Indeterminate State
                 if (progress < 0) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)
-                            .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = pulseAlpha.value))
+                            .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = pulseAlpha))
                     )
                 }
             }
@@ -78,15 +87,9 @@ fun SearchStatus(
                 .fillMaxWidth()
                 .padding(8.dp)
         ) {
-            val icon = when {
-                resultCount > 0 -> Icons.Default.CheckCircle
-                else -> Icons.Default.Info
-            }
+            val icon = if (isLoading) Icons.Default.Refresh else Icons.Default.CheckCircle
+            val color = if (resultCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
 
-            val color = when {
-                resultCount > 0 -> MaterialTheme.colorScheme.primary
-                else -> MaterialTheme.colorScheme.secondary
-            }
             if (totalResults > 0) {
                 Icon(
                     imageVector = icon,
@@ -96,18 +99,15 @@ fun SearchStatus(
                 )
             }
 
-
             Spacer(modifier = Modifier.width(8.dp))
 
             Text(
-                text = if (totalResults > 0)
-                    "$resultCount Treffer von ungefähr $totalResults"
-                else
-                    "",
+                text = if (progress == 0f) "$resultCount Treffer von ungefähr $totalResults" else message,
                 color = color
             )
         }
     }
 }
+
 
 
