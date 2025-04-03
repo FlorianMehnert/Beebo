@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -64,8 +65,8 @@ fun SearchStatus(
                 LinearProgressIndicator(
                     progress = { animatedProgress }, // Use animated progress
                     modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = if (processingResults) pulseAlpha else 1f),
-                    trackColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = if (processingResults) pulseAlpha else 1f),
+                    color = if (progress > 0f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                    trackColor = if (progress > 0f) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary,
                     strokeCap = StrokeCap.Round,
                 )
 
@@ -90,19 +91,25 @@ fun SearchStatus(
             val icon = if (isLoading) Icons.Default.Refresh else Icons.Default.CheckCircle
             val color = if (resultCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
 
-            if (totalResults > 0) {
+            if (progress > 0f) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = color,
                     modifier = Modifier.size(24.dp)
                 )
+            }else if(progress == 0f && isLoading){
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.secondary
+                )
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
             Text(
-                text = if (progress == 0f) "$resultCount Treffer von ungefähr $totalResults" else message,
+                text = if (progress > 0f && isLoading) "$resultCount Treffer von ungefähr $totalResults" else message,
                 color = color
             )
         }
