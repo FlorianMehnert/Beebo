@@ -115,6 +115,7 @@ fun LibrarySearchScreen(
                     )
                 },
                 viewModel = settingsViewModel,
+                searchViewModel = viewModel
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -123,7 +124,8 @@ fun LibrarySearchScreen(
                 isLoading = viewModel.isLoading,
                 totalResults = viewModel.totalPages * 10,
                 progress = viewModel.progress,
-                resultCount = viewModel.results.size
+                resultCount = viewModel.results.size,
+                message = viewModel.statusMessage
             )
 
             Spacer(modifier = Modifier.height(8.dp))

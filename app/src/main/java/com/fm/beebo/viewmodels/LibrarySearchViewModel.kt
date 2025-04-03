@@ -28,7 +28,6 @@ class LibrarySearchViewModel : ViewModel() {
         println("max pages is:$maxPages")
 
         isLoading = true
-        statusMessage = "Suche..."
         results = emptyList()
 
         viewModelScope.launch {

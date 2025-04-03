@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
 
 
@@ -47,6 +48,7 @@ fun SearchBar(
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     viewModel: SettingsViewModel,
+    searchViewModel: LibrarySearchViewModel,
 ) {
     var filterExpanded by remember { mutableStateOf(false) }
     val selectedFilterOption by viewModel.selectedFilterOption.collectAsState()
@@ -94,6 +96,7 @@ fun SearchBar(
                 keyboardActions = KeyboardActions(
                     onDone = {
                         keyboardController?.hide() // Hide keyboard
+                        searchViewModel.statusMessage = "Warte auf Antwort vom Katalog..."
                         onSearch()
                     }
                 )
