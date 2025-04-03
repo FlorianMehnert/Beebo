@@ -132,7 +132,7 @@ fun ItemDetailsScreen(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(2.dp),
+                            .padding(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         item {
@@ -231,11 +231,11 @@ fun DetailCard(
 
 
     Card(
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 8.dp)
+            .padding(bottom = 12.dp)
             .clickable {
                 clipboardManager.setText(AnnotatedString(content))
                 Toast.makeText(context, "Inhalt zur Zwischenablage kopiert!", Toast.LENGTH_SHORT)

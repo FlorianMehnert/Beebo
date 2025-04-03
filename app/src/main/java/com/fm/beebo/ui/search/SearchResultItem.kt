@@ -47,7 +47,7 @@ import java.util.Locale
 import java.util.TimeZone
 
 @Composable
-fun SearchResultItem(context: Context, text: String, isAvailable: Boolean, onClick: () -> Unit) {
+fun SearchResultItem(text: String, isAvailable: Boolean, onClick: () -> Unit, kindOfMedium: String) {
     val parts = text.split(" ", limit = 4)
     val year = if (parts.isNotEmpty()) parts.getOrNull(0) ?: "" else ""
     val medium = if (parts.size > 1) parts.getOrNull(1) ?: "" else ""
@@ -67,28 +67,8 @@ fun SearchResultItem(context: Context, text: String, isAvailable: Boolean, onCli
     }
 
     val displayMedium = medium.ifEmpty { "?" }
-    var showDialog by remember { mutableStateOf(false) }
-
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Add Reminder") },
-            text = { Text("Do you want to add a reminder for $dueDate?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    addReminderToCalendar(context, title, dueDate)
-                    showDialog = false
-                }) {
-                    Text("Yes")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("No")
-                }
-            }
-        )
-    }
+    var showDueDateDialog by remember { mutableStateOf(false) }
+    var showMediumTooltip by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
@@ -106,9 +86,11 @@ fun SearchResultItem(context: Context, text: String, isAvailable: Boolean, onCli
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(if (isAvailable) MaterialTheme.colorScheme.inversePrimary else MaterialTheme.colorScheme.surface),
+                    .background(if (isAvailable) MaterialTheme.colorScheme.inversePrimary else MaterialTheme.colorScheme.surface)
+                    .clickable { showMediumTooltip = true },  // Added clickable modifier here
                 contentAlignment = Alignment.Center
             ) {
+                // icon display for kindOfMedium
                 Text(
                     text = displayMedium,
                     fontSize = 20.sp,
@@ -144,12 +126,45 @@ fun SearchResultItem(context: Context, text: String, isAvailable: Boolean, onCli
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.clickable { showDialog = true }
+                            modifier = Modifier.clickable { showDueDateDialog = true }
                         )
                     }
                 }
             }
         }
+    }
+
+    // Medium type tooltip/popup
+    if (showMediumTooltip) {
+        AlertDialog(
+            onDismissRequest = { showMediumTooltip = false },
+            title = { Text("Medienart") },
+            text = {
+                Column {
+                    Text("$displayMedium steht für \"$kindOfMedium\"")
+                    Text("Im Moment ${if (isAvailable) "ausleihbar" else "nicht ausleihbar"}")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMediumTooltip = false }) {
+                    Text("Schließen")
+                }
+            }
+        )
+    }
+
+    // Due date dialog
+    if (showDueDateDialog) {
+        AlertDialog(
+            onDismissRequest = { showDueDateDialog = false },
+            title = { Text("Item on Loan") },
+            text = { Text("This item is currently on loan and will be available after $dueDate.") },
+            confirmButton = {
+                TextButton(onClick = { showDueDateDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }
 
