@@ -50,10 +50,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
-import kotlin.math.log
 
 @Composable
-fun LibraryResultListItem(context: Context, text: String, isAvailable: Boolean, onClick: () -> Unit) {
+fun SearchResultItem(context: Context, text: String, isAvailable: Boolean, onClick: () -> Unit) {
     val parts = text.split(" ", limit = 4)
     val year = if (parts.isNotEmpty()) parts.getOrNull(0) ?: "" else ""
     val medium = if (parts.size > 1) parts.getOrNull(1) ?: "" else ""

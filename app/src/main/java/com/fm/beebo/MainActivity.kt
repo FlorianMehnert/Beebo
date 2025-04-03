@@ -13,7 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.network.configure
 import com.fm.beebo.ui.LibrariesScreen
-import com.fm.beebo.ui.search.LibrarySearchScreen
+import com.fm.beebo.ui.search.SearchScreen
 import com.fm.beebo.ui.theme.BeeboTheme
 import com.fm.beebo.viewmodels.SettingsViewModel
 
@@ -33,7 +33,7 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(navController = navController, startDestination = "librarySearch") {
                     composable("librarySearch") {
-                        LibrarySearchScreen(
+                        SearchScreen(
                             onSettingsClick = { navController.navigate("settings") },
                             settingsViewModel = settingsViewModel
                         )
