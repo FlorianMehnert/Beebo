@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,6 +39,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -58,6 +61,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.fm.beebo.network.getCookies
 import com.fm.beebo.ui.CustomWebViewClient
+import com.fm.beebo.ui.search.addReminderToCalendar
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,7 +103,7 @@ fun ItemDetailsScreen(
                         onCheckedChange = { isWebViewVisible = it },
 
 
-                    )
+                        )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -134,7 +138,11 @@ fun ItemDetailsScreen(
                         item {
                             Column(modifier = Modifier.padding(8.dp)) {
                                 if (itemDetails.kindOfMedium.isNotEmpty()) {
-                                    DetailCard("Art des Mediums", itemDetails.kindOfMedium, Icons.Filled.Book)
+                                    DetailCard(
+                                        "Art des Mediums",
+                                        itemDetails.kindOfMedium,
+                                        Icons.Filled.Book
+                                    )
                                 }
                                 DetailCard(
                                     "Erscheinungsjahr",
@@ -142,8 +150,13 @@ fun ItemDetailsScreen(
                                     Icons.Filled.CalendarToday
                                 )
                                 if (itemDetails.author.isNotEmpty()) {
-                                    val cardTitle = if (itemDetails.kindOfMedium == "DVD") "Mitwirkende" else "Autor/in"
-                                    DetailCard(cardTitle, itemDetails.author.replace(";", ""), Icons.Filled.Person)
+                                    val cardTitle =
+                                        if (itemDetails.kindOfMedium == "DVD") "Mitwirkende" else "Autor/in"
+                                    DetailCard(
+                                        cardTitle,
+                                        itemDetails.author.replace(";", ""),
+                                        Icons.Filled.Person
+                                    )
                                 }
 
                                 if (itemDetails.isbn.isNotEmpty()) {
@@ -160,14 +173,15 @@ fun ItemDetailsScreen(
                                     DetailCard(
                                         "Entliehen bis",
                                         itemDetails.dueDates[0],
-                                        Icons.Filled.EventBusy
+                                        Icons.Filled.EventBusy,
+                                        hasBookmark = true,
                                     )
                                 }
                                 DetailCard(
                                     "Verfügbarkeit",
                                     if (itemDetails.isAvailable) "Ausleihbar" else "Nicht verfügbar",
                                     if (itemDetails.isAvailable) Icons.Filled.CheckCircle else Icons.Filled.Cancel,
-                                    if (itemDetails.isAvailable) Color.Green else Color.Red
+                                    if (itemDetails.isAvailable) Color.Green else Color.Red,
                                 )
                             }
 
@@ -202,8 +216,6 @@ fun ItemDetailsScreen(
     }
 }
 
-
-
 @Composable
 fun DetailCard(
     title: String,
@@ -211,9 +223,13 @@ fun DetailCard(
     icon: ImageVector,
     iconColor: Color = Color.Unspecified,
     modifier: Modifier = Modifier,
+    hasBookmark: Boolean = false,
 ) {
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+    var showDialog by remember { mutableStateOf(false) }
+
+
     Card(
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -222,44 +238,86 @@ fun DetailCard(
             .padding(bottom = 8.dp)
             .clickable {
                 clipboardManager.setText(AnnotatedString(content))
-                Toast.makeText(context, "Inhalt zur Zwischenablage kopiert!", Toast.LENGTH_SHORT).show()}
+                Toast.makeText(context, "Inhalt zur Zwischenablage kopiert!", Toast.LENGTH_SHORT)
+                    .show()
+            }
     ) {
         Column(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
-        ) {Row {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(24.dp)
-                    .padding(end = 8.dp),
-                tint = iconColor
-            )
-            Text(
-                text = title,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-        }
-
-                Column (horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = content,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(end = 8.dp),
+                    tint = iconColor
+                )
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                if (hasBookmark) {
+                    IconButton(onClick = { showDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Bookmark,
+                            contentDescription = "Bookmark",
+                            tint = Color.Gray
+                        )
+                    }
                 }
+            }
 
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = content,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
         }
+    }
+
+    if (showDialog) {
+        val dateRegex = Regex("\\d{2}\\.\\d{2}\\.\\d{4}")
+        val extractedDate = dateRegex.find(content)?.value ?: content
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Add Reminder") },
+            text = { Text("Erinnerung am Datum ${extractedDate} einfügen?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    addReminderToCalendar(context, title, content)
+                    showDialog = false
+                }) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("No")
+                }
+            }
+        )
     }
 }
 
 
 @Composable
 fun Section(title: String, items: List<String>) {
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
@@ -267,7 +325,10 @@ fun Section(title: String, items: List<String>) {
             modifier = Modifier.padding(vertical = 8.dp)
         )
         items.forEach { item ->
-            Text(text = item.replace("(", "").replace(")", ""), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = item.replace("(", "").replace(")", ""),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
         Divider(modifier = Modifier.padding(vertical = 8.dp))
     }
@@ -275,14 +336,21 @@ fun Section(title: String, items: List<String>) {
 
 @Composable
 fun Section_unavailable(title: String, items: List<Pair<String, String>>) {
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
         items.forEach { item ->
-            Text(text = item.first.replace("(", "").replace(")", ""), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = item.first.replace("(", "").replace(")", ""),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
         Divider(modifier = Modifier.padding(vertical = 8.dp))
     }
