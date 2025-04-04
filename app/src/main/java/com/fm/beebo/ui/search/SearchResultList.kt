@@ -11,15 +11,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.twotone.Search
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -27,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.ui.settings.FilterBy
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 
 // Function to calculate Levenshtein distance between two strings
@@ -68,31 +74,54 @@ fun SearchResultsList(
             // Calculate similarity - lower value means closer match
             levenshteinDistance(item.title.lowercase(), searchQuery.lowercase())
         }
-
     } else {
         filteredResults
     }
 
-    if (sortedResults.isEmpty() && !firstTimeStart) {
-        EmptyResults()
-    } else if(sortedResults.isEmpty() && firstTimeStart){
-        WelcomeScreen()
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(sortedResults) { item ->
-                SearchResultItem(
-                    text = item.toString(),
-                    isAvailable = item.isAvailable,
-                    onClick = { onItemClick(item) },
-                    kindOfMedium = item.kindOfMedium
-                )
+    val listState = rememberLazyListState()
+    val showButton = remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (sortedResults.isEmpty() && !firstTimeStart) {
+            EmptyResults()
+        } else if (sortedResults.isEmpty()) {
+            WelcomeScreen()
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(sortedResults) { item ->
+                    SearchResultItem(
+                        text = item.toString(),
+                        isAvailable = item.isAvailable,
+                        onClick = { onItemClick(item) },
+                        kindOfMedium = item.kindOfMedium
+                    )
+                }
+            }
+        }
+        val coroutineScope = rememberCoroutineScope()
+        // FloatingActionButton to scroll to the top
+        if (showButton.value) {
+            FloatingActionButton(
+                onClick = {
+                    // Scroll to the top
+                    coroutineScope.launch {
+                    listState.scrollToItem(0)
+                        }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(Icons.Filled.ArrowUpward, contentDescription = "Scroll to top")
             }
         }
     }
 }
+
 
 @Composable
 fun EmptyResults() {
