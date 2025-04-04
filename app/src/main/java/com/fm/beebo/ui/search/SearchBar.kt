@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -38,6 +39,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.fm.beebo.ui.settings.FilterOptions
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
 
@@ -52,7 +54,10 @@ fun SearchBar(
 ) {
     var filterExpanded by remember { mutableStateOf(false) }
     val selectedFilterOption by viewModel.selectedFilterOption.collectAsState()
-    val filterOptions = viewModel.filterOptions
+    val kindOfMediumList = viewModel.kindOfMediumList
+    val selectedYear by viewModel.selectedYear.collectAsState(2025)
+    val sortBy =
+        FilterOptions.entries.toTypedArray() // Define the range of years you want to filter by
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -63,7 +68,6 @@ fun SearchBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
-                // TODO: adjust based on font size
                 .height(60.dp)
         ) {
             val keyboardController = LocalSoftwareKeyboardController.current
@@ -88,14 +92,13 @@ fun SearchBar(
                         }
                     }
                 },
-                // TODO: adjust based on font size
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done  // Set action to Done (Enter)
+                    imeAction = ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        keyboardController?.hide() // Hide keyboard
+                        keyboardController?.hide()
                         searchViewModel.statusMessage = "Warte auf Antwort vom Katalog..."
                         onSearch()
                     }
@@ -111,8 +114,6 @@ fun SearchBar(
                     .offset(y = 4.dp),
                 color = MaterialTheme.colorScheme.primary
             ) {
-
-
                 IconButton(
                     onClick = { filterExpanded = true },
                     modifier = Modifier
@@ -131,19 +132,39 @@ fun SearchBar(
                     onDismissRequest = { filterExpanded = false },
                 ) {
                     Text(
-                        text = "Filteroptionen",
+                        text = "Medienart",
                         fontWeight = FontWeight(900),
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                     )
-                    filterOptions.forEach { option ->
+                    kindOfMediumList.forEach { option ->
                         DropdownMenuItem(
                             text = { Text(text = option) },
                             onClick = {
-                                viewModel.setSelectedFilterOption(filterOptions.indexOf(option))
+                                viewModel.setSelectedFilterOption(kindOfMediumList.indexOf(option))
                                 filterExpanded = false
                             },
                             modifier = Modifier.conditional(selectedFilterOption.toString(), option) {
-                                background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)) // Highlight selected item
+                                background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                            }
+                        )
+                    }
+
+                    Divider()
+
+                    Text(
+                        text = "Filterart",
+                        fontWeight = FontWeight(900),
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                    )
+                    sortBy.forEach { option: FilterOptions ->
+                        DropdownMenuItem(
+                            text = { Text(text = option.toString()) },
+                            onClick = {
+                                viewModel.setSortBy(option, true)
+                                filterExpanded = false
+                            },
+                            modifier = Modifier.conditional(selectedYear.toString(), option.toString()) {
+                                background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                             }
                         )
                     }
@@ -152,6 +173,7 @@ fun SearchBar(
         }
     }
 }
+
 
 @Composable
 fun Modifier.conditional(selectedOption: String, filterItem: String, modifier: @Composable Modifier.() -> Modifier): Modifier {
