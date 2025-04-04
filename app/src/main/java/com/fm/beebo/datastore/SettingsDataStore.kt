@@ -14,6 +14,7 @@ class SettingsDataStore(private val context: Context) {
         val ENABLE_DEFAULT_SEARCH_TERM_KEY = booleanPreferencesKey("enable_default_search_term")
         val DEFAULT_SEARCH_TERM_KEY = stringPreferencesKey("default_search_term")
         val MAX_PAGES_KEY = intPreferencesKey("max_pages_term")
+        val BULK_FETCH = booleanPreferencesKey("experimental_feature")
     }
 
     val enableDefaultSearchTermFlow: Flow<Boolean> = context.dataStore.data
@@ -33,6 +34,12 @@ class SettingsDataStore(private val context: Context) {
             preferences[MAX_PAGES_KEY] ?: 3
         }
 
+    val bulkFetchEnabledFlow: Flow<Boolean> = context.dataStore.data
+        .map {
+            preferences ->
+            preferences[BULK_FETCH] == true
+        }
+
     suspend fun enableDefaultSearchTerm(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[ENABLE_DEFAULT_SEARCH_TERM_KEY] = enabled
@@ -50,6 +57,12 @@ class SettingsDataStore(private val context: Context) {
         println("set max pages to:" + maxPages)
         context.dataStore.edit { preferences ->
             preferences[MAX_PAGES_KEY] = maxPages
+        }
+    }
+
+    suspend fun setBulkFetch(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[BULK_FETCH] = enabled
         }
     }
 }

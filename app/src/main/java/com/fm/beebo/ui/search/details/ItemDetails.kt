@@ -68,9 +68,10 @@ import com.fm.beebo.viewmodels.LibrarySearchViewModel
 @Composable
 fun ItemDetailsScreen(
     viewModel: LibrarySearchViewModel,
+    selectedItemUrl: String,
     onBack: () -> Unit
 ) {
-    val itemDetails = viewModel.selectedItemDetails
+    val itemDetails = viewModel.itemDetailsMap[selectedItemUrl]
     var isWebViewVisible by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -101,9 +102,7 @@ fun ItemDetailsScreen(
                     ToggleIconButton(
                         checked = isWebViewVisible,
                         onCheckedChange = { isWebViewVisible = it },
-
-
-                        )
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -215,6 +214,7 @@ fun ItemDetailsScreen(
         }
     }
 }
+
 
 @Composable
 fun DetailCard(

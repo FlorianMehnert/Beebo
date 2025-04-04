@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
                         LibrariesScreen(onBackPress = { navController.popBackStack() })
                     }
                 }
+                settingsViewModel.onAppStart()
             }
         }
     }
