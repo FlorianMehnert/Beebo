@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.twotone.Search
@@ -80,6 +81,7 @@ fun SearchResultsList(
 
     val listState = rememberLazyListState()
     val showButton = remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+    val coroutineScope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (sortedResults.isEmpty() && !firstTimeStart) {
@@ -102,19 +104,20 @@ fun SearchResultsList(
                 }
             }
         }
-        val coroutineScope = rememberCoroutineScope()
+
         // FloatingActionButton to scroll to the top
         if (showButton.value) {
             FloatingActionButton(
                 onClick = {
-                    // Scroll to the top
+                    // Smooth scroll to the top
                     coroutineScope.launch {
-                    listState.scrollToItem(0)
-                        }
+                        listState.animateScrollToItem(0)
+                    }
                 },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(16.dp)
+                    .padding(16.dp),
+                shape = CircleShape
             ) {
                 Icon(Icons.Filled.ArrowUpward, contentDescription = "Scroll to top")
             }
