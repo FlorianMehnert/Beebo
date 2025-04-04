@@ -35,7 +35,7 @@ class LibrarySearchService {
         var totalPages = 0
         val cookieManager = CookieManager.getInstance()
         var pagesToFetch = maxPages
-
+        viewModel.setAppStart(false)
         try {
             // Initialize the session and get the CSId
             val initialResponse = Jsoup.connect(BASE_URL)
@@ -213,7 +213,7 @@ data class SearchResult(
     suspend fun getItemDetails(
         itemUrl: String,
         available: Boolean
-    ): LibraryMedia? {
+    ): LibraryMedia {
         val cookieManager = CookieManager.getInstance()
         return withContext(Dispatchers.IO) {
             val response = Jsoup.connect(itemUrl)
@@ -230,13 +230,13 @@ data class SearchResult(
         doc: Document,
         url: String,
         available: Boolean
-    ): LibraryMedia? {
+    ): LibraryMedia {
         CookieManager.getInstance()
         return withContext(Dispatchers.IO) {
             // Check for session expiry
             if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
                 println("Session expired. Please log in again.")
-                return@withContext null
+                return@withContext LibraryMedia()
             }
 
             val extraDetailsTabUrl = changeDetailsTab(doc)

@@ -55,12 +55,14 @@ fun SearchScreen(
     }
 
     var selectedItem by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    var selectedItemUrl by remember { mutableStateOf("") }
 
     // Handle the ItemDetails screen as a completely separate UI state
     if (selectedItem != null) {
         ItemDetailsScreen(
             viewModel = viewModel,
-            onBack = { selectedItem = null }
+            onBack = { selectedItem = null },
+            selectedItemUrl = selectedItemUrl
         )
         return
     }
@@ -102,7 +104,8 @@ fun SearchScreen(
                     viewModel.searchLibrary(
                         query,
                         maxPagesSetting.toString().toIntOrNull() ?: 3,
-                        settingsViewModel
+                        settingsViewModel,
+                        settingsDataStore
                     )
                 },
                 viewModel = settingsViewModel,
@@ -125,10 +128,12 @@ fun SearchScreen(
                     results = viewModel.results,
                     onItemClick = { item ->
                         selectedItem = Pair(item.title, item.isAvailable)
+                        selectedItemUrl = item.url
                         viewModel.fetchItemDetails(item.url, item.isAvailable)
                     },
                     searchQuery = query,
-                    filter = settingsViewModel.selectedFilterOption
+                    filter = settingsViewModel.selectedFilterOption,
+                    firstTimeStart = settingsViewModel.appStart.collectAsState().value
                 )
             }
         }
