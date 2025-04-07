@@ -442,30 +442,6 @@ fun SearchBar(
                             }
                         }
 
-
-                        FilterOptions.AVAILABLE -> {
-                            // Availability options
-                            Text(
-                                text = "Verfügbarkeit",
-                                fontWeight = FontWeight(900),
-                                modifier = Modifier.padding(
-                                    start = 16.dp,
-                                    end = 16.dp,
-                                    bottom = 8.dp
-                                )
-                            )
-
-                            listOf("Alle", "Nur verfügbare").forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text(text = option) },
-                                    onClick = {
-                                        viewModel.setAvailabilityFilter(option == "Nur verfügbare")
-                                        filterExpanded = false
-                                    }
-                                )
-                            }
-                        }
-
                         FilterOptions.DUE_DATE -> {
                             // Due date options
                             Text(

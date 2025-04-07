@@ -101,10 +101,10 @@ class SettingsViewModel {
         when (_sortBy.value.first) {
             FilterOptions.YEAR -> filters["year"] = _selectedYear.value
             FilterOptions.KIND_OF_MEDIUM -> filters["mediaTypes"] = _selectedMediaTypes.value
-            FilterOptions.AVAILABLE -> filters["onlyAvailable"] = _availabilityFilter.value
             FilterOptions.DUE_DATE -> filters["dueDate"] = _dueDateFilter.value
         }
 
         return filters
     }
 }
+
