@@ -11,11 +11,6 @@ enum class FilterOptions {
             return "Medienart"
         }
     },
-    AVAILABLE {
-        override fun toString(): String {
-            return "Verfügbarkeit"
-        }
-    },
     DUE_DATE {
         override fun toString(): String {
             return "Verfügbarkeitsdatum"

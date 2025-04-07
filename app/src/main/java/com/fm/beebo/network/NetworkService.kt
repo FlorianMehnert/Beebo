@@ -57,9 +57,11 @@ class LibrarySearchService {
             // Prepare search URL
             val searchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
 
-            val searchResponse = Jsoup.connect(searchUrl)
+            val searchConnection = Jsoup.connect(searchUrl)
                 .data("searchCategories[0]", "-1")
                 .data("searchString[0]", searchTerm)
+                .data("searchHistoryCombinationOperator", "AND")
+                .data("searchHistory", "")
                 .data("callingPage", "searchParameters")
                 .data("selectedViewBranchlib", "0")
                 .data("selectedSearchBranchlib", "")
@@ -72,7 +74,25 @@ class LibrarySearchService {
                 .data("searchRestrictionValue2[2]", viewModel.selectedYearRange.value.second.toString())
                 .cookies(cookieManager.getCookies())
                 .timeout(30000)
-                .execute()
+
+// Dynamically add media type filters if more than one media type is selected
+            val selectedMediaTypes = viewModel.selectedMediaTypes
+            if (selectedMediaTypes.value.isNotEmpty()) {
+                selectedMediaTypes.value.forEachIndexed { index, mediaType ->
+                    val paramIndex = index + 1  // Offset by 1 since [0] is already set
+                    searchConnection
+                        .data("searchCategories[$paramIndex]", "800")
+                        .data("searchString[$paramIndex]", mediaType)
+
+                    if (index > 0) {
+                        searchConnection.data("combinationOperator[$paramIndex]", "OR") // Add OR condition for multiple filters
+                    }
+                }
+            }
+
+// Execute the request
+            val searchResponse = searchConnection.execute()
+
 
             // Update cookies
             cookieManager.setCookies(BASE_LOGGED_IN_URL, searchResponse.cookies())

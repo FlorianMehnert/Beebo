@@ -49,3 +49,4 @@ enum class FilterBy {
     abstract fun getSearchRestrictionValue1(): String
     abstract fun getKindOfMedium(): List<String>
 }
+// DVD, CD, Buch, eBook, Kinderbuch
