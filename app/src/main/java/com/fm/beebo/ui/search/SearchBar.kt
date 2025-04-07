@@ -213,6 +213,11 @@ fun SearchBar(
                             var showMaxYearDialog by remember { mutableStateOf(false) }
                             var showRangeSelector by remember { mutableStateOf(false) }
 
+                            // Local state to manage slider position
+                            var sliderPosition by remember(minYear, maxYear, selectedYearRange) {
+                                mutableStateOf(selectedYearRange.first.toFloat()..selectedYearRange.second.toFloat())
+                            }
+
                             Column(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
@@ -237,29 +242,30 @@ fun SearchBar(
                                     )
                                 }
 
-                                val debouncedSelectedYearRange by rememberUpdatedState(selectedYearRange)
-
-                                LaunchedEffect(debouncedSelectedYearRange) {
-                                    delay(300) // Wait 300ms before updating
-                                    viewModel.setSelectedYearRange(debouncedSelectedYearRange)
+                                // Debounce effect moved here and simplified
+                                LaunchedEffect(sliderPosition) {
+                                    // Update the ViewModel with debounce
+                                    delay(300)
+                                    viewModel.setSelectedYearRange(
+                                        Pair(sliderPosition.start.toInt(), sliderPosition.endInclusive.toInt())
+                                    )
                                 }
 
                                 RangeSlider(
-                                    value = selectedYearRange.first.toFloat()..selectedYearRange.second.toFloat(),
+                                    value = sliderPosition,
                                     onValueChange = { range ->
-                                        viewModel.setSelectedYearRange(
-                                            Pair(range.start.toInt(), range.endInclusive.toInt())
-                                        )
+                                        // Update local state only, not ViewModel directly
+                                        sliderPosition = range
                                     },
-                                    valueRange = minYear.toFloat()..maxYear.toFloat()
+                                    valueRange = minYear.toFloat()..maxYear.toFloat(),
+                                    steps = maxYear - minYear - 1  // Optional: adds step indicators
                                 )
 
-
                                 Text(
-                                    "${selectedYearRange.first} - ${selectedYearRange.second}",
-                                    Modifier.align(Alignment.CenterHorizontally).clickable{
-                                        showRangeSelector = true
-                                    }
+                                    "${sliderPosition.start.toInt()} - ${sliderPosition.endInclusive.toInt()}",
+                                    Modifier
+                                        .align(Alignment.CenterHorizontally)
+                                        .clickable { showRangeSelector = true }
                                 )
 
                                 Button(
@@ -291,8 +297,13 @@ fun SearchBar(
                                     },
                                     confirmButton = {
                                         TextButton(onClick = {
-                                            if (newMinYear.toIntOrNull() in minYear..maxYear) {
-                                                viewModel.setMinYear(newMinYear.toIntOrNull()?.coerceAtLeast(minYear) ?: minYear)
+                                            newMinYear.toIntOrNull()?.let { inputYear ->
+                                                if (inputYear in minYear..maxYear) {
+                                                    val newMin = inputYear.coerceAtLeast(minYear)
+                                                    viewModel.setMinYear(newMin)
+                                                    // Also update slider
+                                                    sliderPosition = newMin.toFloat()..sliderPosition.endInclusive
+                                                }
                                             }
                                             showMinYearDialog = false
                                         }) {
@@ -323,8 +334,13 @@ fun SearchBar(
                                     },
                                     confirmButton = {
                                         TextButton(onClick = {
-                                            if (inputMaxYear.toIntOrNull() != null && inputMaxYear.toIntOrNull() in minYear..maxYear) {
-                                                viewModel.setMaxYear(inputMaxYear.toIntOrNull()?.coerceAtMost(maxYear) ?: maxYear)
+                                            inputMaxYear.toIntOrNull()?.let { inputYear ->
+                                                if (inputYear in minYear..maxYear) {
+                                                    val newMax = inputYear.coerceAtMost(maxYear)
+                                                    viewModel.setMaxYear(newMax)
+                                                    // Also update slider
+                                                    sliderPosition = sliderPosition.start..newMax.toFloat()
+                                                }
                                             }
                                             showMaxYearDialog = false
                                         }) {
@@ -341,8 +357,8 @@ fun SearchBar(
 
                             if (showRangeSelector) {
                                 // Initialize with current values
-                                var inputMinYear by remember { mutableStateOf(viewModel.selectedYearRange.value.first.toString()) }
-                                var inputMaxYear by remember { mutableStateOf(viewModel.selectedYearRange.value.second.toString()) }
+                                var inputMinYear by remember { mutableStateOf(sliderPosition.start.toInt().toString()) }
+                                var inputMaxYear by remember { mutableStateOf(sliderPosition.endInclusive.toInt().toString()) }
 
                                 AlertDialog(
                                     onDismissRequest = { showRangeSelector = false },
@@ -399,6 +415,11 @@ fun SearchBar(
                                             // Update both values
                                             viewModel.setMinYear(finalMinYear)
                                             viewModel.setMaxYear(finalMaxYear)
+
+                                            // Update local slider state
+                                            sliderPosition = finalMinYear.toFloat()..finalMaxYear.toFloat()
+
+                                            // Update view model last
                                             viewModel.setSelectedYearRange(Pair(finalMinYear, finalMaxYear))
 
                                             showRangeSelector = false
@@ -414,7 +435,6 @@ fun SearchBar(
                                 )
                             }
                         }
-
 
                         FilterOptions.KIND_OF_MEDIUM -> {
                             Column(
