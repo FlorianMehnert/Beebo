@@ -57,7 +57,6 @@ fun SearchStatus(
         ),
         label = "Pulsating Alpha"
     )
-    val processingResults = resultCount == 0
     Column(modifier = Modifier.fillMaxWidth()) {
         if (isLoading) {
             Box(modifier = Modifier.fillMaxWidth()) {
