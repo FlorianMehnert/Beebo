@@ -9,6 +9,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,16 +22,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -41,6 +49,8 @@ fun SearchStatus(
     totalResults: Int,
     message: String
 ) {
+    var showInfoDialog by remember { mutableStateOf(false) }
+
     val animatedProgress by animateFloatAsState(
         targetValue = if (progress >= 0f) progress else 0f, // Avoid animating indeterminate state
         animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
@@ -57,6 +67,7 @@ fun SearchStatus(
         ),
         label = "Pulsating Alpha"
     )
+
     Column(modifier = Modifier.fillMaxWidth()) {
         if (isLoading) {
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -88,7 +99,8 @@ fun SearchStatus(
                 .padding(8.dp)
         ) {
             val icon = if (isLoading) Icons.Default.Refresh else Icons.Default.CheckCircle
-            val color = if (resultCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+            val color =
+                if (resultCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
 
             if (progress > 0f) {
                 Icon(
@@ -97,7 +109,7 @@ fun SearchStatus(
                     tint = color,
                     modifier = Modifier.size(24.dp)
                 )
-            }else if(progress == 0f && isLoading){
+            } else if (progress == 0f && isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
@@ -108,12 +120,43 @@ fun SearchStatus(
             Spacer(modifier = Modifier.width(8.dp))
 
             Text(
-                text = if (progress > 0f && isLoading) "$resultCount Treffer von ungefähr $totalResults" else message,
-                color = color
+                text = if (progress > 0f && isLoading) "$resultCount Treffer von ungefähr ${totalResults} Treffern" else message,
+                color = color,
+                modifier = Modifier
+                    .clickable {
+                        if ("Treffern" in message) {
+                            showInfoDialog = true
+                        }
+                    }
             )
         }
     }
+
+    // Info Dialog that appears when text is clicked
+    if (showInfoDialog) {
+        InfoDialog(
+            message = "Abhängig von der Einstellung maximale Suchergebnisse werden möglicherweise nicht alle Suchergebnisse angezeigt um die Ladezeiten zu reduzieren, da zusätzliche Zeit benötigt wird um zusätzliche Seiten an Treffern zu zeigen.",
+            onDismiss = { showInfoDialog = false }
+        )
+    }
 }
 
+@Composable
+fun InfoDialog(
+    message: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = {
+            Text(message)
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
 
 

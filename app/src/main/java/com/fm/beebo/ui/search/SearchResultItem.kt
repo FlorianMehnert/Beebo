@@ -158,7 +158,7 @@ fun SearchResultItem(text: String, isAvailable: Boolean, onClick: () -> Unit, ki
         AlertDialog(
             onDismissRequest = { showDueDateDialog = false },
             title = { Text("Item on Loan") },
-            text = { Text("This item is currently on loan and will be available after $dueDate.") },
+            text = { Text("Dieses Medium ist ausgeliehen bis zum $dueDate.") },
             confirmButton = {
                 TextButton(onClick = { showDueDateDialog = false }) {
                     Text("OK")

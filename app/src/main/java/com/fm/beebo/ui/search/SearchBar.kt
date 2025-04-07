@@ -15,41 +15,36 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowLeft
-import androidx.compose.material.icons.filled.ArrowLeft
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Divider
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RangeSlider
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -65,17 +60,17 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fm.beebo.ui.settings.FilterBy
 import com.fm.beebo.ui.settings.FilterOptions
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
 import kotlinx.coroutines.delay
-import kotlin.math.max
+import java.time.Instant
+import java.time.ZoneId
 
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBar(
     query: String,
@@ -96,6 +91,7 @@ fun SearchBar(
     val selectedYearRange by viewModel.selectedYearRange.collectAsState()
     val minYear by viewModel.minYear.collectAsState()
     val maxYear by viewModel.maxYear.collectAsState()
+    val dueDateFilter by viewModel.dueDateFilter.collectAsState()
 
     // Track selected media types
     val selectedMediaTypes by viewModel.selectedMediaTypes.collectAsState(initial = emptyList())
@@ -103,6 +99,7 @@ fun SearchBar(
     // Date picker state
     var showStartYearPicker by remember { mutableStateOf(false) }
     var showEndYearPicker by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -288,14 +285,14 @@ fun SearchBar(
                                         TextField(
                                             value = newMinYear,
                                             onValueChange = { newMinYear = it },
-                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            singleLine = true
                                         )
                                     },
                                     confirmButton = {
                                         TextButton(onClick = {
                                             if (newMinYear.toIntOrNull() in minYear..maxYear) {
                                                 viewModel.setMinYear(newMinYear.toIntOrNull()?.coerceAtLeast(minYear) ?: minYear)
-                                                viewModel.setSelectedYearRange(Pair(minYear, maxYear))
                                             }
                                             showMinYearDialog = false
                                         }) {
@@ -320,14 +317,14 @@ fun SearchBar(
                                         TextField(
                                             value = inputMaxYear,
                                             onValueChange = { inputMaxYear = it },
-                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            singleLine = true
                                         )
                                     },
                                     confirmButton = {
                                         TextButton(onClick = {
                                             if (inputMaxYear.toIntOrNull() != null && inputMaxYear.toIntOrNull() in minYear..maxYear) {
                                                 viewModel.setMaxYear(inputMaxYear.toIntOrNull()?.coerceAtMost(maxYear) ?: maxYear)
-                                                viewModel.setSelectedYearRange(Pair(minYear, maxYear))
                                             }
                                             showMaxYearDialog = false
                                         }) {
@@ -342,42 +339,68 @@ fun SearchBar(
                                 )
                             }
 
-                            if (showRangeSelector){
-                                var inputMinYear by remember { mutableStateOf(maxYear.toString()) }
-                                var inputMaxYear by remember { mutableStateOf(maxYear.toString()) }
+                            if (showRangeSelector) {
+                                // Initialize with current values
+                                var inputMinYear by remember { mutableStateOf(viewModel.selectedYearRange.value.first.toString()) }
+                                var inputMaxYear by remember { mutableStateOf(viewModel.selectedYearRange.value.second.toString()) }
+
                                 AlertDialog(
                                     onDismissRequest = { showRangeSelector = false },
                                     title = { Text("Zeitspanne definieren") },
                                     text = {
-                                        Row(
+                                        Column(
                                             modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically
+                                            horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            TextField(
-                                                value = inputMinYear,
-                                                onValueChange = { inputMinYear = it },
-                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                                modifier = Modifier
-                                                    .weight(0.4f) // 40% of available width
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            TextField(
-                                                value = inputMaxYear,
-                                                onValueChange = { inputMaxYear = it },
-                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                                modifier = Modifier
-                                                    .weight(0.4f) // 40% of available width
-                                            )
-                                        }
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text("Von:")
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                TextField(
+                                                    value = inputMinYear,
+                                                    onValueChange = { inputMinYear = it },
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                                    modifier = Modifier.weight(0.4f),
+                                                    singleLine = true
+                                                )
+                                            }
 
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text("Bis:")
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                TextField(
+                                                    value = inputMaxYear,
+                                                    onValueChange = { inputMaxYear = it },
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                                    modifier = Modifier.weight(0.4f),
+                                                    singleLine = true
+                                                )
+                                            }
+                                        }
                                     },
                                     confirmButton = {
                                         TextButton(onClick = {
-                                            if (inputMaxYear.toIntOrNull() != null && inputMaxYear.toIntOrNull() in minYear..maxYear) {
-                                                viewModel.setMaxYear(inputMaxYear.toIntOrNull()?.coerceAtMost(maxYear) ?: maxYear)
-                                                viewModel.setSelectedYearRange(Pair(minYear, maxYear))
-                                            }
+                                            val newMinYear = inputMinYear.toIntOrNull()?.coerceIn(minYear, maxYear) ?: minYear
+                                            val newMaxYear = inputMaxYear.toIntOrNull()?.coerceIn(minYear, maxYear) ?: maxYear
+
+                                            // Ensure min year is less than or equal to max year
+                                            val finalMinYear = minOf(newMinYear, newMaxYear)
+                                            val finalMaxYear = maxOf(newMinYear, newMaxYear)
+
+                                            // Update both values
+                                            viewModel.setMinYear(finalMinYear)
+                                            viewModel.setMaxYear(finalMaxYear)
+                                            viewModel.setSelectedYearRange(Pair(finalMinYear, finalMaxYear))
+
                                             showRangeSelector = false
                                         }) {
                                             Text("OK")
@@ -391,7 +414,6 @@ fun SearchBar(
                                 )
                             }
                         }
-
 
 
                         FilterOptions.KIND_OF_MEDIUM -> {
@@ -443,25 +465,98 @@ fun SearchBar(
                         }
 
                         FilterOptions.DUE_DATE -> {
-                            // Due date options
-                            Text(
-                                text = "Verfügbar bis",
-                                fontWeight = FontWeight(900),
-                                modifier = Modifier.padding(
-                                    start = 16.dp,
-                                    end = 16.dp,
-                                    bottom = 8.dp
+                            // Due date filter options
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Verfügbar bis",
+                                    fontWeight = FontWeight(900),
+                                    modifier = Modifier.padding(bottom = 16.dp)
                                 )
-                            )
 
-                            listOf("Alle", "Diese Woche", "Dieser Monat").forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text(text = option) },
-                                    onClick = {
-                                        viewModel.setDueDateFilter(option)
-                                        filterExpanded = false
+                                // Display selected date or prompt
+                                val formattedDate = dueDateFilter?.let {
+                                    "${it.dayOfMonth}.${it.monthValue}.${it.year}"
+                                } ?: "Kein Datum ausgewählt"
+
+                                // Date display with picker button
+                                OutlinedButton(
+                                    onClick = { showDatePicker = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(formattedDate)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.DateRange,
+                                            contentDescription = "Datum auswählen"
+                                        )
                                     }
+                                }
+
+                                // Clear date button (only show if a date is selected)
+                                if (dueDateFilter != null) {
+                                    TextButton(
+                                        onClick = { viewModel.setDueDateFilter(null) }
+                                    ) {
+                                        Text("Datum zurücksetzen")
+                                    }
+                                }
+
+                                // Apply Button
+                                Button(
+                                    onClick = {
+                                        filterExpanded = false
+                                        onSearch()
+                                    },
+                                    modifier = Modifier.padding(top = 16.dp)
+                                ) {
+                                    Text("Anwenden")
+                                }
+                            }
+
+                            // Date picker dialog
+                            if (showDatePicker) {
+                                val datePickerState = rememberDatePickerState(
+                                    initialSelectedDateMillis = dueDateFilter?.toEpochDay()?.times(24 * 60 * 60 * 1000)
                                 )
+
+                                DatePickerDialog(
+                                    onDismissRequest = { showDatePicker = false },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                datePickerState.selectedDateMillis?.let { millis ->
+                                                    val localDate = Instant.ofEpochMilli(millis)
+                                                        .atZone(ZoneId.systemDefault())
+                                                        .toLocalDate()
+                                                    viewModel.setDueDateFilter(localDate)
+                                                }
+                                                showDatePicker = false
+                                            }
+                                        ) {
+                                            Text("OK")
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(
+                                            onClick = { showDatePicker = false }
+                                        ) {
+                                            Text("Abbrechen")
+                                        }
+                                    }
+                                ) {
+                                    DatePicker(
+                                        state = datePickerState,
+                                        headline = { Text(text="Datum auswählen", Modifier.padding(16.dp)) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -469,108 +564,6 @@ fun SearchBar(
             }
         }
     }
-
-    // Year Picker Dialogs
-    if (showStartYearPicker) {
-        YearPickerDialog(
-            initialYear = selectedYearRange.first,
-            onYearSelected = { year ->
-                viewModel.setMinYear(year)
-                showStartYearPicker = false
-            },
-            onDismiss = { showStartYearPicker = false }
-        )
-    }
-
-    if (showEndYearPicker) {
-        YearPickerDialog(
-            initialYear = selectedYearRange.second,
-            onYearSelected = { year ->
-                viewModel.setMaxYear(year)
-                showEndYearPicker = false
-            },
-            onDismiss = { showEndYearPicker = false }
-        )
-    }
-}
-
-@Composable
-fun YearPickerDialog(
-    initialYear: Int,
-    onYearSelected: (Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val currentYear = 1800
-    val minYear = 1800
-
-    var selectedYear by remember { mutableStateOf(initialYear) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Startjahr auswählen") },
-        text = {
-            Column {
-                YearPicker(
-                    selectedYear.toString(),
-                ) { newYear -> selectedYear = newYear.toInt() }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    listOf(selectedYear, currentYear - 5, currentYear - 10).forEach { year ->
-                        Button(
-                            onClick = { selectedYear = year },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (selectedYear == year)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.surface,
-                                contentColor = if (selectedYear == year)
-                                    MaterialTheme.colorScheme.onPrimary
-                                else
-                                    MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Text(year.toString())
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onYearSelected(selectedYear) }
-            ) {
-                Text("Bestätigen")
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss
-            ) {
-                Text("Abbrechen")
-            }
-        }
-    )
-}
-
-@Composable
-fun YearPicker(year: String, onYearChange: (String) -> Unit) {
-    TextField(
-        value = year,
-        onValueChange = { newValue ->
-            if (newValue.isNotEmpty() && newValue.all { it.isDigit() } && (newValue.length <= 4)) {
-                onYearChange(newValue)
-            }
-        },
-        label = { Text("Enter Year") },
-        keyboardOptions = KeyboardOptions.Default.copy(
-            keyboardType = KeyboardType.Number
-        ),
-        modifier = Modifier.fillMaxWidth()
-    )
 }
 
 
