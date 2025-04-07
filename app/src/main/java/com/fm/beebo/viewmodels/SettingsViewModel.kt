@@ -5,6 +5,7 @@ import com.fm.beebo.ui.settings.FilterOptions
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.time.Year
 
 
 class SettingsViewModel {
@@ -16,6 +17,8 @@ class SettingsViewModel {
     private val _availabilityFilter = MutableStateFlow(false) // false = show all, true = only available
     private val _dueDateFilter = MutableStateFlow("Alle")
     private var _selectedYearRange = MutableStateFlow(Pair<Int, Int>(2020, 2025))
+    private var _minYear = MutableStateFlow(1800)
+    private var _maxYear = MutableStateFlow(2025)
 
     val selectedFilterOption: StateFlow<FilterBy> = _selectedFilterOption
     val appStart: StateFlow<Boolean> = _appStart
@@ -25,6 +28,8 @@ class SettingsViewModel {
     val availabilityFilter: StateFlow<Boolean> = _availabilityFilter
     val dueDateFilter: StateFlow<String> = _dueDateFilter
     val selectedYearRange: StateFlow<Pair<Int, Int>> = _selectedYearRange
+    val minYear: StateFlow<Int> = _minYear
+    val maxYear: StateFlow<Int> = _maxYear
 
     val kindOfMediumList: List<String> = FilterBy.entries.map { it.name }
 
@@ -72,6 +77,14 @@ class SettingsViewModel {
 
     fun setSelectedYearRange(option: Pair<Int, Int>) {
         _selectedYearRange.value = option
+    }
+
+    fun setMinYear(year: Int){
+        _minYear.value = year
+    }
+
+    fun setMaxYear(year: Int){
+        _maxYear.value = year
     }
 
     fun setAppStart(option: Boolean) {
