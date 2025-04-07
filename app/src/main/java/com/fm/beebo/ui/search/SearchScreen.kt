@@ -138,7 +138,9 @@ fun SearchScreen(
                     searchQuery = query,
                     filter = settingsViewModel.selectedFilterOption,
                     firstTimeStart = settingsViewModel.appStart.collectAsState().value,
-                    dueDateFilter = settingsViewModel.dueDateFilter
+                    dueDateFilter = settingsViewModel.dueDateFilter,
+                    selectedYearRange = settingsViewModel.selectedYearRange,
+                    selectedMediaTypes = settingsViewModel.selectedMediaTypes
                 )
             }
         }

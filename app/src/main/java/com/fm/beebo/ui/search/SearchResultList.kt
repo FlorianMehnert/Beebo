@@ -63,23 +63,47 @@ fun SearchResultsList(
     searchQuery: String,
     filter: StateFlow<FilterBy>,
     dueDateFilter: StateFlow<LocalDate?>,
+    selectedYearRange: StateFlow<Pair<Int, Int>>,
+    selectedMediaTypes: StateFlow<List<String>>,
     onItemClick: (LibraryMedia) -> Unit,
     firstTimeStart: Boolean
 ) {
     // Get current filters
     val currentFilter = filter.collectAsState().value
     val currentDueDateFilter = dueDateFilter.collectAsState().value
+    val currentYearRange = selectedYearRange.collectAsState().value
+    val currentMediaTypes = selectedMediaTypes.collectAsState().value
 
     // Apply filters in sequence
+    // Step 1: Apply type filtering based on FilterBy enum
     val filteredByType = if (currentFilter == FilterBy.Alles) {
         results
     } else {
         results.filter { currentFilter.getKindOfMedium().contains(it.kindOfMedium) }
     }
 
-    // Apply due date filter if present
-    val filteredResults = if (currentDueDateFilter != null) {
+    // Step 2: Apply specific media types filtering if available
+    val filteredByMediaTypes = if (currentMediaTypes.isNotEmpty()) {
         filteredByType.filter { media ->
+            currentMediaTypes.contains(media.kindOfMedium)
+        }
+    } else {
+        filteredByType
+    }
+
+    // Step 3: Apply year range filtering
+    val filteredByYear = filteredByMediaTypes.filter { media ->
+        try {
+            val year = media.year.toInt()
+            year in currentYearRange.first..currentYearRange.second
+        } catch (e: NumberFormatException) {
+            false
+        }
+    }
+
+    // Step 4: Apply due date filter if present
+    val filteredResults = if (currentDueDateFilter != null) {
+        filteredByYear.filter { media ->
             // Only consider media with due dates that is available
             if (media.dueDates.isEmpty()) {
                 false
@@ -111,7 +135,7 @@ fun SearchResultsList(
             }
         }
     } else {
-        filteredByType
+        filteredByYear
     }
 
     // Sort results by similarity to the search query
