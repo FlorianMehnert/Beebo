@@ -1,5 +1,6 @@
 package com.fm.beebo.ui.search
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,8 @@ import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.ui.settings.FilterBy
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import kotlin.math.log
 
 
 // Function to calculate Levenshtein distance between two strings
@@ -59,14 +62,56 @@ fun SearchResultsList(
     results: List<LibraryMedia>,
     searchQuery: String,
     filter: StateFlow<FilterBy>,
+    dueDateFilter: StateFlow<LocalDate?>,
     onItemClick: (LibraryMedia) -> Unit,
     firstTimeStart: Boolean
 ) {
-    // Apply filter
-    val filteredResults = if (filter.collectAsState().value == FilterBy.Alles) {
+    // Get current filters
+    val currentFilter = filter.collectAsState().value
+    val currentDueDateFilter = dueDateFilter.collectAsState().value
+
+    // Apply filters in sequence
+    val filteredByType = if (currentFilter == FilterBy.Alles) {
         results
     } else {
-        results.filter { filter.value.getKindOfMedium().contains(it.kindOfMedium) }
+        results.filter { currentFilter.getKindOfMedium().contains(it.kindOfMedium) }
+    }
+
+    // Apply due date filter if present
+    val filteredResults = if (currentDueDateFilter != null) {
+        filteredByType.filter { media ->
+            // Only consider media with due dates that is available
+            if (media.dueDates.isEmpty()) {
+                false
+            } else {
+                // Check if any due date is before our filter date
+                media.dueDates.any { dueDateStr ->
+                    try {
+                        // First clean the string to handle cases like "2025 (gesamte Vormerkungen: 0)"
+                        val cleanDateStr = dueDateStr.trim().split(" ")[0] // Take only the first part before any space
+                        println(cleanDateStr)
+
+                        // Parse due date string (assuming format is "DD.MM.YYYY")
+                        val parts = cleanDateStr.split(".")
+                        if (parts.size == 3) {
+                            val dueDate = LocalDate.of(
+                                parts[2].toInt(),
+                                parts[1].toInt(),
+                                parts[0].toInt()
+                            )
+                            // Check if due date is before our filter date
+                            dueDate.isBefore(currentDueDateFilter)
+                        } else {
+                            false
+                        }
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+            }
+        }
+    } else {
+        filteredByType
     }
 
     // Sort results by similarity to the search query

@@ -2,10 +2,9 @@ package com.fm.beebo.viewmodels
 
 import com.fm.beebo.ui.settings.FilterBy
 import com.fm.beebo.ui.settings.FilterOptions
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import java.time.Year
+import java.time.LocalDate
 
 
 class SettingsViewModel {
@@ -14,10 +13,9 @@ class SettingsViewModel {
     private val _selectedYear = MutableStateFlow(2025)
     private val _sortBy = MutableStateFlow(Pair(FilterOptions.YEAR, true))
     private val _selectedMediaTypes = MutableStateFlow<List<String>>(emptyList())
-    private val _availabilityFilter = MutableStateFlow(false) // false = show all, true = only available
-    private val _dueDateFilter = MutableStateFlow("Alle")
+    private val _dueDateFilter = MutableStateFlow<LocalDate?>(null)
     private var _selectedYearRange = MutableStateFlow(Pair<Int, Int>(2020, 2025))
-    private var _minYear = MutableStateFlow(1800)
+    private var _minYear = MutableStateFlow(2000)
     private var _maxYear = MutableStateFlow(2025)
 
     val selectedFilterOption: StateFlow<FilterBy> = _selectedFilterOption
@@ -25,33 +23,10 @@ class SettingsViewModel {
     val selectedYear: StateFlow<Int> = _selectedYear
     val sortBy: StateFlow<Pair<FilterOptions, Boolean>> = _sortBy
     val selectedMediaTypes: StateFlow<List<String>> = _selectedMediaTypes
-    val availabilityFilter: StateFlow<Boolean> = _availabilityFilter
-    val dueDateFilter: StateFlow<String> = _dueDateFilter
+    val dueDateFilter: StateFlow<LocalDate?> = _dueDateFilter
     val selectedYearRange: StateFlow<Pair<Int, Int>> = _selectedYearRange
     val minYear: StateFlow<Int> = _minYear
     val maxYear: StateFlow<Int> = _maxYear
-
-    val kindOfMediumList: List<String> = FilterBy.entries.map { it.name }
-
-    fun setSelectedFilterOption(option: Int) {
-        _selectedFilterOption.value = FilterBy.entries.toTypedArray()[option]
-
-        // When filter option changes, update selectedMediaTypes with default values from the enum
-        if (_selectedFilterOption.value.getKindOfMedium().isNotEmpty()) {
-            _selectedMediaTypes.value = _selectedFilterOption.value.getKindOfMedium()
-        }
-    }
-
-    fun selectFilterByMediaType(mediaType: String) {
-        val filterOption = FilterBy.entries.find { it.getKindOfMedium().contains(mediaType) }
-        if (filterOption != null) {
-            _selectedFilterOption.value = filterOption
-        }
-    }
-
-    fun setSelectedYear(year: Int) {
-        _selectedYear.value = year
-    }
 
     fun setSortBy(option: FilterOptions, value: Boolean) {
         _sortBy.value = Pair(option, value)
@@ -67,12 +42,8 @@ class SettingsViewModel {
         _selectedMediaTypes.value = currentList
     }
 
-    fun setAvailabilityFilter(onlyAvailable: Boolean) {
-        _availabilityFilter.value = onlyAvailable
-    }
-
-    fun setDueDateFilter(option: String) {
-        _dueDateFilter.value = option
+    fun setDueDateFilter(date: LocalDate?) {
+        _dueDateFilter.value = date
     }
 
     fun setSelectedYearRange(option: Pair<Int, Int>) {
@@ -94,17 +65,4 @@ class SettingsViewModel {
     fun onAppStart() {
         _appStart.value = true
     }
-
-    fun getAppliedFilters(): Map<String, Any> {
-        val filters = mutableMapOf<String, Any>()
-
-        when (_sortBy.value.first) {
-            FilterOptions.YEAR -> filters["year"] = _selectedYear.value
-            FilterOptions.KIND_OF_MEDIUM -> filters["mediaTypes"] = _selectedMediaTypes.value
-            FilterOptions.DUE_DATE -> filters["dueDate"] = _dueDateFilter.value
-        }
-
-        return filters
-    }
 }
-

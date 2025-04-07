@@ -137,7 +137,8 @@ fun SearchScreen(
                     },
                     searchQuery = query,
                     filter = settingsViewModel.selectedFilterOption,
-                    firstTimeStart = settingsViewModel.appStart.collectAsState().value
+                    firstTimeStart = settingsViewModel.appStart.collectAsState().value,
+                    dueDateFilter = settingsViewModel.dueDateFilter
                 )
             }
         }

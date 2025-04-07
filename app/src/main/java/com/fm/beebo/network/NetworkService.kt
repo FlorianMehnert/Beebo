@@ -194,7 +194,7 @@ class LibrarySearchService {
                         totalPages = totalPages,
                         success = true,
                         message = if (totalPages > 1 && (totalPages * 10 - results.size) >= 10)
-                            "${results.size} Treffer von ungefähr ${totalPages} Treffern."
+                            "${results.size} Treffer von ungefähr ${totalPages*10} Treffern"
                         else
                             "${results.size} Treffer",
                         isComplete = true,
@@ -268,7 +268,7 @@ data class SearchResult(
 
             val title = doc.select("h1").text()
             val dueDates = doc.select("td:contains(entliehen bis)").eachText()
-                .map { it.replace("entliehen bis ", "") }
+                .map { it.replace("entliehen bis ", "").replace("(gesamte Vormerkungen: 0)", "") }
             val kindOfMedium = doc.select("div.teaser").text().let {
                 when {
                     it.contains("DVD") -> "DVD"
