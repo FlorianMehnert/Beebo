@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowLeft
 import androidx.compose.material.icons.filled.ArrowLeft
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FilterList
@@ -33,6 +37,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -70,6 +75,7 @@ import kotlinx.coroutines.delay
 import kotlin.math.max
 
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SearchBar(
     query: String,
@@ -389,58 +395,53 @@ fun SearchBar(
 
 
                         FilterOptions.KIND_OF_MEDIUM -> {
-                            // Media type selection UI with checkboxes for multiple selection
-                            Text(
-                                text = "Medienart",
-                                fontWeight = FontWeight(900),
-                                modifier = Modifier.padding(
-                                    start = 16.dp,
-                                    end = 16.dp,
-                                    bottom = 8.dp
-                                )
-                            )
-
-                            // Get all unique media types from FilterBy enum
-                            val allMediaTypes =
-                                FilterBy.entries.flatMap { it.getKindOfMedium() }.distinct()
-                                    .filter { it.isNotEmpty() }
-
-                            allMediaTypes.forEach { mediaType ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            viewModel.toggleMediaType(mediaType)
-                                        }
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Checkbox(
-                                        checked = selectedMediaTypes.contains(mediaType),
-                                        onCheckedChange = { viewModel.toggleMediaType(mediaType) }
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(text = mediaType)
-                                }
-                            }
-
-                            // Add Apply button
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.End
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally // Centers content
                             ) {
+                                Text(
+                                    text = "Medienart",
+                                    fontWeight = FontWeight(900),
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+
+                                // Get all unique media types
+                                val allMediaTypes =
+                                    FilterBy.entries.flatMap { it.getKindOfMedium() }.distinct()
+                                        .filter { it.isNotEmpty() }
+
+                                // **Wrap the FlowRow inside a Box to restrict width**
+                                Box(
+                                    modifier = Modifier.widthIn(min = 100.dp, max = 200.dp) // Set min/max width
+                                ) {
+                                    FlowRow(
+                                        modifier = Modifier
+                                            .padding(horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        allMediaTypes.forEach { mediaType ->
+                                            FilterChip(
+                                                selected = selectedMediaTypes.contains(mediaType),
+                                                onClick = { viewModel.toggleMediaType(mediaType) },
+                                                label = { Text(mediaType) },
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Apply Button
                                 Button(
                                     onClick = {
                                         filterExpanded = false
                                         onSearch()
-                                    }
+                                    },
+                                    modifier = Modifier.padding(top = 16.dp)
                                 ) {
                                     Text("Anwenden")
                                 }
                             }
                         }
+
 
                         FilterOptions.AVAILABLE -> {
                             // Availability options
