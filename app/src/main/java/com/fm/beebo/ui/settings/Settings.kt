@@ -237,7 +237,7 @@ fun SettingsScreen(
 
                     Column(horizontalAlignment = Alignment.Start) {
                         Text(
-                            text = "Version: 1.5",
+                            text = "Version: 2.0",
                             fontSize = 14.sp,
                         )
                         Text(
