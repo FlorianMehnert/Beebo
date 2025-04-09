@@ -18,6 +18,7 @@ class SettingsViewModel {
     private val _maxYear = MutableStateFlow(2025)
     private val _hasFilters = MutableStateFlow(false)
     private val _activeFiltersCount = MutableStateFlow(0)
+    private val _isHoldingReset = MutableStateFlow(false)
 
     // Public StateFlows
     val selectedFilterOption: StateFlow<FilterBy> = _selectedFilterOption
@@ -30,12 +31,15 @@ class SettingsViewModel {
     val maxYear: StateFlow<Int> = _maxYear
     val hasFilters: StateFlow<Boolean> = _hasFilters
     val activeFiltersCount: StateFlow<Int> = _activeFiltersCount
+    val isHoldingReset = _isHoldingReset
+
 
     // Default values - make these configurable if needed
     private val defaultMinYear = 2000
     private val defaultMaxYear = 2025
     private val defaultSortOption = FilterOptions.YEAR
     private val defaultSortDirection = true
+
 
     fun setSortBy(option: FilterOptions, value: Boolean) {
         _sortBy.value = Pair(option, value)
@@ -76,6 +80,10 @@ class SettingsViewModel {
     fun setFilterByTimeSpan(option: Boolean) {
         _filterByTimeSpan.value = option
         updateFilterState()
+    }
+
+    fun setIsHoldingReset(option: Boolean) {
+        _isHoldingReset.value = option
     }
 
     fun resetFilters() {
