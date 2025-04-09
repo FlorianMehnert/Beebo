@@ -1,7 +1,5 @@
 package com.fm.beebo.ui.search
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -52,7 +50,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -80,7 +83,7 @@ fun SearchBar(
     searchViewModel: LibrarySearchViewModel,
 ) {
     var filterExpanded by remember { mutableStateOf(false) }
-    var isHolding by remember { mutableStateOf(false) }
+
     var progress by remember { mutableStateOf(0f) }
 
     val selectedFilterOptions by viewModel.sortBy.collectAsState(
@@ -93,365 +96,422 @@ fun SearchBar(
     val maxYear by viewModel.maxYear.collectAsState()
     val dueDateFilter by viewModel.dueDateFilter.collectAsState()
     val filterByTimeSpan by viewModel.filterByTimeSpan.collectAsState()
+    var isHolding by remember { mutableStateOf(false) }
+    LaunchedEffect(isHolding) {
+        if (isHolding) {
+            progress = 0f
+            val duration = 800L
+            val step = 16L
+            val steps = duration / step
 
+            repeat(steps.toInt()) {
+                if (!isHolding) return@repeat
+                delay(step)
+                progress += 1f / steps
+
+                if (progress >= 0.9f) {
+                    viewModel.resetFilters()
+                    isHolding = false
+                }
+            }
+        } else {
+            progress = 0f
+        }
+    }
     // Track selected media types
     val selectedMediaTypes by viewModel.selectedMediaTypes.collectAsState(initial = emptyList())
 
     // Date picker state
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // Animate the Surface background color based on holding progress
-    val surfaceBackgroundColor by animateColorAsState(
-        targetValue = if (isHolding) {
-            // Blend between primary color and error color based on progress
-            MaterialTheme.colorScheme.primary.copy(alpha = (1f - progress*progress).coerceAtMost(0f))
-                .compositeOver(MaterialTheme.colorScheme.error.copy(alpha = progress))
-        } else {
-            MaterialTheme.colorScheme.primary
-        },
-        animationSpec = tween(durationMillis = 100),
-        label = "surfaceBackgroundColor"
-    )
+    val gradientColor1 = MaterialTheme.colorScheme.primary
+    val cardShape = RoundedCornerShape(8)
 
-    Card(
-        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    Surface(
+        modifier = Modifier.clip(cardShape),
+        shape = cardShape,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .height(60.dp)
-        ) {
-            val keyboardController = LocalSoftwareKeyboardController.current
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                label = { Text("Suchbegriff") },
-                singleLine = true,
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Suchen"
-                    )
-                },
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChange("") }) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Löschen"
+                .padding(2.dp)
+                .drawWithContent {
+                    if (isHolding) {
+                        rotate(degrees = progress * 360f) {
+                            drawCircle(
+                                brush = Brush.horizontalGradient(
+                                    listOf(
+                                        Color.Transparent,
+                                        gradientColor1
+                                    )
+                                ),
+                                radius = size.width,
+                                blendMode = BlendMode.Difference,
                             )
                         }
                     }
+                    drawContent()
                 },
-                modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        keyboardController?.hide()
-                        searchViewModel.statusMessage = "Warte auf Antwort vom Katalog..."
-                        onSearch()
-                    }
-                )
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Effect to handle hold progress animation
-            LaunchedEffect(isHolding) {
-                if (isHolding) {
-                    progress = 0f
-                    val duration = 1000L
-                    val step = 16L
-                    val steps = duration / step
-
-                    repeat(steps.toInt()) {
-                        if (!isHolding) return@repeat
-                        delay(step)
-                        progress += 1f / steps
-
-                        if (progress >= 1f) {
-                            viewModel.resetFilters()
-                            isHolding = false
-                        }
-                    }
-                } else {
-                    progress = 0f
-                }
-            }
-
-            Surface(
-                shape = RoundedCornerShape(8),
-                modifier = Modifier
-                    .height(50.dp)
-                    .offset(y = 4.dp),
-                color = surfaceBackgroundColor,
-                border = if (viewModel.hasFilters.collectAsState().value)
-                    BorderStroke(2.dp, MaterialTheme.colorScheme.onBackground)
-                else null
+            color = MaterialTheme.colorScheme.surface,
+            shape = cardShape
+        ) {
+            Card(
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                shape = cardShape
             ) {
-                // Modified HoldableFilterButton to accept and update the holding state
-                HoldableFilterButton(
-                    onClick = { filterExpanded = true },
-                    isHolding = isHolding,
-                    onHoldingChanged = { isHolding = it },
-                    progress = progress
-                )
-
-                DropdownMenu(
-                    expanded = filterExpanded,
-                    onDismissRequest = { filterExpanded = false },
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .height(60.dp)
                 ) {
-                    // Filter Options Section (YEAR, KIND_OF_MEDIUM, etc.)
-                    Text(
-                        text = "Filterart",
-                        fontWeight = FontWeight(900),
-                        modifier = Modifier.padding(start = 32.dp, end = 32.dp, bottom = 16.dp)
-                    )
-
-                    FilterOptions.entries.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(text = option.toString()) },
-                            onClick = {
-                                viewModel.setSortBy(option, true)
-                            },
-                            modifier = Modifier.conditional(selectedFilterOptions.first == option) {
-                                val background =
-                                    background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                                background
+                    val keyboardController = LocalSoftwareKeyboardController.current
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = onQueryChange,
+                        label = { Text("Suchbegriff") },
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Suchen"
+                            )
+                        },
+                        trailingIcon = {
+                            if (query.isNotEmpty()) {
+                                IconButton(onClick = { onQueryChange("") }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Löschen"
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions.Default.copy(
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                keyboardController?.hide()
+                                searchViewModel.statusMessage = "Warte auf Antwort vom Katalog..."
+                                onSearch()
                             }
                         )
-                    }
-
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        thickness = 2.dp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
                     )
 
-                    // Dynamic section based on selected filter option
-                    when (selectedFilterOptions.first) {
-                        FilterOptions.YEAR -> {
-                            ToggleButton(text ="Mit Zeitspanne filtern", settingsViewModel = viewModel)
+                    // Filter button
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                            var showMinYearDialog by remember { mutableStateOf(false) }
-                            var showMaxYearDialog by remember { mutableStateOf(false) }
+                    Surface(
+                        modifier = Modifier
+                            .height(50.dp)
+                            .offset(y = 4.dp)
+                            .clip(cardShape),
+                        shape = cardShape,
+                    ) {
+                        Surface(
+                            shape = cardShape,
+                            color = if (viewModel.hasFilters.collectAsState().value) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                            border = BorderStroke(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            // Modified HoldableFilterButton to accept and update the holding state
+                            HoldableFilterButton(
+                                onClick = { filterExpanded = true },
+                                isHolding = isHolding,
+                                onHoldingChanged = { isHolding = it },
+                                progress = progress
+                            )
 
-                            Column(
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                            DropdownMenu(
+                                expanded = filterExpanded,
+                                onDismissRequest = { filterExpanded = false },
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    TextButton(onClick = { showMinYearDialog = true }, enabled=filterByTimeSpan) {
-                                        Text(text = "Von: $minYear")
-                                    }
-                                    TextButton(onClick = { showMaxYearDialog = true }, enabled = filterByTimeSpan) {
-                                        Text(text = "Bis: $maxYear")
-                                    }
-                                }
+                                // Filter Options Section (YEAR, KIND_OF_MEDIUM, etc.)
+                                Text(
+                                    text = "Filterart",
+                                    fontWeight = FontWeight(900),
+                                    modifier = Modifier.padding(
+                                        start = 32.dp,
+                                        end = 32.dp,
+                                        bottom = 16.dp
+                                    )
+                                )
 
-                                if (maxYear > 2025) {
-                                    Text(
-                                        "Endjahr darf nicht größer als das aktuelle Jahr sein.",
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.labelSmall
+                                FilterOptions.entries.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(text = option.toString()) },
+                                        onClick = {
+                                            viewModel.setSortBy(option, true)
+                                        },
+                                        modifier = Modifier.conditional(selectedFilterOptions.first == option) {
+                                            val background =
+                                                background(
+                                                    MaterialTheme.colorScheme.primary.copy(
+                                                        alpha = 0.2f
+                                                    )
+                                                )
+                                            background
+                                        }
                                     )
                                 }
 
-                                Button(
-                                    onClick = {
-                                        filterExpanded = false
-                                        onSearch()
-                                    },
-                                    modifier = Modifier
-                                        .padding(16.dp)
-                                        .align(Alignment.CenterHorizontally)
-                                ) {
-                                    Text("Anwenden")
-                                }
-                            }
-                            val calendar: Calendar = Calendar.getInstance()
-                            val year: Int = calendar.get(Calendar.YEAR)
-                            // Min Year Input Dialog
-                            if (showMinYearDialog) {
-                                YearPickerDialog(
-                                    minYear = 1900,
-                                    maxYear = year,
-                                    initialSelection = minYear,
-                                    onYearSelected = { selectedYear ->
-                                        if (selectedYear < maxYear){
-                                            viewModel.setMinYear(selectedYear)
-                                        }else{
-                                            // show error message
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    thickness = 2.dp,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
+                                )
+
+                                // Dynamic section based on selected filter option
+                                when (selectedFilterOptions.first) {
+                                    FilterOptions.YEAR -> {
+                                        ToggleButton(
+                                            text = "Mit Zeitspanne filtern",
+                                            settingsViewModel = viewModel
+                                        )
+
+                                        var showMinYearDialog by remember { mutableStateOf(false) }
+                                        var showMaxYearDialog by remember { mutableStateOf(false) }
+
+                                        Column(
+                                            modifier = Modifier.padding(horizontal = 16.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                TextButton(
+                                                    onClick = { showMinYearDialog = true },
+                                                    enabled = filterByTimeSpan
+                                                ) {
+                                                    Text(text = "Von: $minYear")
+                                                }
+                                                TextButton(
+                                                    onClick = { showMaxYearDialog = true },
+                                                    enabled = filterByTimeSpan
+                                                ) {
+                                                    Text(text = "Bis: $maxYear")
+                                                }
+                                            }
+
+                                            if (maxYear > 2025) {
+                                                Text(
+                                                    "Endjahr darf nicht größer als das aktuelle Jahr sein.",
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    style = MaterialTheme.typography.labelSmall
+                                                )
+                                            }
+
+                                            Button(
+                                                onClick = {
+                                                    filterExpanded = false
+                                                    onSearch()
+                                                },
+                                                modifier = Modifier
+                                                    .padding(16.dp)
+                                                    .align(Alignment.CenterHorizontally)
+                                            ) {
+                                                Text("Anwenden")
+                                            }
                                         }
-                                    },
-                                    onDismissRequest = { showMinYearDialog = false }
-                                )
-                            }
-
-                            if (showMaxYearDialog) {
-                                YearPickerDialog(
-                                    minYear = minYear,
-                                    maxYear = year,
-                                    initialSelection = maxYear,
-                                    onYearSelected = { selectedYear ->
-                                        if (selectedYear > minYear){
-                                            viewModel.setMaxYear(selectedYear)
-                                        }else {
-                                            // show error message
+                                        val calendar: Calendar = Calendar.getInstance()
+                                        val year: Int = calendar.get(Calendar.YEAR)
+                                        // Min Year Input Dialog
+                                        if (showMinYearDialog) {
+                                            YearPickerDialog(
+                                                minYear = 1900,
+                                                maxYear = year,
+                                                initialSelection = minYear,
+                                                onYearSelected = { selectedYear ->
+                                                    if (selectedYear < maxYear) {
+                                                        viewModel.setMinYear(selectedYear)
+                                                    } else {
+                                                        // show error message
+                                                    }
+                                                },
+                                                onDismissRequest = { showMinYearDialog = false }
+                                            )
                                         }
-                                    },
-                                    onDismissRequest = { showMaxYearDialog = false }
-                                )
-                            }
-                        }
 
-                        FilterOptions.KIND_OF_MEDIUM -> {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally // Centers content
-                            ) {
-                                Text(
-                                    text = "Medienart",
-                                    fontWeight = FontWeight(900),
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-
-                                // Get all unique media types
-                                val allMediaTypes =
-                                    FilterBy.entries.flatMap { it.getKindOfMedium() }.distinct()
-                                        .filter { it.isNotEmpty() }
-
-                                // **Wrap the FlowRow inside a Box to restrict width**
-                                Box(
-                                    modifier = Modifier.widthIn(min = 100.dp, max = 200.dp) // Set min/max width
-                                ) {
-                                    FlowRow(
-                                        modifier = Modifier
-                                            .padding(horizontal = 8.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        allMediaTypes.forEach { mediaType ->
-                                            FilterChip(
-                                                selected = selectedMediaTypes.contains(mediaType),
-                                                onClick = { viewModel.toggleMediaType(mediaType) },
-                                                label = { Text(mediaType) },
+                                        if (showMaxYearDialog) {
+                                            YearPickerDialog(
+                                                minYear = minYear,
+                                                maxYear = year,
+                                                initialSelection = maxYear,
+                                                onYearSelected = { selectedYear ->
+                                                    if (selectedYear > minYear) {
+                                                        viewModel.setMaxYear(selectedYear)
+                                                    } else {
+                                                        // show error message
+                                                    }
+                                                },
+                                                onDismissRequest = { showMaxYearDialog = false }
                                             )
                                         }
                                     }
-                                }
 
-                                Button(
-                                    onClick = {
-                                        filterExpanded = false
-                                        onSearch()
-                                    },
-                                    modifier = Modifier.padding(top = 16.dp)
-                                ) {
-                                    Text("Anwenden")
-                                }
-                            }
-                        }
+                                    FilterOptions.KIND_OF_MEDIUM -> {
+                                        Column(
+                                            modifier = Modifier.padding(16.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally // Centers content
+                                        ) {
+                                            Text(
+                                                text = "Medienart",
+                                                fontWeight = FontWeight(900),
+                                                modifier = Modifier.padding(bottom = 8.dp)
+                                            )
 
-                        FilterOptions.DUE_DATE -> {
-                            // Due date filter options
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "Verfügbar bis",
-                                    fontWeight = FontWeight(900),
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
+                                            // Get all unique media types
+                                            val allMediaTypes =
+                                                FilterBy.entries.flatMap { it.getKindOfMedium() }
+                                                    .distinct()
+                                                    .filter { it.isNotEmpty() }
 
-                                // Display selected date or prompt
-                                val formattedDate = dueDateFilter?.let {
-                                    "${it.dayOfMonth}.${it.monthValue}.${it.year}"
-                                } ?: "Kein Datum ausgewählt"
-
-                                // Date display with picker button
-                                OutlinedButton(
-                                    onClick = { showDatePicker = true },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(formattedDate)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Icon(
-                                            imageVector = Icons.Default.DateRange,
-                                            contentDescription = "Datum auswählen"
-                                        )
-                                    }
-                                }
-
-                                // Clear date button (only show if a date is selected)
-                                if (dueDateFilter != null) {
-                                    TextButton(
-                                        onClick = { viewModel.setDueDateFilter(null) }
-                                    ) {
-                                        Text("Datum zurücksetzen")
-                                    }
-                                }
-
-                                // Apply Button
-                                Button(
-                                    onClick = {
-                                        filterExpanded = false
-                                        onSearch()
-                                    },
-                                    modifier = Modifier.padding(top = 16.dp)
-                                ) {
-                                    Text("Anwenden")
-                                }
-                            }
-
-                            // Date picker dialog
-                            if (showDatePicker) {
-                                val datePickerState = rememberDatePickerState(
-                                    initialSelectedDateMillis = dueDateFilter?.toEpochDay()?.times(24 * 60 * 60 * 1000)
-                                )
-
-                                DatePickerDialog(
-                                    onDismissRequest = { showDatePicker = false },
-                                    confirmButton = {
-                                        TextButton(
-                                            onClick = {
-                                                datePickerState.selectedDateMillis?.let { millis ->
-                                                    val localDate = Instant.ofEpochMilli(millis)
-                                                        .atZone(ZoneId.systemDefault())
-                                                        .toLocalDate()
-                                                    viewModel.setDueDateFilter(localDate)
+                                            // **Wrap the FlowRow inside a Box to restrict width**
+                                            Box(
+                                                modifier = Modifier.widthIn(
+                                                    min = 100.dp,
+                                                    max = 200.dp
+                                                ) // Set min/max width
+                                            ) {
+                                                FlowRow(
+                                                    modifier = Modifier
+                                                        .padding(horizontal = 8.dp),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    allMediaTypes.forEach { mediaType ->
+                                                        FilterChip(
+                                                            selected = selectedMediaTypes.contains(
+                                                                mediaType
+                                                            ),
+                                                            onClick = {
+                                                                viewModel.toggleMediaType(
+                                                                    mediaType
+                                                                )
+                                                            },
+                                                            label = { Text(mediaType) },
+                                                        )
+                                                    }
                                                 }
-                                                showDatePicker = false
                                             }
-                                        ) {
-                                            Text("OK")
-                                        }
-                                    },
-                                    dismissButton = {
-                                        TextButton(
-                                            onClick = { showDatePicker = false }
-                                        ) {
-                                            Text("Abbrechen")
+
+                                            Button(
+                                                onClick = {
+                                                    filterExpanded = false
+                                                    onSearch()
+                                                },
+                                                modifier = Modifier.padding(top = 16.dp)
+                                            ) {
+                                                Text("Anwenden")
+                                            }
                                         }
                                     }
-                                ) {
-                                    DatePicker(
-                                        state = datePickerState,
-                                        headline = { Text(text="Datum auswählen", Modifier.padding(16.dp)) }
-                                    )
+
+                                    FilterOptions.DUE_DATE -> {
+                                        // Due date filter options
+                                        Column(
+                                            modifier = Modifier.padding(16.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "Verfügbar bis",
+                                                fontWeight = FontWeight(900),
+                                                modifier = Modifier.padding(bottom = 16.dp)
+                                            )
+
+                                            // Display selected date or prompt
+                                            val formattedDate = dueDateFilter?.let {
+                                                "${it.dayOfMonth}.${it.monthValue}.${it.year}"
+                                            } ?: "Kein Datum ausgewählt"
+
+                                            // Date display with picker button
+                                            OutlinedButton(
+                                                onClick = { showDatePicker = true },
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Text(formattedDate)
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Icon(
+                                                        imageVector = Icons.Default.DateRange,
+                                                        contentDescription = "Datum auswählen"
+                                                    )
+                                                }
+                                            }
+
+                                            // Clear date button (only show if a date is selected)
+                                            if (dueDateFilter != null) {
+                                                TextButton(
+                                                    onClick = { viewModel.setDueDateFilter(null) }
+                                                ) {
+                                                    Text("Datum zurücksetzen")
+                                                }
+                                            }
+
+                                            // Apply Button
+                                            Button(
+                                                onClick = {
+                                                    filterExpanded = false
+                                                    onSearch()
+                                                },
+                                                modifier = Modifier.padding(top = 16.dp)
+                                            ) {
+                                                Text("Anwenden")
+                                            }
+                                        }
+
+                                        // Date picker dialog
+                                        if (showDatePicker) {
+                                            val datePickerState = rememberDatePickerState(
+                                                initialSelectedDateMillis = dueDateFilter?.toEpochDay()
+                                                    ?.times(24 * 60 * 60 * 1000)
+                                            )
+
+                                            DatePickerDialog(
+                                                onDismissRequest = { showDatePicker = false },
+                                                confirmButton = {
+                                                    TextButton(
+                                                        onClick = {
+                                                            datePickerState.selectedDateMillis?.let { millis ->
+                                                                val localDate =
+                                                                    Instant.ofEpochMilli(millis)
+                                                                        .atZone(ZoneId.systemDefault())
+                                                                        .toLocalDate()
+                                                                viewModel.setDueDateFilter(localDate)
+                                                            }
+                                                            showDatePicker = false
+                                                        }
+                                                    ) {
+                                                        Text("OK")
+                                                    }
+                                                },
+                                                dismissButton = {
+                                                    TextButton(
+                                                        onClick = { showDatePicker = false }
+                                                    ) {
+                                                        Text("Abbrechen")
+                                                    }
+                                                }
+                                            ) {
+                                                DatePicker(
+                                                    state = datePickerState,
+                                                    headline = {
+                                                        Text(
+                                                            text = "Datum auswählen",
+                                                            Modifier.padding(16.dp)
+                                                        )
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

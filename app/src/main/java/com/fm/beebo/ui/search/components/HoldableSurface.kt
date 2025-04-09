@@ -76,7 +76,6 @@ fun HoldableFilterButton(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Cancel Filter",
-                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(18.dp)
                     )
                     CircularProgressIndicator(
@@ -92,7 +91,6 @@ fun HoldableFilterButton(
                 Icon(
                     imageVector = Icons.Default.FilterList,
                     contentDescription = "Filter",
-                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
