@@ -230,7 +230,7 @@ fun SearchBar(
                                     },
                                     modifier = Modifier
                                         .padding(16.dp)
-                                        .align(Alignment.End)
+                                        .align(Alignment.CenterHorizontally)
                                 ) {
                                     Text("Anwenden")
                                 }
