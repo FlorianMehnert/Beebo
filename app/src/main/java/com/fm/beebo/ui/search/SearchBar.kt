@@ -1,5 +1,7 @@
 package com.fm.beebo.ui.search
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +52,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -60,6 +64,7 @@ import com.fm.beebo.ui.settings.FilterBy
 import com.fm.beebo.ui.settings.FilterOptions
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Calendar
@@ -75,6 +80,9 @@ fun SearchBar(
     searchViewModel: LibrarySearchViewModel,
 ) {
     var filterExpanded by remember { mutableStateOf(false) }
+    var isHolding by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0f) }
+
     val selectedFilterOptions by viewModel.sortBy.collectAsState(
         initial = Pair(
             FilterOptions.YEAR,
@@ -92,9 +100,22 @@ fun SearchBar(
     // Date picker state
     var showDatePicker by remember { mutableStateOf(false) }
 
+    // Animate the Surface background color based on holding progress
+    val surfaceBackgroundColor by animateColorAsState(
+        targetValue = if (isHolding) {
+            // Blend between primary color and error color based on progress
+            MaterialTheme.colorScheme.primary.copy(alpha = (1f - progress*progress).coerceAtMost(0f))
+                .compositeOver(MaterialTheme.colorScheme.error.copy(alpha = progress))
+        } else {
+            MaterialTheme.colorScheme.primary
+        },
+        animationSpec = tween(durationMillis = 100),
+        label = "surfaceBackgroundColor"
+    )
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -140,17 +161,45 @@ fun SearchBar(
 
             Spacer(modifier = Modifier.width(8.dp))
 
+            // Effect to handle hold progress animation
+            LaunchedEffect(isHolding) {
+                if (isHolding) {
+                    progress = 0f
+                    val duration = 1000L
+                    val step = 16L
+                    val steps = duration / step
+
+                    repeat(steps.toInt()) {
+                        if (!isHolding) return@repeat
+                        delay(step)
+                        progress += 1f / steps
+
+                        if (progress >= 1f) {
+                            viewModel.resetFilters()
+                            isHolding = false
+                        }
+                    }
+                } else {
+                    progress = 0f
+                }
+            }
+
             Surface(
                 shape = RoundedCornerShape(8),
                 modifier = Modifier
                     .height(50.dp)
                     .offset(y = 4.dp),
-                color = MaterialTheme.colorScheme.primary,
-                border = if (viewModel.hasFilters.collectAsState().value) BorderStroke(2.dp, MaterialTheme.colorScheme.onBackground) else null
+                color = surfaceBackgroundColor,
+                border = if (viewModel.hasFilters.collectAsState().value)
+                    BorderStroke(2.dp, MaterialTheme.colorScheme.onBackground)
+                else null
             ) {
+                // Modified HoldableFilterButton to accept and update the holding state
                 HoldableFilterButton(
                     onClick = { filterExpanded = true },
-                    onHoldComplete = {viewModel.resetFilters()}
+                    isHolding = isHolding,
+                    onHoldingChanged = { isHolding = it },
+                    progress = progress
                 )
 
                 DropdownMenu(
