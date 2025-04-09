@@ -1,5 +1,6 @@
 package com.fm.beebo.ui.search
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +21,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -49,17 +49,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.fm.beebo.ui.search.components.HoldableFilterButton
+import com.fm.beebo.ui.search.components.ToggleButton
 import com.fm.beebo.ui.search.components.YearPickerDialog
 import com.fm.beebo.ui.settings.FilterBy
 import com.fm.beebo.ui.settings.FilterOptions
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
-import com.fm.beebo.ui.search.components.ToggleButton
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Calendar
@@ -145,20 +145,13 @@ fun SearchBar(
                 modifier = Modifier
                     .height(50.dp)
                     .offset(y = 4.dp),
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                border = if (viewModel.hasFilters.collectAsState().value) BorderStroke(2.dp, MaterialTheme.colorScheme.onBackground) else null
             ) {
-                IconButton(
+                HoldableFilterButton(
                     onClick = { filterExpanded = true },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp))
-                        .width(40.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FilterList,
-                        contentDescription = "Filter",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+                    onHoldComplete = {viewModel.resetFilters()}
+                )
 
                 DropdownMenu(
                     expanded = filterExpanded,
@@ -306,7 +299,6 @@ fun SearchBar(
                                     }
                                 }
 
-                                // Apply Button
                                 Button(
                                     onClick = {
                                         filterExpanded = false
