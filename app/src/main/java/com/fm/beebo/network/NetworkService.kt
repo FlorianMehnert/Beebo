@@ -74,8 +74,8 @@ class LibrarySearchService {
                 .data("searchRestrictionID[1]", "6")
                 .data("searchRestrictionValue1[1]", "")
                 .data("searchRestrictionID[2]", "3")
-                .data("searchRestrictionValue1[2]", viewModel.minYear.value.toString())
-                .data("searchRestrictionValue2[2]", viewModel.maxYear.value.toString())
+                .data("searchRestrictionValue1[2]", if (viewModel.filterByTimeSpan.value) viewModel.minYear.value.toString() else "")
+                .data("searchRestrictionValue2[2]", if (viewModel.filterByTimeSpan.value) viewModel.maxYear.value.toString() else "")
                 .cookies(cookieManager.getCookies())
                 .timeout(30000)
 
