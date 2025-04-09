@@ -139,6 +139,7 @@ fun SearchScreen(
                     filter = settingsViewModel.selectedFilterOption,
                     firstTimeStart = settingsViewModel.appStart.collectAsState().value,
                     dueDateFilter = settingsViewModel.dueDateFilter,
+                    doYearRangeFiltering = settingsViewModel.filterByTimeSpan.collectAsState().value,
                     selectedYearRange = Pair(settingsViewModel.minYear.collectAsState(), settingsViewModel.maxYear.collectAsState()),
                     selectedMediaTypes = settingsViewModel.selectedMediaTypes
                 )

@@ -79,7 +79,6 @@ class LibrarySearchService {
                 .cookies(cookieManager.getCookies())
                 .timeout(30000)
 
-// Dynamically add media type filters if more than one media type is selected
             val selectedMediaTypes = viewModel.selectedMediaTypes
             if (selectedMediaTypes.value.isNotEmpty()) {
                 selectedMediaTypes.value.forEachIndexed { index, mediaType ->
@@ -96,17 +95,14 @@ class LibrarySearchService {
                     }
                 }
             }
-
-// Execute the request
             val searchResponse = searchConnection.execute()
-
 
             // Update cookies
             cookieManager.setCookies(BASE_LOGGED_IN_URL, searchResponse.cookies())
 
             val searchDoc = searchResponse.parse()
 
-            // Check if we have results
+            // Check for results
             if (searchDoc.text().contains("keine Treffer")) {
                 emit(SearchResult(emptyList(), 0, true, "Keine Treffer gefunden"))
                 return@flow
@@ -149,10 +145,6 @@ class LibrarySearchService {
                 )
 
                 val pagesToFetch = minOf(totalPages, maxPages)
-
-                if (currentPage >= pagesToFetch || currentPage == 3) {
-
-                }
                 var nextUrl = getNextPageLink(searchDoc)
 
                 while (nextUrl != null && currentPage < pagesToFetch) {

@@ -61,6 +61,7 @@ fun SearchResultsList(
     searchQuery: String,
     filter: StateFlow<FilterBy>,
     dueDateFilter: StateFlow<LocalDate?>,
+    doYearRangeFiltering: Boolean,
     selectedYearRange: Pair<State<Int>, State<Int>>,
     selectedMediaTypes: StateFlow<List<String>>,
     onItemClick: (LibraryMedia) -> Unit,
@@ -89,13 +90,17 @@ fun SearchResultsList(
     }
 
     // Step 3: Apply year range filtering
-    val filteredByYear = filteredByMediaTypes.filter { media ->
-        try {
-            val year = media.year.toInt()
-            year in selectedYearRange.first.value..selectedYearRange.second.value
-        } catch (e: NumberFormatException) {
-            false
+    val filteredByYear = if (doYearRangeFiltering) {
+        filteredByMediaTypes.filter { media ->
+            try {
+                val year = media.year.toInt()
+                year in selectedYearRange.first.value..selectedYearRange.second.value
+            } catch (e: NumberFormatException) {
+                false
+            }
         }
+    } else {
+        filteredByMediaTypes
     }
 
     // Step 4: Apply due date filter if present
@@ -109,7 +114,8 @@ fun SearchResultsList(
                 media.dueDates.any { dueDateStr ->
                     try {
                         // First clean the string to handle cases like "2025 (gesamte Vormerkungen: 0)"
-                        val cleanDateStr = dueDateStr.trim().split(" ")[0] // Take only the first part before any space
+                        val cleanDateStr = dueDateStr.trim()
+                            .split(" ")[0] // Take only the first part before any space
                         println(cleanDateStr)
 
                         // Parse due date string (assuming format is "DD.MM.YYYY")
@@ -254,7 +260,9 @@ fun WelcomeScreen() {
                 text = "Gib einen Suchbegriff ein und starte die Suche um Suchergebnisse zu sehen",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                modifier = Modifier.padding(horizontal = 16.dp).width(250.dp),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .width(250.dp),
                 textAlign = TextAlign.Center
             )
 
