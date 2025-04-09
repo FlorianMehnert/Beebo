@@ -10,21 +10,19 @@ import java.time.LocalDate
 class SettingsViewModel {
     private val _selectedFilterOption = MutableStateFlow(FilterBy.Alles)
     private val _appStart = MutableStateFlow(false)
-    private val _selectedYear = MutableStateFlow(2025)
     private val _sortBy = MutableStateFlow(Pair(FilterOptions.YEAR, true))
     private val _selectedMediaTypes = MutableStateFlow<List<String>>(emptyList())
     private val _dueDateFilter = MutableStateFlow<LocalDate?>(null)
-    private var _selectedYearRange = MutableStateFlow(Pair<Int, Int>(2020, 2025))
+    private val _filterByTimeSpan = MutableStateFlow<Boolean>(false)
     private var _minYear = MutableStateFlow(2000)
     private var _maxYear = MutableStateFlow(2025)
 
     val selectedFilterOption: StateFlow<FilterBy> = _selectedFilterOption
     val appStart: StateFlow<Boolean> = _appStart
-    val selectedYear: StateFlow<Int> = _selectedYear
     val sortBy: StateFlow<Pair<FilterOptions, Boolean>> = _sortBy
     val selectedMediaTypes: StateFlow<List<String>> = _selectedMediaTypes
     val dueDateFilter: StateFlow<LocalDate?> = _dueDateFilter
-    val selectedYearRange: StateFlow<Pair<Int, Int>> = _selectedYearRange
+    val filterByTimeSpan: StateFlow<Boolean> = _filterByTimeSpan
     val minYear: StateFlow<Int> = _minYear
     val maxYear: StateFlow<Int> = _maxYear
 
@@ -46,10 +44,6 @@ class SettingsViewModel {
         _dueDateFilter.value = date
     }
 
-    fun setSelectedYearRange(option: Pair<Int, Int>) {
-        _selectedYearRange.value = option
-    }
-
     fun setMinYear(year: Int){
         _minYear.value = year
     }
@@ -60,6 +54,10 @@ class SettingsViewModel {
 
     fun setAppStart(option: Boolean) {
         _appStart.value = option
+    }
+
+    fun setFilterByTimeSpan(option: Boolean) {
+        _filterByTimeSpan.value = option
     }
 
     fun onAppStart() {

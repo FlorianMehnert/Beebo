@@ -1,6 +1,5 @@
 package com.fm.beebo.ui.search
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,9 +21,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -36,7 +35,6 @@ import com.fm.beebo.ui.settings.FilterBy
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import kotlin.math.log
 
 
 // Function to calculate Levenshtein distance between two strings
@@ -63,7 +61,7 @@ fun SearchResultsList(
     searchQuery: String,
     filter: StateFlow<FilterBy>,
     dueDateFilter: StateFlow<LocalDate?>,
-    selectedYearRange: StateFlow<Pair<Int, Int>>,
+    selectedYearRange: Pair<State<Int>, State<Int>>,
     selectedMediaTypes: StateFlow<List<String>>,
     onItemClick: (LibraryMedia) -> Unit,
     firstTimeStart: Boolean
@@ -71,7 +69,6 @@ fun SearchResultsList(
     // Get current filters
     val currentFilter = filter.collectAsState().value
     val currentDueDateFilter = dueDateFilter.collectAsState().value
-    val currentYearRange = selectedYearRange.collectAsState().value
     val currentMediaTypes = selectedMediaTypes.collectAsState().value
 
     // Apply filters in sequence
@@ -95,7 +92,7 @@ fun SearchResultsList(
     val filteredByYear = filteredByMediaTypes.filter { media ->
         try {
             val year = media.year.toInt()
-            year in currentYearRange.first..currentYearRange.second
+            year in selectedYearRange.first.value..selectedYearRange.second.value
         } catch (e: NumberFormatException) {
             false
         }

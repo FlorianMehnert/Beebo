@@ -55,7 +55,8 @@ class LibrarySearchService {
             val csid = csidInput.attr("value")
 
             // Prepare search URL
-            val searchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
+            val searchUrl =
+                "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
 
             val searchConnection = Jsoup.connect(searchUrl)
                 .data("searchCategories[0]", "-1")
@@ -66,12 +67,15 @@ class LibrarySearchService {
                 .data("selectedViewBranchlib", "0")
                 .data("selectedSearchBranchlib", "")
                 .data("searchRestrictionID[0]", "8")
-                .data("searchRestrictionValue1[0]", viewModel.selectedFilterOption.value.getSearchRestrictionValue1())
+                .data(
+                    "searchRestrictionValue1[0]",
+                    viewModel.selectedFilterOption.value.getSearchRestrictionValue1()
+                )
                 .data("searchRestrictionID[1]", "6")
                 .data("searchRestrictionValue1[1]", "")
                 .data("searchRestrictionID[2]", "3")
-                .data("searchRestrictionValue1[2]", viewModel.selectedYearRange.value.first.toString())
-                .data("searchRestrictionValue2[2]", viewModel.selectedYearRange.value.second.toString())
+                .data("searchRestrictionValue1[2]", viewModel.minYear.value.toString())
+                .data("searchRestrictionValue2[2]", viewModel.maxYear.value.toString())
                 .cookies(cookieManager.getCookies())
                 .timeout(30000)
 
@@ -85,7 +89,10 @@ class LibrarySearchService {
                         .data("searchString[$paramIndex]", mediaType)
 
                     if (index > 0) {
-                        searchConnection.data("combinationOperator[$paramIndex]", "OR") // Add OR condition for multiple filters
+                        searchConnection.data(
+                            "combinationOperator[$paramIndex]",
+                            "OR"
+                        ) // Add OR condition for multiple filters
                     }
                 }
             }
@@ -130,18 +137,20 @@ class LibrarySearchService {
                 totalPages = getMaxPages(searchDoc)
                 pagesToFetch = minOf(totalPages, maxPages)
                 // Emit first page results immediately
-                emit(SearchResult(
-                    results = results.toList(),
-                    totalPages = totalPages,
-                    success = true,
-                    message = if (results.isEmpty()) "Keine Treffer gefunden" else
-                        "Erste Seite: ${results.size} Treffer von ungefähr ${totalPages*10} Treffern",
-                    progress = currentPage.toFloat() / totalPages
-                ))
+                emit(
+                    SearchResult(
+                        results = results.toList(),
+                        totalPages = totalPages,
+                        success = true,
+                        message = if (results.isEmpty()) "Keine Treffer gefunden" else
+                            "Erste Seite: ${results.size} Treffer von ungefähr ${totalPages * 10} Treffern",
+                        progress = currentPage.toFloat() / totalPages
+                    )
+                )
 
                 val pagesToFetch = minOf(totalPages, maxPages)
 
-                if (currentPage >= pagesToFetch || currentPage == 3){
+                if (currentPage >= pagesToFetch || currentPage == 3) {
 
                 }
                 var nextUrl = getNextPageLink(searchDoc)
@@ -161,13 +170,15 @@ class LibrarySearchService {
                         results.addAll(pageResults)
 
                         // Emit updated results after each page
-                        emit(SearchResult(
-                            results = results.toList(),
-                            totalPages = totalPages,
-                            success = true,
-                            message = "Seite $currentPage: ${results.size} Treffer von ungefähr ${totalPages*10} Treffern",
-                            progress = currentPage.toFloat() / pagesToFetch
-                        ))
+                        emit(
+                            SearchResult(
+                                results = results.toList(),
+                                totalPages = totalPages,
+                                success = true,
+                                message = "Seite $currentPage: ${results.size} Treffer von ungefähr ${totalPages * 10} Treffern",
+                                progress = currentPage.toFloat() / pagesToFetch
+                            )
+                        )
 
                         // Get next page URL
                         nextUrl = getNextPageLink(nextPageDoc)
@@ -175,57 +186,63 @@ class LibrarySearchService {
                     } catch (e: Exception) {
                         // Handle page-specific errors but continue with results we have
                         println("Error loading page $currentPage: ${e.message ?: "Unknown error"}")
-                        emit(SearchResult(
-                            results = results.toList(),
-                            totalPages = totalPages,
-                            success = true,
-                            message = "Teilweise Ergebnisse (${results.size}): Fehler bei Seite $currentPage",
-                            isComplete = true,
-                            progress = currentPage.toFloat() / pagesToFetch
-                        ))
+                        emit(
+                            SearchResult(
+                                results = results.toList(),
+                                totalPages = totalPages,
+                                success = true,
+                                message = "Teilweise Ergebnisse (${results.size}): Fehler bei Seite $currentPage",
+                                isComplete = true,
+                                progress = currentPage.toFloat() / pagesToFetch
+                            )
+                        )
                         break
                     }
                 }
 
                 // Final results summary if we have results
                 if (results.isNotEmpty()) {
-                    emit(SearchResult(
-                        results = results.toList(),
-                        totalPages = totalPages,
-                        success = true,
-                        message = if (totalPages > 1 && (totalPages * 10 - results.size) >= 10)
-                            "${results.size} Treffer von ungefähr ${totalPages*10} Treffern"
-                        else
-                            "${results.size} Treffer",
-                        isComplete = true,
-                        progress = currentPage.toFloat() / pagesToFetch
-                    ))
+                    emit(
+                        SearchResult(
+                            results = results.toList(),
+                            totalPages = totalPages,
+                            success = true,
+                            message = if (totalPages > 1 && (totalPages * 10 - results.size) >= 10)
+                                "${results.size} Treffer von ungefähr ${totalPages * 10} Treffern"
+                            else
+                                "${results.size} Treffer",
+                            isComplete = true,
+                            progress = currentPage.toFloat() / pagesToFetch
+                        )
+                    )
 
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
             val errorMessage = e.message ?: "Unbekannter Fehler bei der Suche"
-            emit(SearchResult(
-                results = results.toList(),
-                totalPages = totalPages,
-                success = false,
-                message = "Error: $errorMessage",
-                progress = currentPage.toFloat() / pagesToFetch
-            ))
+            emit(
+                SearchResult(
+                    results = results.toList(),
+                    totalPages = totalPages,
+                    success = false,
+                    message = "Error: $errorMessage",
+                    progress = currentPage.toFloat() / pagesToFetch
+                )
+            )
         }
     }
 
 
-// Create a data class to hold search results and metadata
-data class SearchResult(
-    val results: List<LibraryMedia>,
-    val totalPages: Int,
-    val success: Boolean,
-    val message: String,
-    val isComplete: Boolean = false,
-    val progress: Float = 0f
-)
+    // Create a data class to hold search results and metadata
+    data class SearchResult(
+        val results: List<LibraryMedia>,
+        val totalPages: Int,
+        val success: Boolean,
+        val message: String,
+        val isComplete: Boolean = false,
+        val progress: Float = 0f
+    )
 
     /**
      * Connects to the item URL and invokes the DOM parser for media details.
@@ -295,6 +312,7 @@ data class SearchResult(
                             statusText.substringAfter("entliehen bis ").substringBefore(" (")
                         librariesUnavailable.add(library to dueDate)
                     }
+
                     statusText.contains("bestellbar") -> librariesOrderable.add(library)
                 }
             }
