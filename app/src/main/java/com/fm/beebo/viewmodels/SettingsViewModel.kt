@@ -132,12 +132,6 @@ class SettingsViewModel {
             count++
         }
 
-        // Check if sort is non-default
-        val currentSort = _sortBy.value
-        if (currentSort.first != defaultSortOption || currentSort.second != defaultSortDirection) {
-            count++
-        }
-
         // Update the filter states
         _activeFiltersCount.value = count
         _hasFilters.value = count > 0
