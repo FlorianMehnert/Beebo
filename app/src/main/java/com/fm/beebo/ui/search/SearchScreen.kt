@@ -148,7 +148,6 @@ fun SearchScreen(
                         viewModel.fetchItemDetails(item.url, item.isAvailable)
                     },
                     searchQuery = query,
-                    filter = settingsViewModel.selectedFilterOption,
                     firstTimeStart = settingsViewModel.appStart.collectAsState().value,
                     dueDateFilter = settingsViewModel.dueDateFilter,
                     doYearRangeFiltering = settingsViewModel.filterByTimeSpan.collectAsState().value,

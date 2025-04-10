@@ -1,7 +1,10 @@
 package com.fm.beebo.network
 
 import android.webkit.CookieManager
+import androidx.compose.material3.MediumTopAppBar
 import com.fm.beebo.models.LibraryMedia
+import com.fm.beebo.ui.settings.Media
+import com.fm.beebo.ui.settings.mediaFromString
 import com.fm.beebo.viewmodels.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -69,7 +72,7 @@ class LibrarySearchService {
                 .data("searchRestrictionID[0]", "8")
                 .data(
                     "searchRestrictionValue1[0]",
-                    viewModel.selectedFilterOption.value.getSearchRestrictionValue1()
+                    if (viewModel.selectedMediaTypes.value.isNotEmpty()) viewModel.selectedMediaTypes.value[0].asGetParameter() else ""
                 )
                 .data("searchRestrictionID[1]", "6")
                 .data("searchRestrictionValue1[1]", "")
@@ -85,7 +88,7 @@ class LibrarySearchService {
                     val paramIndex = index + 1  // Offset by 1 since [0] is already set
                     searchConnection
                         .data("searchCategories[$paramIndex]", "800")
-                        .data("searchString[$paramIndex]", mediaType)
+                        .data("searchString[$paramIndex]", mediaType.asGetParameter())
 
                     if (index > 0) {
                         searchConnection.data(
@@ -280,11 +283,11 @@ class LibrarySearchService {
                 .map { it.replace("entliehen bis ", "").replace("(gesamte Vormerkungen: 0)", "") }
             val kindOfMedium = doc.select("div.teaser").text().let {
                 when {
-                    it.contains("DVD") -> "DVD"
-                    it.contains("Blu-ray") -> "Blu-ray Disc"
-                    it.contains("CD") -> "CD"
-                    it.contains("Buch") -> "Buch"
-                    else -> ""
+                    it.contains("DVD") -> Media.Filme
+                    it.contains("Blu-ray") -> Media.Bluray
+                    it.contains("CD") -> Media.CDs
+                    it.contains("Buch") -> Media.Bücher
+                    else -> Media.Other
                 }
             }
 
@@ -382,14 +385,12 @@ class LibrarySearchService {
                 attributes[fieldMappings[key]!!] = value
             }
         }
-        println(attributes["kindOfMedium"])
-        // Construct LibraryMedia object with mapped values
         return LibraryMedia(
             url = attributes["url"] ?: "",
             title = attributes["title"] ?: "Unbekannter Titel",
             year = attributes["year"] ?: "",
             isbn = attributes["isbn"] ?: "",
-            kindOfMedium = attributes["kindOfMedium"] ?: "",
+            kindOfMedium = mediaFromString(attributes["kindOfMedium"]?:""),
             author = attributes["author"] ?: "",
             language = attributes["language"] ?: "",
             publisher = attributes["publisher"] ?: "",
@@ -476,7 +477,7 @@ class LibrarySearchService {
                     year = year,
                     title = title,
                     dueDates = emptyList(),
-                    kindOfMedium = kindOfMedium
+                    kindOfMedium = mediaFromString(kindOfMedium)
                 )
 
                 results.add(media)

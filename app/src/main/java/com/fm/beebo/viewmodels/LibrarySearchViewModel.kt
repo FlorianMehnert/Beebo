@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.LibrarySearchService
+import com.fm.beebo.ui.settings.Media
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -103,6 +104,16 @@ class LibrarySearchViewModel() : ViewModel() {
                 statusMessage = "Error: ${e.message}"
             }
         }
+    }
+
+    fun getCountOfMedium(kindOfMedium: Media): Int {
+        var count = 0
+        results.forEach {
+            if (it.kindOfMedium == kindOfMedium) {
+                count++
+            }
+        }
+        return count
     }
 }
 

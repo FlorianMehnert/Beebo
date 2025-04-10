@@ -2,8 +2,6 @@ package com.fm.beebo.ui.search
 
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -72,7 +70,7 @@ import androidx.compose.ui.unit.dp
 import com.fm.beebo.ui.search.components.HoldableFilterButton
 import com.fm.beebo.ui.search.components.ToggleButton
 import com.fm.beebo.ui.search.components.YearPickerDialog
-import com.fm.beebo.ui.settings.FilterBy
+import com.fm.beebo.ui.settings.Media
 import com.fm.beebo.ui.settings.FilterOptions
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
@@ -400,17 +398,17 @@ fun SearchBar(
                                                 modifier = Modifier.padding(bottom = 8.dp)
                                             )
 
-                                            // Get all unique media types
+                                            // Get all unique strings in case I duplicated something and ignore empty string for everything
                                             val allMediaTypes =
-                                                FilterBy.entries.flatMap { it.getKindOfMedium() }
+                                                Media.entries
                                                     .distinct()
-                                                    .filter { it.isNotEmpty() }
+                                                    .filter { it != Media.Alles }
 
                                             // **Wrap the FlowRow inside a Box to restrict width**
                                             Box(
                                                 modifier = Modifier.widthIn(
                                                     min = 100.dp,
-                                                    max = 200.dp
+                                                    max = 280.dp
                                                 ) // Set min/max width
                                             ) {
                                                 FlowRow(
@@ -428,7 +426,7 @@ fun SearchBar(
                                                                     mediaType
                                                                 )
                                                             },
-                                                            label = { Text(mediaType) },
+                                                            label = { Text(text = mediaType.getChipString() + if (searchViewModel.results.isEmpty()) "" else " (" + searchViewModel.getCountOfMedium(mediaType) + ")") },
                                                         )
                                                     }
                                                 }
