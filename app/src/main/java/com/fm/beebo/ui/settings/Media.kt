@@ -11,18 +11,12 @@ import com.fm.beebo.ui.settings.Media.Kinderbücher
 import com.fm.beebo.ui.settings.Media.Noten
 import com.fm.beebo.ui.settings.Media.Other
 import com.fm.beebo.ui.settings.Media.Streaming
-import com.fm.beebo.ui.settings.Media.Toonie
-import com.fm.beebo.ui.settings.Media.ÜbergeordnetesBuch
 import com.fm.beebo.ui.settings.Media.Schallplatte
-import com.fm.beebo.ui.settings.Media.Nintendo
 import com.fm.beebo.ui.settings.Media.Spiel
 import com.fm.beebo.ui.settings.Media.Karte
 import com.fm.beebo.ui.settings.Media.CDRom
 import com.fm.beebo.ui.settings.Media.Zeitung
-import com.fm.beebo.ui.settings.Media.Item
 import com.fm.beebo.ui.settings.Media.Musikgegenstand
-import com.fm.beebo.ui.settings.Media.BluRay3D
-import com.fm.beebo.ui.settings.Media.KeinKinderbuch
 
 
 enum class Media {
@@ -60,29 +54,29 @@ enum class Media {
             return "📖"
         }
     },
-    KeinKinderbuch {
-        override fun asGetParameter(): String {
-            return "298"
-        }
-
-        override fun getKindOfMedium(): List<String> {
-            return listOf(
-                "Buch",
-                "Übergeordneter Titel, siehe auch Einzelbände",
-                "Einzelband einer Serie, siehe auch übergeordnete Titel",
-                "Artikel"
-            )
-        }
-
-        override fun getChipString(): String {
-            return "Buch für Erwachsene"
-        }
-
-        override fun getIcon(): String {
-            return "📖"
-        }
-
-    },
+//    KeinKinderbuch {
+//        override fun asGetParameter(): String {
+//            return "298"
+//        }
+//
+//        override fun getKindOfMedium(): List<String> {
+//            return listOf(
+//                "Buch",
+//                "Übergeordneter Titel, siehe auch Einzelbände",
+//                "Einzelband einer Serie, siehe auch übergeordnete Titel",
+//                "Artikel"
+//            )
+//        }
+//
+//        override fun getChipString(): String {
+//            return "Buch für Erwachsene"
+//        }
+//
+//        override fun getIcon(): String {
+//            return "📖"
+//        }
+//
+//    },
     Kinderbücher {
         override fun asGetParameter(): String {
             return "299"
@@ -236,23 +230,23 @@ enum class Media {
             return "📰"
         }
     },
-    Item {
-        override fun asGetParameter(): String {
-            return "369"
-        }
-
-        override fun getKindOfMedium(): List<String> {
-            return listOf("Gegenstand (Bibliothek der Dinge)")
-        }
-
-        override fun getChipString(): String {
-            return "Gegenstand"
-        }
-
-        override fun getIcon(): String {
-            return "\uD83D\uDD2D"
-        }
-    },
+//    Item {
+//        override fun asGetParameter(): String {
+//            return "369"
+//        }
+//
+//        override fun getKindOfMedium(): List<String> {
+//            return listOf("Gegenstand (Bibliothek der Dinge)")
+//        }
+//
+//        override fun getChipString(): String {
+//            return "Gegenstand"
+//        }
+//
+//        override fun getIcon(): String {
+//            return "\uD83D\uDD2D"
+//        }
+//    },
     Musikgegenstand {
         override fun asGetParameter(): String {
             return "370"
@@ -287,20 +281,20 @@ enum class Media {
             return "\uD83D\uDCFA"
         }
     },
-    Nintendo{
-        override fun asGetParameter(): String {
-            return "316"
-        }
-        override fun getKindOfMedium(): List<String> {
-            return listOf("Spiel für Nintendo DS")
-        }
-        override fun getChipString(): String {
-            return "NDS"
-        }
-        override fun getIcon(): String {
-            return "\uD83C\uDFAE"
-        }
-    },
+//    Nintendo{
+//        override fun asGetParameter(): String {
+//            return "316"
+//        }
+//        override fun getKindOfMedium(): List<String> {
+//            return listOf("Spiel für Nintendo DS")
+//        }
+//        override fun getChipString(): String {
+//            return "NDS"
+//        }
+//        override fun getIcon(): String {
+//            return "\uD83C\uDFAE"
+//        }
+//    },
     Bluray {
         override fun asGetParameter(): String {
             return "301"
@@ -318,23 +312,23 @@ enum class Media {
             return "🔵"
         }
     },
-    BluRay3D {
-        override fun asGetParameter(): String {
-            return "302"
-        }
-
-        override fun getKindOfMedium(): List<String> {
-            return listOf("Blu-ray Disc 3D")
-        }
-
-        override fun getChipString(): String {
-            return "Blu-ray 3D"
-        }
-
-        override fun getIcon(): String {
-            return "\uD83D\uDD37"
-        }
-    },
+//    BluRay3D {
+//        override fun asGetParameter(): String {
+//            return "302"
+//        }
+//
+//        override fun getKindOfMedium(): List<String> {
+//            return listOf("Blu-ray Disc 3D")
+//        }
+//
+//        override fun getChipString(): String {
+//            return "Blu-ray 3D"
+//        }
+//
+//        override fun getIcon(): String {
+//            return "\uD83D\uDD37"
+//        }
+//    },
     Einzelband {
         override fun asGetParameter(): String {
             return ""
@@ -352,23 +346,23 @@ enum class Media {
             return "📕"
         }
     },
-    ÜbergeordnetesBuch {
-        override fun asGetParameter(): String {
-            return ""
-        }
-
-        override fun getKindOfMedium(): List<String> {
-            return listOf("Übergeordneter Titel, siehe auch Einzelbände")
-        }
-
-        override fun getChipString(): String {
-            return "Buchserie"
-        }
-
-        override fun getIcon(): String {
-            return "\uD83D\uDCDA"
-        }
-    },
+//    ÜbergeordnetesBuch {
+//        override fun asGetParameter(): String {
+//            return ""
+//        }
+//
+//        override fun getKindOfMedium(): List<String> {
+//            return listOf("Übergeordneter Titel, siehe auch Einzelbände")
+//        }
+//
+//        override fun getChipString(): String {
+//            return "Buchserie"
+//        }
+//
+//        override fun getIcon(): String {
+//            return "\uD83D\uDCDA"
+//        }
+//    },
     EAudio {
         override fun asGetParameter(): String {
             return ""
@@ -403,24 +397,24 @@ enum class Media {
             return "\uD83D\uDCD7"
         }
     },
-    Toonie {
-        override fun asGetParameter(): String {
-            return "392"
-        }
-
-        override fun getKindOfMedium(): List<String> {
-            return listOf("Tonie-Figur")
-        }
-
-        override fun getChipString(): String {
-            return "Tonie"
-        }
-
-        override fun getIcon(): String {
-            return "\uD83D\uDC40"
-        }
-
-    },
+//    Tonie {
+//        override fun asGetParameter(): String {
+//            return "392"
+//        }
+//
+//        override fun getKindOfMedium(): List<String> {
+//            return listOf("Tonie-Figur")
+//        }
+//
+//        override fun getChipString(): String {
+//            return "Tonie"
+//        }
+//
+//        override fun getIcon(): String {
+//            return "\uD83D\uDC40"
+//        }
+//
+//    },
     Other {
         override fun asGetParameter(): String {
             return ""
@@ -465,9 +459,9 @@ fun mediaFromString(string: String): Media {
         "Einzelband einer Serie, siehe auch übergeordnete Titel" -> Einzelband
         "eAudio" -> EAudio
         "eBook" -> EBook
-        "Tonie-Figur" -> Toonie
+        "Tonie-Figur" -> Other
         "Karte" -> Karte
-        "Artikel" -> KeinKinderbuch
+        "Artikel" -> Bücher
         "DVD-ROM" -> CDRom
         "CD-ROM" -> CDRom
         "Schallplatte" -> Schallplatte
@@ -477,10 +471,10 @@ fun mediaFromString(string: String): Media {
         "Spiel für Nintendo DS" -> Spiel
         "eMagazine" -> Zeitung
         "Zeitung / Zeitschrift" -> Zeitung
-        "Gegenstand (Bibliothek der Dinge)" -> Item
+        "Gegenstand (Bibliothek der Dinge)" -> Other
         "Musikinstrument (Bibliothek der Dinge)" -> Musikgegenstand
-        "Blu-ray Disc 3D" -> BluRay3D
-        "Übergeordneter Titel, siehe auch Einzelbände" -> ÜbergeordnetesBuch
+        "Blu-ray Disc 3D" -> Bluray
+        "Übergeordneter Titel, siehe auch Einzelbände" -> Bücher
         else -> Other
     }
 }
