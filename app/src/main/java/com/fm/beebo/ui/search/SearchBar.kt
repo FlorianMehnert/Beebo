@@ -435,7 +435,7 @@ fun SearchBar(
                                                                     hasHitsString = ""
                                                                 }
                                                                 Text(
-                                                                    text = mediaType.getChipString() + if (searchViewModel.results.isEmpty()) "" else "$hasHitsString)"
+                                                                    text = mediaType.getChipString() + if (searchViewModel.results.isEmpty()) "" else hasHitsString
                                                                 )
                                                             },
                                                         )
