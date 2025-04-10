@@ -1,5 +1,9 @@
 package com.fm.beebo.ui.search
 
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -51,11 +55,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -67,10 +76,16 @@ import com.fm.beebo.ui.settings.FilterBy
 import com.fm.beebo.ui.settings.FilterOptions
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Calendar
+import kotlin.math.PI
+import kotlin.math.sin
 
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -97,6 +112,8 @@ fun SearchBar(
     val dueDateFilter by viewModel.dueDateFilter.collectAsState()
     val filterByTimeSpan by viewModel.filterByTimeSpan.collectAsState()
     var isHolding by remember { mutableStateOf(false) }
+    val hapticFeedback = LocalHapticFeedback.current
+    val context = LocalContext.current
     LaunchedEffect(isHolding) {
         if (isHolding) {
             progress = 0f
@@ -109,8 +126,12 @@ fun SearchBar(
                 delay(step)
                 progress += 1f / steps
 
-                if (progress >= 0.9f) {
+                if (progress >= 0.99f) {
                     viewModel.resetFilters()
+                    // Trigger haptic feedback when reset completes
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    // Optional toast notification
+                    showToast(context, "Suchfilter wurden zurückgesetzt")
                     isHolding = false
                 }
             }
@@ -136,17 +157,21 @@ fun SearchBar(
                 .padding(2.dp)
                 .drawWithContent {
                     if (isHolding) {
-                        rotate(degrees = progress * 360f) {
-                            drawCircle(
-                                brush = Brush.horizontalGradient(
-                                    listOf(
-                                        Color.Transparent,
-                                        gradientColor1
-                                    )
-                                ),
-                                radius = size.width,
-                                blendMode = BlendMode.Difference,
-                            )
+                        // Enhanced visual feedback with pulsing effect
+                        val scale = 1f + (sin(progress * 8 * PI.toFloat()) * 0.03f)
+                        scale(scale) {
+                            rotate(degrees = progress * 360f) {
+                                drawCircle(
+                                    brush = Brush.horizontalGradient(
+                                        listOf(
+                                            Color.Transparent,
+                                            gradientColor1
+                                        )
+                                    ),
+                                    radius = size.width,
+                                    blendMode = BlendMode.Difference,
+                                )
+                            }
                         }
                     }
                     drawContent()
@@ -156,7 +181,18 @@ fun SearchBar(
         ) {
             Card(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                shape = cardShape
+                shape = cardShape,
+                modifier = Modifier
+                    .drawBehind {
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                gradientColor1.copy(alpha = progress),
+                                gradientColor1.copy(alpha = 0f)
+                            ),
+                            startX = 0f,
+                            endX = size.width
+                        )
+                    }
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -522,6 +558,14 @@ fun SearchBar(
     }
 }
 
+fun showToast(context: Context, message: String, duration: Int = Toast.LENGTH_SHORT) {
+    CoroutineScope(Dispatchers.IO).launch {
+        withContext(Dispatchers.Main) {
+            Toast.makeText(context, message, duration).show()
+        }
+    }
+
+}
 
 @Composable
 fun Modifier.conditional(
