@@ -426,7 +426,18 @@ fun SearchBar(
                                                                     mediaType
                                                                 )
                                                             },
-                                                            label = { Text(text = mediaType.getChipString() + if (searchViewModel.results.isEmpty()) "" else " (" + searchViewModel.getCountOfMedium(mediaType) + ")") },
+                                                            label = {
+                                                                val hasHits = searchViewModel.getCountOfMedium(mediaType)
+                                                                var hasHitsString = ""
+                                                                if (hasHits > 0) {
+                                                                    hasHitsString = " ($hasHits)"
+                                                                }else {
+                                                                    hasHitsString = ""
+                                                                }
+                                                                Text(
+                                                                    text = mediaType.getChipString() + if (searchViewModel.results.isEmpty()) "" else "$hasHitsString)"
+                                                                )
+                                                            },
                                                         )
                                                     }
                                                 }
