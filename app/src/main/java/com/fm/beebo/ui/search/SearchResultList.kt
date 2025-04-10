@@ -31,7 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.fm.beebo.models.LibraryMedia
-import com.fm.beebo.ui.settings.FilterBy
+import com.fm.beebo.ui.settings.Media
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -59,37 +59,27 @@ fun levenshteinDistance(s1: String, s2: String): Int {
 fun SearchResultsList(
     results: List<LibraryMedia>,
     searchQuery: String,
-    filter: StateFlow<FilterBy>,
     dueDateFilter: StateFlow<LocalDate?>,
     doYearRangeFiltering: Boolean,
     selectedYearRange: Pair<State<Int>, State<Int>>,
-    selectedMediaTypes: StateFlow<List<String>>,
+    selectedMediaTypes: StateFlow<List<Media>>,
     onItemClick: (LibraryMedia) -> Unit,
     firstTimeStart: Boolean
 ) {
     // Get current filters
-    val currentFilter = filter.collectAsState().value
     val currentDueDateFilter = dueDateFilter.collectAsState().value
     val currentMediaTypes = selectedMediaTypes.collectAsState().value
 
-    // Apply filters in sequence
-    // Step 1: Apply type filtering based on FilterBy enum
-    val filteredByType = if (currentFilter == FilterBy.Alles) {
-        results
-    } else {
-        results.filter { currentFilter.getKindOfMedium().contains(it.kindOfMedium) }
-    }
-
-    // Step 2: Apply specific media types filtering if available
+    // Step 1: Apply specific media types filtering if available
     val filteredByMediaTypes = if (currentMediaTypes.isNotEmpty()) {
-        filteredByType.filter { media ->
+        results.filter { media ->
             currentMediaTypes.contains(media.kindOfMedium)
         }
     } else {
-        filteredByType
+        results
     }
 
-    // Step 3: Apply year range filtering
+    // Step 2: Apply year range filtering
     val filteredByYear = if (doYearRangeFiltering) {
         filteredByMediaTypes.filter { media ->
             try {
@@ -103,7 +93,7 @@ fun SearchResultsList(
         filteredByMediaTypes
     }
 
-    // Step 4: Apply due date filter if present
+    // Step 3: Apply due date filter if present
     val filteredResults = if (currentDueDateFilter != null) {
         filteredByYear.filter { media ->
             // Only consider media with due dates that is available
@@ -168,10 +158,8 @@ fun SearchResultsList(
             ) {
                 items(sortedResults) { item ->
                     SearchResultItem(
-                        text = item.toString(),
-                        isAvailable = item.isAvailable,
+                        item,
                         onClick = { onItemClick(item) },
-                        kindOfMedium = item.kindOfMedium
                     )
                 }
             }

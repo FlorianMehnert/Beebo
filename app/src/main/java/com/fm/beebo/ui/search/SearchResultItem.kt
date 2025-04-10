@@ -41,32 +41,24 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.fm.beebo.models.LibraryMedia
+import com.fm.beebo.ui.settings.Media
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
 
 @Composable
-fun SearchResultItem(text: String, isAvailable: Boolean, onClick: () -> Unit, kindOfMedium: String) {
-    val parts = text.split(" ", limit = 4)
-    val year = if (parts.isNotEmpty()) parts.getOrNull(0) ?: "" else ""
-    val medium = if (parts.size > 1) parts.getOrNull(1) ?: "" else ""
-    var title = if (parts.size > 2) parts.drop(2).joinToString(" ") else ""
+fun SearchResultItem(
+    item: LibraryMedia,
+    onClick: () -> Unit
+) {
 
-    val availabilityText = if (title.contains(" ausleihbar")) " ausleihbar" else " nicht_ausleihbar "
-    title = title.replace(availabilityText, "").replace("¬", "")
+    var title = item.title.replace("¬", "")
 
-    val dueDate = if (!isAvailable && title.contains(Regex("\\d{2}\\.\\d{2}\\.\\d{4}"))) {
-        val regex = Regex("(\\d{2}\\.\\d{2}\\.\\d{4})")
-        val match = regex.find(title)
-        match?.value ?: ""
-    } else ""
+    val dueDate = if (item.dueDates.isNotEmpty()) item.dueDates[0] else ""
 
-    if (dueDate.isNotEmpty()) {
-        title = title.replace(dueDate, "").trim()
-    }
-
-    val displayMedium = medium.ifEmpty { "?" }
+    val displayMedium = item.kindOfMedium.getIcon()
     var showDueDateDialog by remember { mutableStateOf(false) }
     var showMediumTooltip by remember { mutableStateOf(false) }
 
@@ -86,7 +78,7 @@ fun SearchResultItem(text: String, isAvailable: Boolean, onClick: () -> Unit, ki
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(if (isAvailable) MaterialTheme.colorScheme.inversePrimary else MaterialTheme.colorScheme.surface)
+                    .background(if (item.isAvailable) MaterialTheme.colorScheme.inversePrimary else MaterialTheme.colorScheme.surface)
                     .clickable { showMediumTooltip = true },  // Added clickable modifier here
                 contentAlignment = Alignment.Center
             ) {
@@ -108,9 +100,9 @@ fun SearchResultItem(text: String, isAvailable: Boolean, onClick: () -> Unit, ki
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (year.isNotEmpty()) {
+                    if (item.year.isNotEmpty()) {
                         Text(
-                            text = year,
+                            text = item.year,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -141,8 +133,8 @@ fun SearchResultItem(text: String, isAvailable: Boolean, onClick: () -> Unit, ki
             title = { Text("Medienart") },
             text = {
                 Column {
-                    Text("$displayMedium steht für \"$kindOfMedium\"")
-                    Text("Im Moment ${if (isAvailable) "ausleihbar" else "nicht ausleihbar"}")
+                    Text("$displayMedium steht für \"${item.kindOfMedium.getChipString()}\"")
+                    Text("Im Moment ${if (item.isAvailable) "ausleihbar" else "nicht ausleihbar"}")
                 }
             },
             confirmButton = {
@@ -157,7 +149,7 @@ fun SearchResultItem(text: String, isAvailable: Boolean, onClick: () -> Unit, ki
     if (showDueDateDialog) {
         AlertDialog(
             onDismissRequest = { showDueDateDialog = false },
-            title = { Text("Item on Loan") },
+            title = { Text("Dieses Medium ist entliehen") },
             text = { Text("Dieses Medium ist ausgeliehen bis zum $dueDate.") },
             confirmButton = {
                 TextButton(onClick = { showDueDateDialog = false }) {
@@ -171,7 +163,8 @@ fun SearchResultItem(text: String, isAvailable: Boolean, onClick: () -> Unit, ki
 fun addReminderToCalendar(context: Context, title: String, dueDate: String) {
     // Check for permissions first
     if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) !=
-        PackageManager.PERMISSION_GRANTED) {
+        PackageManager.PERMISSION_GRANTED
+    ) {
         Toast.makeText(context, "Calendar permission required", Toast.LENGTH_SHORT).show()
         return
     }
@@ -201,7 +194,10 @@ fun addReminderToCalendar(context: Context, title: String, dueDate: String) {
                 put(CalendarContract.Events.TITLE, "Medium verfügbar: $title")
                 put(CalendarContract.Events.DESCRIPTION, "Erinnerung: $title könnte verfügbar sein")
                 put(CalendarContract.Events.DTSTART, calendar.timeInMillis)
-                put(CalendarContract.Events.DTEND, calendar.timeInMillis + 7200000) // End time is 1 hour later
+                put(
+                    CalendarContract.Events.DTEND,
+                    calendar.timeInMillis + 7200000
+                ) // End time is 1 hour later
                 put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
                 put(CalendarContract.Events.HAS_ALARM, 1)
             }
@@ -215,11 +211,19 @@ fun addReminderToCalendar(context: Context, title: String, dueDate: String) {
                     put(CalendarContract.Reminders.MINUTES, 60) // Reminder 1 hour before
                     put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALERT)
                 }
-                context.contentResolver.insert(CalendarContract.Reminders.CONTENT_URI, reminderValues)
+                context.contentResolver.insert(
+                    CalendarContract.Reminders.CONTENT_URI,
+                    reminderValues
+                )
 
-                Toast.makeText(context, "Erinnerung um 8 Uhr hinzugefügt", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Erinnerung um 8 Uhr hinzugefügt", Toast.LENGTH_SHORT)
+                    .show()
             } else {
-                Toast.makeText(context, "Konnte die Erinnerung nicht hinzufügen", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Konnte die Erinnerung nicht hinzufügen",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     } catch (e: Exception) {
@@ -231,7 +235,8 @@ fun addReminderToCalendar(context: Context, title: String, dueDate: String) {
 // Helper function to get the default calendar ID
 private fun getDefaultCalendarId(context: Context): Long {
     val projection = arrayOf(CalendarContract.Calendars._ID)
-    val selection = "${CalendarContract.Calendars.VISIBLE} = ? AND ${CalendarContract.Calendars.IS_PRIMARY} = ?"
+    val selection =
+        "${CalendarContract.Calendars.VISIBLE} = ? AND ${CalendarContract.Calendars.IS_PRIMARY} = ?"
     val selectionArgs = arrayOf("1", "1")
 
     context.contentResolver.query(

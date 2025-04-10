@@ -62,6 +62,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.fm.beebo.network.getCookies
 import com.fm.beebo.ui.CustomWebViewClient
 import com.fm.beebo.ui.search.addReminderToCalendar
+import com.fm.beebo.ui.settings.Media
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,10 +137,10 @@ fun ItemDetailsScreen(
                     ) {
                         item {
                             Column(modifier = Modifier.padding(8.dp)) {
-                                if (itemDetails.kindOfMedium.isNotEmpty()) {
+                                if (listOf(Media.Other, Media.Alles).contains(itemDetails.kindOfMedium)) {
                                     DetailCard(
                                         "Art des Mediums",
-                                        itemDetails.kindOfMedium,
+                                        itemDetails.kindOfMedium.getChipString(),
                                         Icons.Filled.Book
                                     )
                                 }
@@ -150,7 +151,7 @@ fun ItemDetailsScreen(
                                 )
                                 if (itemDetails.author.isNotEmpty()) {
                                     val cardTitle =
-                                        if (itemDetails.kindOfMedium == "DVD") "Mitwirkende" else "Autor/in"
+                                        if (itemDetails.kindOfMedium == Media.Filme) "Mitwirkende" else "Autor/in"
                                     DetailCard(
                                         cardTitle,
                                         itemDetails.author.replace(";", ""),

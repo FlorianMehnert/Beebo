@@ -1,17 +1,16 @@
 package com.fm.beebo.viewmodels
 
-import com.fm.beebo.ui.settings.FilterBy
 import com.fm.beebo.ui.settings.FilterOptions
+import com.fm.beebo.ui.settings.Media
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.time.LocalDate
 
 class SettingsViewModel {
     // Private MutableStateFlows
-    private val _selectedFilterOption = MutableStateFlow(FilterBy.Alles)
     private val _appStart = MutableStateFlow(false)
     private val _sortBy = MutableStateFlow(Pair(FilterOptions.YEAR, true))
-    private val _selectedMediaTypes = MutableStateFlow<List<String>>(emptyList())
+    private val _selectedMediaTypes = MutableStateFlow<List<Media>>(emptyList())
     private val _dueDateFilter = MutableStateFlow<LocalDate?>(null)
     private val _filterByTimeSpan = MutableStateFlow(false)
     private val _minYear = MutableStateFlow(2000)
@@ -21,17 +20,14 @@ class SettingsViewModel {
     private val _isHoldingReset = MutableStateFlow(false)
 
     // Public StateFlows
-    val selectedFilterOption: StateFlow<FilterBy> = _selectedFilterOption
     val appStart: StateFlow<Boolean> = _appStart
     val sortBy: StateFlow<Pair<FilterOptions, Boolean>> = _sortBy
-    val selectedMediaTypes: StateFlow<List<String>> = _selectedMediaTypes
+    val selectedMediaTypes: StateFlow<List<Media>> = _selectedMediaTypes
     val dueDateFilter: StateFlow<LocalDate?> = _dueDateFilter
     val filterByTimeSpan: StateFlow<Boolean> = _filterByTimeSpan
     val minYear: StateFlow<Int> = _minYear
     val maxYear: StateFlow<Int> = _maxYear
     val hasFilters: StateFlow<Boolean> = _hasFilters
-    val activeFiltersCount: StateFlow<Int> = _activeFiltersCount
-    val isHoldingReset = _isHoldingReset
 
 
     // Default values - make these configurable if needed
@@ -47,7 +43,7 @@ class SettingsViewModel {
         updateFilterState()
     }
 
-    fun toggleMediaType(mediaType: String) {
+    fun toggleMediaType(mediaType: Media) {
         val currentList = _selectedMediaTypes.value.toMutableList()
         if (currentList.contains(mediaType)) {
             currentList.remove(mediaType)
@@ -80,10 +76,6 @@ class SettingsViewModel {
     fun setFilterByTimeSpan(option: Boolean) {
         _filterByTimeSpan.value = option
         updateFilterState()
-    }
-
-    fun setIsHoldingReset(option: Boolean) {
-        _isHoldingReset.value = option
     }
 
     fun resetFilters() {
