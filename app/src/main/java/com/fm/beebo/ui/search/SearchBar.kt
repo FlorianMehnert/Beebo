@@ -402,7 +402,7 @@ fun SearchBar(
                                             val allMediaTypes =
                                                 Media.entries
                                                     .distinct()
-                                                    .filter { it != Media.Alles }
+                                                    .filter { !listOf(Media.Alles, Media.Einzelband).contains(it) }
 
                                             // **Wrap the FlowRow inside a Box to restrict width**
                                             Box(
