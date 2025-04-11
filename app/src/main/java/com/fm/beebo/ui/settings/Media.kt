@@ -365,7 +365,7 @@ enum class Media {
 //    },
     EAudio {
         override fun asGetParameter(): String {
-            return ""
+            return "331"
         }
 
         override fun getKindOfMedium(): List<String> {
@@ -382,7 +382,7 @@ enum class Media {
     },
     EBook {
         override fun asGetParameter(): String {
-            return ""
+            return "332"
         }
 
         override fun getKindOfMedium(): List<String> {
