@@ -82,22 +82,22 @@ class LibrarySearchService {
                 .cookies(cookieManager.getCookies())
                 .timeout(30000)
 
-            val selectedMediaTypes = viewModel.selectedMediaTypes
-            if (selectedMediaTypes.value.isNotEmpty()) {
-                selectedMediaTypes.value.forEachIndexed { index, mediaType ->
-                    val paramIndex = index + 1  // Offset by 1 since [0] is already set
-                    searchConnection
-                        .data("searchCategories[$paramIndex]", "800")
-                        .data("searchString[$paramIndex]", mediaType.asGetParameter())
-
-                    if (index > 0) {
-                        searchConnection.data(
-                            "combinationOperator[$paramIndex]",
-                            "OR"
-                        ) // Add OR condition for multiple filters
-                    }
-                }
-            }
+//            val selectedMediaTypes = viewModel.selectedMediaTypes
+//            if (selectedMediaTypes.value.isNotEmpty()) {
+//                selectedMediaTypes.value.forEachIndexed { index, mediaType ->
+//                    val paramIndex = index + 1  // Offset by 1 since [0] is already set
+//                    searchConnection
+//                        .data("searchCategories[$paramIndex]", "800")
+//                        .data("searchString[$paramIndex]", mediaType.asGetParameter())
+//
+//                    if (index > 0) {
+//                        searchConnection.data(
+//                            "combinationOperator[$paramIndex]",
+//                            "OR"
+//                        ) // Add OR condition for multiple filters
+//                    }
+//                }
+//            }
             val searchResponse = searchConnection.execute()
 
             // Update cookies
@@ -390,7 +390,7 @@ class LibrarySearchService {
             title = attributes["title"] ?: "Unbekannter Titel",
             year = attributes["year"] ?: "",
             isbn = attributes["isbn"] ?: "",
-            kindOfMedium = mediaFromString(attributes["kindOfMedium"]?:""),
+            kindOfMedium = mediaFromString(attributes["kindOfMedium"] ?: ""),
             author = attributes["author"] ?: "",
             language = attributes["language"] ?: "",
             publisher = attributes["publisher"] ?: "",
