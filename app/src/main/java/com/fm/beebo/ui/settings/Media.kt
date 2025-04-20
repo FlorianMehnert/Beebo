@@ -134,7 +134,7 @@ enum class Media {
         }
 
         override fun getKindOfMedium(): List<String> {
-            return listOf("DVD-ROM", "CD-ROM")
+            return listOf("CD-ROM", "DVD-ROM")
         }
 
         override fun getChipString(): String {
