@@ -21,7 +21,7 @@ data class SearchHistoryItem(
 
 class SearchHistoryManager(private val context: Context) {
     private val searchHistoryKey = stringPreferencesKey("search_history")
-    private val maxHistorySize = 10 // Maximum number of search terms to keep
+    private val maxHistorySize = 100 // Maximum number of search terms to keep
 
     val searchHistory: Flow<List<SearchHistoryItem>> = context.searchHistoryDataStore.data
         .map { preferences ->
