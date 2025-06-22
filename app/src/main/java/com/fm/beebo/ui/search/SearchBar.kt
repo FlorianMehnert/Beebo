@@ -2,6 +2,7 @@ package com.fm.beebo.ui.search
 
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +36,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import com.fm.beebo.datastore.SearchHistoryManager
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -59,6 +62,10 @@ fun SearchBar(
     var isHolding by remember { mutableStateOf(false) }
     val hapticFeedback = LocalHapticFeedback.current
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // Create SearchHistoryManager instance
+    val searchHistoryManager = remember { SearchHistoryManager(context) }
 
     LaunchedEffect(isHolding) {
         if (isHolding) {
@@ -136,12 +143,23 @@ fun SearchBar(
                         .padding(16.dp)
                         .height(60.dp)
                 ) {
-                    SearchBarTextField(
-                        query = query,
-                        onQueryChange = onQueryChange,
-                        onSearch = onSearch,
-                        searchViewModel = searchViewModel
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        SearchBarTextField(
+                            query = query,
+                            onQueryChange = onQueryChange,
+                            onSearch = {
+                                // Save search term to history before performing search
+                                if (query.isNotBlank()) {
+                                    coroutineScope.launch {
+                                        searchHistoryManager.addSearchTerm(query)
+                                    }
+                                }
+                                onSearch()
+                            },
+                            searchViewModel = searchViewModel,
+                            searchHistoryManager = searchHistoryManager
+                        )
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     SearchFilter(
                         viewModel = viewModel,
@@ -151,7 +169,15 @@ fun SearchBar(
                         isHolding = isHolding,
                         onHoldingChanged = { isHolding = it },
                         progress = progress,
-                        onSearch = onSearch
+                        onSearch = {
+                            // Also save search term when search is triggered from filter
+                            if (query.isNotBlank()) {
+                                coroutineScope.launch {
+                                    searchHistoryManager.addSearchTerm(query)
+                                }
+                            }
+                            onSearch()
+                        }
                     )
                 }
             }
