@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.getCookies
 import com.fm.beebo.ui.CustomWebViewClient
 import com.fm.beebo.ui.search.addReminderToCalendar
@@ -141,13 +142,15 @@ fun ItemDetailsScreen(
                                     DetailCard(
                                         "Art des Mediums",
                                         itemDetails.kindOfMedium.getChipString(),
-                                        Icons.Filled.Book
+                                        Icons.Filled.Book,
+                                        hasBookmark = false
                                     )
                                 }
                                 DetailCard(
                                     "Erscheinungsjahr",
                                     itemDetails.year.toString(),
-                                    Icons.Filled.CalendarToday
+                                    Icons.Filled.CalendarToday,
+                                    hasBookmark = false
                                 )
                                 if (itemDetails.author.isNotEmpty()) {
                                     val cardTitle =
@@ -155,18 +158,25 @@ fun ItemDetailsScreen(
                                     DetailCard(
                                         cardTitle,
                                         itemDetails.author.replace(";", ""),
-                                        Icons.Filled.Person
+                                        Icons.Filled.Person,
+                                        hasBookmark = false
                                     )
                                 }
 
                                 if (itemDetails.isbn.isNotEmpty()) {
-                                    DetailCard("ISBN", itemDetails.isbn, Icons.Filled.Book)
+                                    DetailCard(
+                                        "ISBN",
+                                        itemDetails.isbn,
+                                        Icons.Filled.Book,
+                                        hasBookmark = false
+                                    )
                                 }
                                 if (itemDetails.language.isNotEmpty()) {
                                     DetailCard(
                                         "Sprache",
                                         itemDetails.language,
-                                        Icons.Filled.Translate
+                                        Icons.Filled.Translate,
+                                        hasBookmark = false
                                     )
                                 }
                                 if (!itemDetails.isAvailable && itemDetails.dueDates.isNotEmpty()) {
@@ -175,6 +185,7 @@ fun ItemDetailsScreen(
                                         itemDetails.dueDates[0],
                                         Icons.Filled.EventBusy,
                                         hasBookmark = true,
+                                        itemDetails = itemDetails
                                     )
                                 }
                                 DetailCard(
@@ -182,6 +193,7 @@ fun ItemDetailsScreen(
                                     if (itemDetails.isAvailable) "Ausleihbar" else "Nicht verfügbar",
                                     if (itemDetails.isAvailable) Icons.Filled.CheckCircle else Icons.Filled.Cancel,
                                     if (itemDetails.isAvailable) Color.Green else Color.Red,
+                                    hasBookmark = false
                                 )
                             }
 
@@ -225,6 +237,7 @@ fun DetailCard(
     iconColor: Color = Color.Unspecified,
     modifier: Modifier = Modifier,
     hasBookmark: Boolean = false,
+    itemDetails: LibraryMedia? = null, // sloppy solution since title is for the title of the current card, not the title of the medium, hence title_of_medium is required here
 ) {
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
@@ -290,13 +303,17 @@ fun DetailCard(
     if (showDialog) {
         val dateRegex = Regex("\\d{2}\\.\\d{2}\\.\\d{4}")
         val extractedDate = dateRegex.find(content)?.value ?: content
+        var itemYearString = ""
+        if (itemDetails != null){
+            itemYearString = " (" + itemDetails.year + ")"
+        }
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Erinnerung zum Kalender hinzufügen") },
             text = { Text("Erinnerung am Datum ${extractedDate} einfügen?") },
             confirmButton = {
                 TextButton(onClick = {
-                    addReminderToCalendar(context, title, content)
+                    addReminderToCalendar(context, itemDetails?.cleanedTitle() + itemYearString, content)
                     showDialog = false
                 }) {
                     Text("Yes")

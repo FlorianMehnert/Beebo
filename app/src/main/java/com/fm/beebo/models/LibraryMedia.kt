@@ -22,4 +22,8 @@ data class LibraryMedia(
     fun getIsAvailable(): String {
         return if (isAvailable) " ausleihbar" else " nicht_ausleihbar "
     }
+
+    fun cleanedTitle(): String {
+        return title.replace("¬", "")
+    }
 }
