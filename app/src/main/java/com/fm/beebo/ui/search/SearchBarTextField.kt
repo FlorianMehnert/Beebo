@@ -1,55 +1,56 @@
 package com.fm.beebo.ui.search
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.filled.History
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
-import androidx.compose.ui.zIndex
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
+import com.fm.beebo.datastore.SearchHistoryItem
 import com.fm.beebo.datastore.SearchHistoryManager
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBarTextField(
     query: String,
@@ -58,137 +59,117 @@ fun SearchBarTextField(
     searchViewModel: LibrarySearchViewModel,
     searchHistoryManager: SearchHistoryManager
 ) {
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val searchHistory by searchHistoryManager.searchHistory.collectAsState(initial = emptyList())
+    val keyboard = LocalSoftwareKeyboardController.current
+    val searchHistory by searchHistoryManager.searchHistory.collectAsState(emptyList())
+    val focusManager = LocalFocusManager.current
 
-    var isFocused by remember { mutableStateOf(false) }
-    var showSuggestions by remember { mutableStateOf(false) }
-
-    // Filter suggestions based on current query
-    val filteredSuggestions = remember(query, searchHistory) {
-        if (query.isBlank()) {
-            searchHistory.take(5)
-        } else {
-            searchHistory.filter {
-                it.query.contains(query, ignoreCase = true) &&
-                        !it.query.equals(query, ignoreCase = true)
-            }.take(5)
+    val filtered by remember(query, searchHistory) {
+        derivedStateOf {
+            if (query.isBlank()) searchHistory.take(10)
+            else searchHistory
+                .filter { it.query.contains(query, ignoreCase = true) && it.query != query }
+                .take(5)
         }
     }
 
-    // Show suggestions when focused and there are suggestions to show
-    LaunchedEffect(isFocused, filteredSuggestions, query) {
-        showSuggestions = isFocused && (
-                (query.isBlank() && searchHistory.isNotEmpty()) ||
-                        (query.isNotBlank() && filteredSuggestions.isNotEmpty())
-                )
+
+    /* ----------  Focus tracking ---------- */
+    var fieldHasFocus by remember { mutableStateOf(false) }
+
+
+    /* ----------  Menu visibility = focus && listNotEmpty ---------- */
+    val showMenu by remember(fieldHasFocus, filtered) {
+        derivedStateOf { fieldHasFocus && filtered.isNotEmpty() }
     }
 
-    // Hide suggestions when focus is lost
-    LaunchedEffect(isFocused) {
-        if (!isFocused) {
-            showSuggestions = false
-        }
-    }
 
-    // Use Box for proper overlay positioning
-    Box {
+    ExposedDropdownMenuBox(
+        expanded = showMenu,
+        onExpandedChange = {  }
+    ) {
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
             label = { Text("Suchbegriff") },
             singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()  // Make sure it takes full width
-                .onFocusChanged { focusState ->
-                    isFocused = focusState.isFocused
-                },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Suchen"
-                )
-            },
+            leadingIcon  = { Icon(Icons.Default.Search, null) },
             trailingIcon = {
-                if (query.isNotEmpty()) {
+                if (query.isNotEmpty())
                     IconButton(onClick = { onQueryChange("") }) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Löschen"
-                        )
+                        Icon(Icons.Default.Close, "Löschen")
                     }
-                }
             },
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Done
-            ),
+            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(
-                onDone = {
-                    keyboardController?.hide()
-                    searchViewModel.statusMessage = "Warte auf Antwort vom Katalog..."
-                    onSearch()
-                    isFocused = false
+                onSearch = {
+                    performSearch(keyboard, searchViewModel, onSearch) { /* keep focus */ }
                 }
-            )
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { fieldHasFocus = it.isFocused }
+                .menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = true)
         )
 
-        // Dropdown positioned as overlay
-        if (showSuggestions) {
-            Popup(
-                onDismissRequest = { showSuggestions = false },
-                properties = PopupProperties(
-                    focusable = false,
-                    dismissOnBackPress = true,
-                    dismissOnClickOutside = true
-                ),
-                offset = IntOffset(0,160)
-            ) {
-                Card(
-                    modifier = Modifier
-                        .widthIn(min = 280.dp, max = 400.dp)
-                        .padding(horizontal = 16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .padding(vertical = 4.dp)
-                    ) {
-                        items(filteredSuggestions) { historyItem ->
-                            SearchHistorySuggestion(
-                                historyItem = historyItem,
-                                onSuggestionClick = { selectedQuery ->
-                                    onQueryChange(selectedQuery)
-                                    keyboardController?.hide()
-                                    searchViewModel.statusMessage = "Warte auf Antwort vom Katalog..."
-                                    onSearch()
-                                    isFocused = false
-                                    showSuggestions = false
-                                }
-                            )
 
-
-                            if (historyItem != filteredSuggestions.last()) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                )
-                            }
-                        }
+        ExposedDropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { focusManager.clearFocus() },
+            modifier = Modifier
+                .widthIn(min = 280.dp, max = 400.dp)
+                .animateContentSize()
+        ) {
+            filtered.forEachIndexed { i, item ->
+                DropdownMenuItem(
+                    text = { SearchHistoryRow(item) },
+                    onClick = {
+                        onQueryChange(item.query)
+                        performSearch(keyboard, searchViewModel, onSearch) { /* keep focus */ }
                     }
-                }
+                )
+                if (i < filtered.lastIndex) Divider()
             }
         }
     }
 }
 
+@Composable
+private fun SearchHistoryRow(item: SearchHistoryItem) {
+    val date = remember(item.timestamp) {
+        SimpleDateFormat("dd.MM.yyyy", Locale.GERMAN).format(Date(item.timestamp))
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Default.History, null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(end = 12.dp))
+        Column {
+            Text(item.query, style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(date, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+        }
+    }
+}
+
+
+
+// Extract search logic to reduce duplication
+private inline fun performSearch(
+    keyboard: SoftwareKeyboardController?,
+    vm: LibrarySearchViewModel,
+    onSearch: () -> Unit,
+    after: () -> Unit
+) {
+    keyboard?.hide()
+    vm.statusMessage = "Warte auf Antwort vom Katalog..."
+    onSearch()
+    after()
+}
+
 
 @Composable
 private fun SearchHistorySuggestion(
-    historyItem: com.fm.beebo.datastore.SearchHistoryItem,
+    historyItem: SearchHistoryItem,
     onSuggestionClick: (String) -> Unit
 ) {
     val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale.GERMAN) }
@@ -199,7 +180,9 @@ private fun SearchHistorySuggestion(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onSuggestionClick(historyItem.query) }
+            .clickable(
+                onClick = { onSuggestionClick(historyItem.query) }
+            )
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
