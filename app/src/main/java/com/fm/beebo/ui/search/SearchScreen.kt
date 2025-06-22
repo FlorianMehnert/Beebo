@@ -109,7 +109,6 @@ fun SearchScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // text input to start searching and filter options
             SearchBar(
                 query = query,
                 onQueryChange = { query = it },
