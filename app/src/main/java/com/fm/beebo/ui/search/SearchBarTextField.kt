@@ -11,7 +11,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.OutlinedTextField
@@ -35,14 +34,12 @@ import com.fm.beebo.datastore.SearchHistoryItem
 import com.fm.beebo.datastore.SearchHistoryManager
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
@@ -167,47 +164,3 @@ private inline fun performSearch(
 }
 
 
-@Composable
-private fun SearchHistorySuggestion(
-    historyItem: SearchHistoryItem,
-    onSuggestionClick: (String) -> Unit
-) {
-    val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale.GERMAN) }
-    val formattedDate = remember(historyItem.timestamp) {
-        dateFormatter.format(Date(historyItem.timestamp))
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                onClick = { onSuggestionClick(historyItem.query) }
-            )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.History,
-            contentDescription = "Suchverlauf",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(end = 12.dp)
-        )
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = historyItem.query,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Text(
-                text = formattedDate,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp
-            )
-        }
-    }
-}
