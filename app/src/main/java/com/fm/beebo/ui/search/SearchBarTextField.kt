@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,8 +38,11 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.zIndex
 import com.fm.beebo.datastore.SearchHistoryManager
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
@@ -130,40 +134,49 @@ fun SearchBarTextField(
 
         // Dropdown positioned as overlay
         if (showSuggestions) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 56.dp) // Position below text field
-                    .zIndex(10f),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+            Popup(
+                onDismissRequest = { showSuggestions = false },
+                properties = PopupProperties(
+                    focusable = false,
+                    dismissOnBackPress = true,
+                    dismissOnClickOutside = true
+                ),
+                offset = IntOffset(0,160)
             ) {
-                LazyColumn(
+                Card(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .widthIn(min = 280.dp, max = 400.dp)
+                        .padding(horizontal = 16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
                 ) {
-                    items(filteredSuggestions) { historyItem ->
-                        SearchHistorySuggestion(
-                            historyItem = historyItem,
-                            onSuggestionClick = { selectedQuery ->
-                                onQueryChange(selectedQuery)
-                                keyboardController?.hide()
-                                searchViewModel.statusMessage = "Warte auf Antwort vom Katalog..."
-                                onSearch()
-                                isFocused = false
-                                showSuggestions = false
-                            }
-                        )
-
-                        if (historyItem != filteredSuggestions.last()) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    LazyColumn(
+                        modifier = Modifier
+                            .padding(vertical = 4.dp)
+                    ) {
+                        items(filteredSuggestions) { historyItem ->
+                            SearchHistorySuggestion(
+                                historyItem = historyItem,
+                                onSuggestionClick = { selectedQuery ->
+                                    onQueryChange(selectedQuery)
+                                    keyboardController?.hide()
+                                    searchViewModel.statusMessage = "Warte auf Antwort vom Katalog..."
+                                    onSearch()
+                                    isFocused = false
+                                    showSuggestions = false
+                                }
                             )
+
+
+                            if (historyItem != filteredSuggestions.last()) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                )
+                            }
                         }
                     }
                 }
