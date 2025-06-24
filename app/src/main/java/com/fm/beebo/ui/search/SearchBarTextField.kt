@@ -62,7 +62,7 @@ fun SearchBarTextField(
 
     val filtered by remember(query, searchHistory) {
         derivedStateOf {
-            if (query.isBlank()) searchHistory.take(10)
+            if (query.isBlank()) searchHistory.take(5)
             else searchHistory
                 .filter { it.query.contains(query, ignoreCase = true) && it.query != query }
                 .take(5)

@@ -120,7 +120,11 @@ fun SearchScreen(
                 totalResults = viewModel.totalPages * 10,
                 progress = viewModel.progress,
                 resultCount = viewModel.results.size,
-                message = viewModel.statusMessage
+                message = viewModel.statusMessage,
+                onCancelSearch = {
+                    // Implement the logic to cancel the search
+                    viewModel.cancelSearch()
+                }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
