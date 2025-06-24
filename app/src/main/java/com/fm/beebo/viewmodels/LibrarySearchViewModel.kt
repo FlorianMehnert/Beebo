@@ -11,6 +11,7 @@ import com.fm.beebo.network.LibrarySearchService
 import com.fm.beebo.ui.settings.Media
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flowOn
@@ -26,7 +27,7 @@ class LibrarySearchViewModel() : ViewModel() {
     
     private val librarySearchService = LibrarySearchService()
     private val _bulkFetchEnabled = MutableStateFlow(false)
-
+    private var searchJob: Job? = null
     fun searchLibrary(query: String, maxPages: Int = 3, settingsViewModel: SettingsViewModel, settingsDataStore: SettingsDataStore) {
         if (query.isBlank()) return
         isLoading = true
@@ -37,7 +38,7 @@ class LibrarySearchViewModel() : ViewModel() {
                 _bulkFetchEnabled.value = enabled
             }
         }
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
             try {
                 librarySearchService.searchWithFlow(query, maxPages, settingsViewModel)
                     .flowOn(Dispatchers.IO)
@@ -71,6 +72,11 @@ class LibrarySearchViewModel() : ViewModel() {
                 }
             }
         }
+    }
+
+    fun cancelSearch() {
+        searchJob?.cancel()
+        isLoading = false
     }
 
     fun fetchItemDetails(itemUrl: String, available: Boolean) {

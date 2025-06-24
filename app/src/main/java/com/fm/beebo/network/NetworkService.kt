@@ -7,6 +7,7 @@ import com.fm.beebo.ui.settings.Media
 import com.fm.beebo.ui.settings.mediaFromString
 import com.fm.beebo.viewmodels.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -14,6 +15,8 @@ import org.jsoup.nodes.Element
 import java.util.regex.Pattern
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
+import kotlin.coroutines.coroutineContext
 
 
 object NetworkConfig {
@@ -39,6 +42,7 @@ class LibrarySearchService {
         val cookieManager = CookieManager.getInstance()
         var pagesToFetch = maxPages
         viewModel.setAppStart(false)
+
         try {
             // Initialize the session and get the CSId
             val initialResponse = Jsoup.connect(BASE_URL)
@@ -47,7 +51,6 @@ class LibrarySearchService {
 
             // Store cookies
             cookieManager.setCookies(BASE_LOGGED_IN_URL, initialResponse.cookies())
-
             val initialDoc = initialResponse.parse()
             val csidInput = initialDoc.select("input[name=CSId]").first()
                 ?: run {
@@ -58,9 +61,7 @@ class LibrarySearchService {
             val csid = csidInput.attr("value")
 
             // Prepare search URL
-            val searchUrl =
-                "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
-
+            val searchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
             val searchConnection = Jsoup.connect(searchUrl)
                 .data("searchCategories[0]", "-1")
                 .data("searchString[0]", searchTerm)
@@ -70,10 +71,7 @@ class LibrarySearchService {
                 .data("selectedViewBranchlib", "0")
                 .data("selectedSearchBranchlib", "")
                 .data("searchRestrictionID[0]", "8")
-                .data(
-                    "searchRestrictionValue1[0]",
-                    if (viewModel.selectedMediaTypes.value.isNotEmpty()) viewModel.selectedMediaTypes.value[0].asGetParameter() else ""
-                )
+                .data("searchRestrictionValue1[0]", if (viewModel.selectedMediaTypes.value.isNotEmpty()) viewModel.selectedMediaTypes.value[0].asGetParameter() else "")
                 .data("searchRestrictionID[1]", "6")
                 .data("searchRestrictionValue1[1]", "")
                 .data("searchRestrictionID[2]", "3")
@@ -82,27 +80,9 @@ class LibrarySearchService {
                 .cookies(cookieManager.getCookies())
                 .timeout(30000)
 
-//            val selectedMediaTypes = viewModel.selectedMediaTypes
-//            if (selectedMediaTypes.value.isNotEmpty()) {
-//                selectedMediaTypes.value.forEachIndexed { index, mediaType ->
-//                    val paramIndex = index + 1  // Offset by 1 since [0] is already set
-//                    searchConnection
-//                        .data("searchCategories[$paramIndex]", "800")
-//                        .data("searchString[$paramIndex]", mediaType.asGetParameter())
-//
-//                    if (index > 0) {
-//                        searchConnection.data(
-//                            "combinationOperator[$paramIndex]",
-//                            "OR"
-//                        ) // Add OR condition for multiple filters
-//                    }
-//                }
-//            }
             val searchResponse = searchConnection.execute()
-
             // Update cookies
             cookieManager.setCookies(BASE_LOGGED_IN_URL, searchResponse.cookies())
-
             val searchDoc = searchResponse.parse()
 
             // Check for results
@@ -118,7 +98,6 @@ class LibrarySearchService {
                 val result = parseDetails(doc = searchDoc)
                 if (result != null) {
                     result.url = searchResponse.url().toString()
-
                     val details: LibraryMedia? = getItemDetails(result.url, false)
                     if (details != null) {
                         results.add(details)
@@ -135,6 +114,7 @@ class LibrarySearchService {
                 results.addAll(firstPageResults)
                 totalPages = getMaxPages(searchDoc)
                 pagesToFetch = minOf(totalPages, maxPages)
+
                 // Emit first page results immediately
                 emit(
                     SearchResult(
@@ -147,19 +127,15 @@ class LibrarySearchService {
                     )
                 )
 
-                val pagesToFetch = minOf(totalPages, maxPages)
                 var nextUrl = getNextPageLink(searchDoc)
-
-                while (nextUrl != null && currentPage < pagesToFetch) {
+                while (nextUrl != null && currentPage < pagesToFetch && coroutineContext.isActive) {
                     currentPage++
                     try {
                         val nextPageResponse = Jsoup.connect(nextUrl)
                             .cookies(cookieManager.getCookies())
                             .timeout(30000)
                             .execute()
-
                         cookieManager.setCookies(BASE_LOGGED_IN_URL, nextPageResponse.cookies())
-
                         val nextPageDoc = nextPageResponse.parse()
                         val pageResults = extractMetadata(nextPageDoc)
                         results.addAll(pageResults)
@@ -196,7 +172,7 @@ class LibrarySearchService {
                 }
 
                 // Final results summary if we have results
-                if (results.isNotEmpty()) {
+                if (results.isNotEmpty() && coroutineContext.isActive) {
                     emit(
                         SearchResult(
                             results = results.toList(),
@@ -210,23 +186,27 @@ class LibrarySearchService {
                             progress = currentPage.toFloat() / pagesToFetch
                         )
                     )
-
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            val errorMessage = e.message ?: "Unbekannter Fehler bei der Suche"
-            emit(
-                SearchResult(
-                    results = results.toList(),
-                    totalPages = totalPages,
-                    success = false,
-                    message = "Error: $errorMessage",
-                    progress = currentPage.toFloat() / pagesToFetch
+            if (coroutineContext.isActive) {
+                e.printStackTrace()
+                val errorMessage = e.message ?: "Unbekannter Fehler bei der Suche"
+                emit(
+                    SearchResult(
+                        results = results.toList(),
+                        totalPages = totalPages,
+                        success = false,
+                        message = "Error: $errorMessage",
+                        progress = currentPage.toFloat() / pagesToFetch
+                    )
                 )
-            )
+            }
         }
     }
+
+
+
 
 
     // Create a data class to hold search results and metadata
