@@ -59,7 +59,6 @@ fun SearchResultItem(
     val dueDate = if (item.dueDates.isNotEmpty()) item.dueDates[0] else ""
 
     val displayMedium = item.kindOfMedium.getIcon()
-    var showDueDateDialog by remember { mutableStateOf(false) }
     var showMediumTooltip by remember { mutableStateOf(false) }
 
     Card(
@@ -118,7 +117,6 @@ fun SearchResultItem(
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.clickable { showDueDateDialog = true }
                         )
                     }
                 }
@@ -140,20 +138,6 @@ fun SearchResultItem(
             confirmButton = {
                 TextButton(onClick = { showMediumTooltip = false }) {
                     Text("Schließen")
-                }
-            }
-        )
-    }
-
-    // Due date dialog
-    if (showDueDateDialog) {
-        AlertDialog(
-            onDismissRequest = { showDueDateDialog = false },
-            title = { Text("Dieses Medium ist entliehen") },
-            text = { Text("Dieses Medium ist ausgeliehen bis zum $dueDate.") },
-            confirmButton = {
-                TextButton(onClick = { showDueDateDialog = false }) {
-                    Text("OK")
                 }
             }
         )
