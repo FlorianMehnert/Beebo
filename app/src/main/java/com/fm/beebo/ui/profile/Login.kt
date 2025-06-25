@@ -27,11 +27,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.fm.beebo.viewmodels.LoginViewModel
+import com.fm.beebo.viewmodels.UserViewModel
 
 @Composable
 fun LoginDialog(
-    loginViewModel: LoginViewModel, onDismiss: () -> Unit
+    userViewModel: UserViewModel, onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -55,7 +55,7 @@ fun LoginDialog(
 
                 // Embed your login screen content here
                 LoginScreen(
-                    viewModel = loginViewModel,
+                    viewModel = userViewModel,
                     onLoginSuccess = {
                         // Close dialog after successful login
                         onDismiss()
@@ -67,7 +67,7 @@ fun LoginDialog(
 }
 
 @Composable
-fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
+fun LoginScreen(viewModel: UserViewModel, onLoginSuccess: () -> Unit) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
