@@ -1,5 +1,5 @@
 [versions]
-aboutLibraries = "11.6.3"
+aboutLibraries = "12.2.3"
 agp = "8.9.3"
 datastorePreferences = "1.1.7"
 jsoup = "1.19.1"
@@ -50,7 +50,7 @@ androidx-datastore-core-android = { group = "androidx.datastore", name = "datast
 accompanist-insets = { group = "com.google.accompanist", name = "accompanist-insets", version = "0.30.1" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
-androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version = "1.4.0-alpha10" }
+androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version = "1.4.0-alpha16" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 androidx-activity = { module = "androidx.activity:activity-ktx", version.ref = "androidx-activity" }
 

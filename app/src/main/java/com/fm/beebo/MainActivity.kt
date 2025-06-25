@@ -13,8 +13,10 @@ import androidx.navigation.compose.rememberNavController
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.network.configure
 import com.fm.beebo.ui.LibrariesScreen
+import com.fm.beebo.ui.profile.UserProfileScreen
 import com.fm.beebo.ui.search.SearchScreen
 import com.fm.beebo.ui.theme.BeeboTheme
+import com.fm.beebo.viewmodels.UserViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
@@ -24,6 +26,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val settingsDataStore = SettingsDataStore(applicationContext)
         val settingsViewModel = SettingsViewModel()
+        val userViewModel = UserViewModel()
         val cookieManager = CookieManager.getInstance()
         cookieManager.configure()
 
@@ -35,7 +38,8 @@ class MainActivity : ComponentActivity() {
                     composable("librarySearch") {
                         SearchScreen(
                             onSettingsClick = { navController.navigate("settings") },
-                            settingsViewModel = settingsViewModel
+                            settingsViewModel = settingsViewModel,
+                            navController = navController
                         )
                     }
                     composable("settings") {
@@ -47,6 +51,12 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("libraries") {
                         LibrariesScreen(onBackPress = { navController.popBackStack() })
+                    }
+                    composable ("profile") {
+                        UserProfileScreen(
+                            navController = navController,
+                            userViewModel = userViewModel
+                        )
                     }
                 }
                 settingsViewModel.onAppStart()

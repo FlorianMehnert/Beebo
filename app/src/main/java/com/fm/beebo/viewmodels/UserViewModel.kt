@@ -9,7 +9,7 @@ import com.fm.beebo.network.LoginService
 import kotlinx.coroutines.launch
 
 
-class LoginViewModel : ViewModel() {
+class UserViewModel : ViewModel() {
     var isLoggedIn by mutableStateOf(false)
     var username by mutableStateOf("")
     var password by mutableStateOf("")
@@ -24,5 +24,4 @@ class LoginViewModel : ViewModel() {
             isLoggedIn = true
         }
     }
-
 }

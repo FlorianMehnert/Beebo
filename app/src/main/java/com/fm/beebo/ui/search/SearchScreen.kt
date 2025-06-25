@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.ui.search.details.ItemDetailsScreen
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
@@ -40,6 +43,7 @@ fun SearchScreen(
     onSettingsClick: () -> Unit,
     viewModel: LibrarySearchViewModel = viewModel(),
     settingsViewModel: SettingsViewModel,
+    navController: NavController
 ) {
     val settingsDataStore = SettingsDataStore(LocalContext.current)
     val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
@@ -79,6 +83,14 @@ fun SearchScreen(
                 ),
                 actions = {
                     Row {
+                        IconButton(onClick = { navController.navigate("profile") }) {
+                            Icon(
+                                Icons.Filled.AccountCircle,
+                                contentDescription = "Account",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                         IconButton(onClick = onSettingsClick) {
                             Icon(
                                 Icons.Filled.Settings,

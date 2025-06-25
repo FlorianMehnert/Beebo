@@ -56,6 +56,7 @@ class LoginService {
                     false
                 } else {
                     println("Login successful")
+                    println(loginResponse.body())
                     true
                 }
             } catch (e: Exception) {
