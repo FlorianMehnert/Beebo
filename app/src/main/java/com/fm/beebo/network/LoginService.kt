@@ -12,41 +12,54 @@ class LoginService {
 
     /**
      * Get CSID to allow login if never logged in before then login using credentials
-     * and return cookies
+     * and return cookies. This version properly syncs cookies between HTTP and WebView.
      */
     suspend fun login(username: String, password: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 val cookieManager = CookieManager.getInstance()
 
-                // Step 1: Get initial response and store cookies
+                // Clear existing cookies to start fresh
+                cookieManager.removeAllCookies(null)
+                cookieManager.flush()
+
+                // Step 1: Get initial response and extract cookies
                 val initialResponse = Jsoup.connect(BASE_URL)
                     .timeout(30000)
                     .execute()
 
-                cookieManager.setCookies(BASE_LOGGED_IN_URL, initialResponse.cookies())
+                val initialCookies = initialResponse.cookies()
+
+                // Immediately sync initial cookies to WebView
+                syncCookiesToWebView(initialCookies, BASE_LOGGED_IN_URL)
 
                 val initialDoc = initialResponse.parse()
                 val csidInput = initialDoc.select("input[name=CSId]").first()
                     ?: return@withContext false
 
                 val csid = csidInput.attr("value")
+                println("CSID: $csid")
 
-                // Step 2: Send login request with proper cookie handling
+                // Step 2: Send login request
                 val loginResponse = Jsoup.connect("$BASE_LOGGED_IN_URL/webOPACClient/login.do")
-                    .data("methodToCall", "submit")  // Add this - likely required
-                    .data("methodToCallParameter", "submitLogin")  // Add this - likely required
+                    .data("methodToCall", "submit")
+                    .data("methodToCallParameter", "submitLogin")
                     .data("username", username)
                     .data("password", password)
                     .data("CSId", csid)
-                    .cookies(initialResponse.cookies())  // Use the original cookies directly
+                    .cookies(initialCookies)  // Use the cookies from initial request
                     .timeout(30000)
                     .method(Connection.Method.POST)
-                    .followRedirects(true)  // Important: follow redirects after login
+                    .followRedirects(true)
                     .execute()
 
-                // Step 3: Update cookies after login
-                cookieManager.setCookies(BASE_LOGGED_IN_URL, loginResponse.cookies())
+                val loginCookies = loginResponse.cookies()
+
+                // Step 3: Sync login cookies to WebView immediately
+                syncCookiesToWebView(loginCookies, BASE_LOGGED_IN_URL)
+
+                // Force flush cookies to ensure they're persisted
+                cookieManager.flush()
 
                 // Step 4: Verify if login was successful
                 val loginDoc = loginResponse.parse()
@@ -55,14 +68,17 @@ class LoginService {
                 println("Login response URL: ${loginResponse.url()}")
                 println("Login response status: ${loginResponse.statusCode()}")
                 println("Page title: ${loginDoc.title()}")
-                println("Page text contains 'angemeldet': ${loginDoc.text().lowercase().contains("angemeldet")}")
+
+                // Print all cookies for debugging
+                println("Login cookies received:")
+                loginCookies.forEach { (name, value) ->
+                    println("  $name = $value")
+                }
 
                 // Check multiple indicators of successful login
-                val loginError = loginDoc.select(".loginError, .error, div:contains(Fehler)")
-                val isLoggedIn = loginDoc.select("a:contains(Abmelden), a:contains(Logout)")
+                val loginError = loginDoc.select(".loginError, .error, div:contains(Fehler), div:contains(Error)")
+                val isLoggedIn = loginDoc.select("a:contains(Abmelden), a:contains(Logout), a:contains(logout)")
                 val loginSuccess = loginDoc.select(".loginSuccess, .success")
-
-                // Additional check: look for user-specific content or account info
                 val userInfo = loginDoc.select(".userInfo, .account, a[href*=account]")
 
                 println("Login error elements: ${loginError.size}")
@@ -76,25 +92,34 @@ class LoginService {
                         false
                     }
                     isLoggedIn.isNotEmpty() || loginSuccess.isNotEmpty() || userInfo.isNotEmpty() -> {
-                        println("Login successful")
+                        println("Login successful - found success indicators")
                         true
                     }
                     else -> {
-                        // If we can't determine success, check the URL or page content
+                        // Check if we have session cookies that indicate login
+                        val hasSessionCookie = loginCookies.any { (name, _) ->
+                            name.lowercase().contains("session") ||
+                                    name.lowercase().contains("jsession") ||
+                                    name.lowercase().contains("auth")
+                        }
+
                         val currentUrl = loginResponse.url().toString()
                         val pageContent = loginDoc.text().lowercase()
 
-                        if (currentUrl.contains("account") ||
+                        if (hasSessionCookie ||
+                            currentUrl.contains("account") ||
                             currentUrl.contains("user") ||
                             pageContent.contains("willkommen") ||
-                            pageContent.contains("angemeldet")) {
-                            println("Login appears successful based on URL/content")
+                            pageContent.contains("angemeldet") ||
+                            !currentUrl.contains("login")) {
+                            println("Login appears successful based on cookies/URL/content")
                             true
                         } else {
                             println("Login status unclear. URL: $currentUrl")
-                            println("Page title: ${loginDoc.title()}")
+                            println("Page content preview: ${pageContent.take(200)}...")
                             false
                         }
+
                     }
                 }
             } catch (e: Exception) {
@@ -103,5 +128,28 @@ class LoginService {
                 return@withContext false
             }
         }
+    }
+
+    /**
+     * Properly sync cookies from HTTP response to WebView CookieManager
+     */
+    private fun syncCookiesToWebView(cookies: Map<String, String>, domain: String) {
+        val cookieManager = CookieManager.getInstance()
+
+        cookies.forEach { (name, value) ->
+            val cookieString = "$name=$value; Domain=${domain.removePrefix("https://").removePrefix("http://").split("/")[0]}; Path=/"
+            cookieManager.setCookie(domain, cookieString)
+            println("Set cookie: $cookieString")
+        }
+
+        // Flush to ensure cookies are persisted
+        cookieManager.flush()
+    }
+
+    /**
+     * Get current cookies from WebView (for debugging)
+     */
+    fun getCurrentWebViewCookies(url: String): String? {
+        return CookieManager.getInstance().getCookie(url)
     }
 }
