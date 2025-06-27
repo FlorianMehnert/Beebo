@@ -40,40 +40,44 @@ class LibrarySearchService {
         var pagesToFetch = maxPages
         viewModel.setAppStart(false)
 
+
         try {
             val cookieManager = CookieManager.getInstance()
-            val existingCookies = cookieManager.getCookies()
-            val csid = cookieManager.getStoredCSId()
-            if (existingCookies.isEmpty()) {
-                emit(
-                    SearchResult(
-                        emptyList(),
-                        0,
-                        false,
-                        "Keine gültige Sitzung - bitte erneut anmelden"
-                    )
-                )
-                return@flow
+            var existingCookies = cookieManager.getCookies()
+            var csid = cookieManager.getStoredCSId()
+
+            // ✅ If no session exists, initialize a new anonymous session
+            if (existingCookies.isEmpty() || csid.isEmpty()) {
+                println("🔄 No session found, initializing anonymous session...")
+
+                // Initialize session by connecting to BASE_URL
+                val initResponse = Jsoup.connect(NetworkConfig.BASE_URL)
+                    .timeout(30000)
+                    .execute()
+
+                val initDoc = initResponse.parse()
+                val csidInput = initDoc.select("input[name=CSId]").first()
+
+                if (csidInput == null) {
+                    emit(SearchResult(emptyList(), 0, false, "Fehler beim Initialisieren der Sitzung"))
+                    return@flow
+                }
+
+                csid = csidInput.attr("value")
+                existingCookies = initResponse.cookies()
+
+                // Store the new session cookies and CSId
+                cookieManager.syncFromHttpClient(existingCookies, BASE_LOGGED_IN_URL)
+                cookieManager.storeCSId(csid)
+
+                println("✅ Anonymous session initialized with CSId: $csid")
+            } else {
+                println("🔍 Using existing session with CSId: $csid")
             }
 
-            if (csid.isEmpty()) {
-                emit(
-                    SearchResult(
-                        emptyList(),
-                        0,
-                        false,
-                        "Session-ID nicht gefunden - bitte erneut anmelden"
-                    )
-                )
-                return@flow
-            }
 
-            println("🔍 Using stored CSId: $csid")
-
-
-            // Use existing cookies for search
-            val searchUrl =
-                "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
+            // Now proceed with search using the session (either existing or newly created)
+            val searchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
             val searchConnection = Jsoup.connect(searchUrl)
                 .data("searchCategories[0]", "-1")
                 .data("searchString[0]", searchTerm)
@@ -104,22 +108,80 @@ class LibrarySearchService {
 
             val searchResponse = searchConnection.execute()
 
-            // Check if session expired and clear CSId if needed
+
+            // Check if session expired
             val searchDoc = searchResponse.parse()
-            if (searchDoc.select("div.error").text()
-                    .contains("Diese Sitzung ist nicht mehr gültig!")
-            ) {
+            if (searchDoc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
+                // Clear expired session and try to initialize a new one
                 cookieManager.clearCSId()
-                emit(
-                    SearchResult(
-                        emptyList(),
-                        0,
-                        false,
-                        "Sitzung abgelaufen - bitte erneut anmelden"
+                cookieManager.removeAllCookies(null)
+                cookieManager.flush()
+
+                println("🔄 Session expired, trying to initialize new session...")
+
+                // Try to initialize a fresh session
+                val freshInitResponse = Jsoup.connect(NetworkConfig.BASE_URL)
+                    .timeout(30000)
+                    .execute()
+
+                val freshInitDoc = freshInitResponse.parse()
+                val freshCsidInput = freshInitDoc.select("input[name=CSId]").first()
+
+                if (freshCsidInput == null) {
+                    emit(SearchResult(emptyList(), 0, false, "Sitzung abgelaufen und konnte nicht erneuert werden"))
+                    return@flow
+                }
+
+                val freshCsid = freshCsidInput.attr("value")
+                val freshCookies = freshInitResponse.cookies()
+
+                cookieManager.syncFromHttpClient(freshCookies, BASE_LOGGED_IN_URL)
+                cookieManager.storeCSId(freshCsid)
+
+                // Retry search with fresh session
+                val retrySearchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$freshCsid&methodToCallParameter=submitSearch"
+                val retrySearchResponse = Jsoup.connect(retrySearchUrl)
+                    .data("searchCategories[0]", "-1")
+                    .data("searchString[0]", searchTerm)
+                    .data("searchHistoryCombinationOperator", "AND")
+                    .data("searchHistory", "")
+                    .data("callingPage", "searchParameters")
+                    .data("selectedViewBranchlib", "0")
+                    .data("selectedSearchBranchlib", "")
+                    .data("searchRestrictionID[0]", "8")
+                    .data(
+                        "searchRestrictionValue1[0]",
+                        if (viewModel.selectedMediaTypes.value.isNotEmpty()) viewModel.selectedMediaTypes.value[0].asGetParameter() else ""
                     )
-                )
-                return@flow
+                    .data("searchRestrictionID[1]", "6")
+                    .data("searchRestrictionValue1[1]", "")
+                    .data("searchRestrictionID[2]", "3")
+                    .data(
+                        "searchRestrictionValue1[2]",
+                        if (viewModel.filterByTimeSpan.value) viewModel.minYear.value.toString() else ""
+                    )
+                    .data(
+                        "searchRestrictionValue2[2]",
+                        if (viewModel.filterByTimeSpan.value) viewModel.maxYear.value.toString() else ""
+                    )
+                    .cookies(freshCookies)
+                    .timeout(30000)
+                    .execute()
+
+                // Update search response and doc with retry results
+                val retrySearchDoc = retrySearchResponse.parse()
+                if (retrySearchDoc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
+                    emit(SearchResult(emptyList(), 0, false, "Sitzung konnte nicht erneuert werden"))
+                    return@flow
+                }
+
+                // Use the retry results
+                searchDoc.empty()
+                searchDoc.appendElement("body").html(retrySearchDoc.html())
+
+                println("✅ Session renewed and search retried")
             }
+
 
             // Only update cookies if server sends new ones AND they're different
             val newCookies = searchResponse.cookies()
@@ -128,13 +190,16 @@ class LibrarySearchService {
                 println("🍪 Session cookies updated due to server changes")
             }
 
+
             // Check for results
             if (searchDoc.text().contains("keine Treffer")) {
                 emit(SearchResult(emptyList(), 0, true, "Keine Treffer gefunden"))
                 return@flow
             }
 
+
             val currentTab = getCurrentTab(searchDoc)
+
 
             // Handle only one result
             if (currentTab == "Detailanzeige") {
@@ -158,6 +223,7 @@ class LibrarySearchService {
                 totalPages = getMaxPages(searchDoc)
                 pagesToFetch = minOf(totalPages, maxPages)
 
+
                 // Emit first page results immediately
                 emit(
                     SearchResult(
@@ -169,6 +235,7 @@ class LibrarySearchService {
                         progress = currentPage.toFloat() / totalPages
                     )
                 )
+
 
                 var nextUrl = getNextPageLink(searchDoc)
                 while (nextUrl != null && currentPage < pagesToFetch && coroutineContext.isActive) {
@@ -183,6 +250,7 @@ class LibrarySearchService {
                         val pageResults = extractMetadata(nextPageDoc)
                         results.addAll(pageResults)
 
+
                         // Emit updated results after each page
                         emit(
                             SearchResult(
@@ -193,6 +261,7 @@ class LibrarySearchService {
                                 progress = currentPage.toFloat() / pagesToFetch
                             )
                         )
+
 
                         // Get next page URL
                         nextUrl = getNextPageLink(nextPageDoc)
@@ -213,6 +282,7 @@ class LibrarySearchService {
                         break
                     }
                 }
+
 
                 // Final results summary if we have results
                 if (results.isNotEmpty() && coroutineContext.isActive) {

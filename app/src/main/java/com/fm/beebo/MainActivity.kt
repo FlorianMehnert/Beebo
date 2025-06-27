@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
                         SearchScreen(
                             onSettingsClick = { navController.navigate("settings") },
                             settingsViewModel = settingsViewModel,
+                            userViewModel = userViewModel,
                             navController = navController
                         )
                     }

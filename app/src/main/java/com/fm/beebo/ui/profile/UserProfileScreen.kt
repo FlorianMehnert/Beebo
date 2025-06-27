@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -26,7 +27,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -38,8 +43,8 @@ fun UserProfileScreen(
     navController: NavController,
     userViewModel: UserViewModel
 ) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf(userViewModel.username) }
+    var password by remember { mutableStateOf(userViewModel.password) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -68,7 +73,9 @@ fun UserProfileScreen(
                 value = username,
                 onValueChange = { username = it },
                 label = { Text("Benutzername") },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .semantics { contentType = ContentType.Username }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -78,7 +85,10 @@ fun UserProfileScreen(
                 onValueChange = { password = it },
                 label = { Text("Passwort") },
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .semantics { contentType = ContentType.Password }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -86,15 +96,28 @@ fun UserProfileScreen(
             if (userViewModel.isLoading) {
                 CircularProgressIndicator()
             } else {
-                Button(
-                    onClick = {
-                        userViewModel.username = username
-                        userViewModel.password = password
-                        userViewModel.login()
-                    }, shape = RoundedCornerShape(4.dp),
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text("Anmelden")
+                if (userViewModel.isLoggedIn) {
+                    Button(
+                        onClick = {
+                            userViewModel.logout()
+                            navController.popBackStack()
+                        }, shape = RoundedCornerShape(4.dp),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text("Abmelden")
+                    }
+                }else {
+                    Button(
+                        onClick = {
+                            userViewModel.username = username
+                            userViewModel.password = password
+                            userViewModel.login()
+                            navController.popBackStack()
+                        }, shape = RoundedCornerShape(4.dp),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text("Anmelden")
+                    }
                 }
             }
 

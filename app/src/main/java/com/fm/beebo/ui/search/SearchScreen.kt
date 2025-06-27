@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +36,7 @@ import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.ui.search.details.ItemDetailsScreen
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
+import com.fm.beebo.viewmodels.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +44,7 @@ fun SearchScreen(
     onSettingsClick: () -> Unit,
     viewModel: LibrarySearchViewModel = viewModel(),
     settingsViewModel: SettingsViewModel,
+    userViewModel: UserViewModel,
     navController: NavController
 ) {
     val settingsDataStore = SettingsDataStore(LocalContext.current)
@@ -84,7 +87,7 @@ fun SearchScreen(
                     Row {
                         IconButton(onClick = { navController.navigate("profile") }) {
                             Icon(
-                                Icons.Filled.AccountCircle,
+                                if (userViewModel.isLoggedIn) Icons.Default.AccountCircle else Icons.Outlined.AccountCircle,
                                 contentDescription = "Account",
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(28.dp)
