@@ -63,7 +63,6 @@ class LoginService {
                 }
 
                 cookieManager.syncFromHttpClient(finalCookies, BASE_LOGGED_IN_URL)
-                cookieManager.debugSessionState()
 
                 // Step 4: Verify login
                 val loginDoc = loginResponse.parse()

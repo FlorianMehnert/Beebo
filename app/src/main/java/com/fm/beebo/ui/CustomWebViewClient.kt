@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.fm.beebo.network.debugPrintCookies
 
 class CustomWebViewClient(private val cookies: Map<String, String>) : WebViewClient() {
 
@@ -24,7 +23,6 @@ class CustomWebViewClient(private val cookies: Map<String, String>) : WebViewCli
             domStorageEnabled = true
         }
 
-        cookieManager.debugPrintCookies("WebView Page Started")
     }
 
     override fun onPageFinished(view: WebView?, url: String?) {
@@ -33,7 +31,6 @@ class CustomWebViewClient(private val cookies: Map<String, String>) : WebViewCli
         // Sync any new cookies back to the cookie manager
         val cookieManager = CookieManager.getInstance()
         cookieManager.flush()
-        cookieManager.debugPrintCookies("WebView Page Finished")
     }
 }
 
