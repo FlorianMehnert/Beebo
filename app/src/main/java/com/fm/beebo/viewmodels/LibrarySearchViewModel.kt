@@ -41,15 +41,18 @@ class LibrarySearchViewModel() : ViewModel() {
     private var previouslyLoadedItems: Set<String> = emptySet()
     private var isReSearchDueToSessionChange = false
 
+    private var pendingItemFetch: Pair<String, Boolean>? = null
+    var currentlyRefetching = false
     fun searchLibrary(query: String, maxPages: Int = 3, settingsViewModel: SettingsViewModel, settingsDataStore: SettingsDataStore) {
         if (query.isBlank()) return
 
-        // ✅ Validate session before searching
+
         val cookieManager = CookieManager.getInstance()
         if (!cookieManager.isSessionValid()) {
             statusMessage = "Session ungültig - bitte erneut anmelden"
             return
         }
+
 
         // Store search parameters
         lastSearchQuery = query
@@ -58,7 +61,7 @@ class LibrarySearchViewModel() : ViewModel() {
         lastSettingsDataStore = settingsDataStore
 
 
-        // ✅ Store which items had details before clearing
+        // ✅ Store which items had details before clearing (only for new searches, not re-searches)
         if (!isReSearchDueToSessionChange) {
             previouslyLoadedItems = itemDetailsMap.keys.toSet()
         }
@@ -76,8 +79,11 @@ class LibrarySearchViewModel() : ViewModel() {
         }
 
 
-        // Store current session state
-        currentSessionCookies = cookieManager.getCookies()
+        // ✅ Only update session cookies if this is NOT a re-search due to session change
+        if (!isReSearchDueToSessionChange) {
+            currentSessionCookies = cookieManager.getCookies()
+        }
+
         searchJob = viewModelScope.launch {
             try {
                 librarySearchService.searchWithFlow(query, maxPages, settingsViewModel)
@@ -92,26 +98,38 @@ class LibrarySearchViewModel() : ViewModel() {
 
                             // ✅ Re-fetch details for previously loaded items after session change
                             if (isReSearchDueToSessionChange && previouslyLoadedItems.isNotEmpty()) {
-                                println("🔄 Re-fetching details for ${previouslyLoadedItems.size} previously loaded items")
 
                                 searchResult.results.forEach { item ->
                                     if (previouslyLoadedItems.contains(item.url)) {
                                         viewModelScope.launch {
-                                            // Don't trigger session check again for these re-fetches
                                             fetchItemDetailsInternal(item.url, item.isAvailable)
                                         }
                                     }
                                 }
 
-                                // Clear the tracking after re-fetching
                                 previouslyLoadedItems = emptySet()
+                            }
+
+
+                            // ✅ Handle pending item fetch after re-search
+                            if (isReSearchDueToSessionChange && pendingItemFetch != null) {
+                                val (url, available) = pendingItemFetch!!
+                                pendingItemFetch = null
+
+                                viewModelScope.launch {
+                                    fetchItemDetailsInternal(url, available)
+                                }
+                            }
+
+
+                            // ✅ Reset re-search flag
+                            if (isReSearchDueToSessionChange) {
                                 isReSearchDueToSessionChange = false
                             }
 
 
-                            // ✅ Normal bulk fetch for new searches
+                            // Normal bulk fetch for new searches
                             if (_bulkFetchEnabled.value && !isReSearchDueToSessionChange) {
-                                println("bulkfetch is enabled")
                                 searchResult.results.forEach { item ->
                                     viewModelScope.launch {
                                         fetchItemDetailsInternal(item.url, item.isAvailable)
@@ -132,14 +150,41 @@ class LibrarySearchViewModel() : ViewModel() {
                 withContext(Dispatchers.Main) {
                     statusMessage = "Error: ${e.message ?: "Unknown error"}"
                     isLoading = false
+
+                    // ✅ Reset flags on error
+                    isReSearchDueToSessionChange = false
+                    pendingItemFetch = null
                 }
             }
         }
     }
 
     fun fetchItemDetails(itemUrl: String, available: Boolean) {
-        checkSessionAndReSearchIfNeeded()
-        fetchItemDetailsInternal(itemUrl, available)
+        val cookieManager = CookieManager.getInstance()
+        val newSessionCookies = cookieManager.getCookies()
+
+        // ✅ Check if session changed
+        if (sessionHasChanged(currentSessionCookies, newSessionCookies)) {
+            currentlyRefetching = true
+            // ✅ Store the item fetch request for after re-search
+            pendingItemFetch = itemUrl to available
+
+            // Trigger re-search
+            statusMessage = "Session geändert - Suchergebnisse werden aktualisiert..."
+            isReSearchDueToSessionChange = true
+            currentSessionCookies = newSessionCookies
+
+
+            lastSettingsViewModel?.let { settingsVM ->
+                lastSettingsDataStore?.let { dataStore ->
+                    searchLibrary(lastSearchQuery, lastSearchMaxPages, settingsVM, dataStore)
+                }
+            }
+            currentlyRefetching = false
+        } else {
+            // ✅ No session change, fetch details directly
+            fetchItemDetailsInternal(itemUrl, available)
+        }
     }
 
 
@@ -178,30 +223,7 @@ class LibrarySearchViewModel() : ViewModel() {
         }
     }
 
-    private fun checkSessionAndReSearchIfNeeded() {
-        if (lastSearchQuery.isEmpty()) return
-
-        val cookieManager = CookieManager.getInstance()
-        val newSessionCookies = cookieManager.getCookies()
-
-        if (sessionHasChanged(currentSessionCookies, newSessionCookies)) {
-            println("🔄 Session changed detected, re-searching...")
-            statusMessage = "Session geändert - Suchergebnisse werden aktualisiert..."
-
-            // ✅ Mark this as a session-change triggered re-search
-            isReSearchDueToSessionChange = true
-            currentSessionCookies = newSessionCookies
-
-
-            lastSettingsViewModel?.let { settingsVM ->
-                lastSettingsDataStore?.let { dataStore ->
-                    searchLibrary(lastSearchQuery, lastSearchMaxPages, settingsVM, dataStore)
-                }
-            }
-        }
-    }
-
-    private fun sessionHasChanged(oldCookies: Map<String, String>, newCookies: Map<String, String>): Boolean {
+    fun sessionHasChanged(oldCookies: Map<String, String>, newCookies: Map<String, String>): Boolean {
         // Compare important session cookies
         val importantKeys = setOf("JSESSIONID", "USERSESSIONID", "BaseURL", "APP_CSID")
 

@@ -39,20 +39,10 @@ fun CookieManager.syncFromHttpClient(cookies: Map<String, String>, domain: Strin
     this.flush()
 }
 
-fun CookieManager.debugPrintCookies(context: String = "") {
-    val cookies = this.getCookie(NetworkConfig.BASE_LOGGED_IN_URL) ?: "No cookies"
-    println("🍪 [$context] WebView Cookies: $cookies")
-}
-
 // CookieManager.kt - Add session validation
 fun CookieManager.isSessionValid(): Boolean {
     val cookies = this.getCookie(NetworkConfig.BASE_LOGGED_IN_URL) ?: return false
     return cookies.contains("JSESSIONID") && cookies.contains("USERSESSIONID")
-}
-
-fun CookieManager.debugSessionState() {
-    val cookies = this.getCookie(NetworkConfig.BASE_LOGGED_IN_URL) ?: "No cookies"
-    println("🔍 Session Debug: $cookies")
 }
 
 fun CookieManager.storeCSId(csid: String) {

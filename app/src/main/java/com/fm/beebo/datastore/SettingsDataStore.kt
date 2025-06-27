@@ -47,14 +47,12 @@ class SettingsDataStore(private val context: Context) {
     }
 
     suspend fun setDefaultSearchTerm(searchTerm: String) {
-        println("set search term:" + searchTerm)
         context.dataStore.edit { preferences ->
             preferences[DEFAULT_SEARCH_TERM_KEY] = searchTerm
         }
     }
 
     suspend fun setMaxPages(maxPages: Int) {
-        println("set max pages to:" + maxPages)
         context.dataStore.edit { preferences ->
             preferences[MAX_PAGES_KEY] = maxPages
         }

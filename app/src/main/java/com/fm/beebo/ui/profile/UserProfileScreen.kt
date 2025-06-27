@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,9 +29,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -45,6 +49,7 @@ fun UserProfileScreen(
 ) {
     var username by remember { mutableStateOf(userViewModel.username) }
     var password by remember { mutableStateOf(userViewModel.password) }
+    val focusManager = LocalFocusManager.current
     Scaffold(
         topBar = {
             TopAppBar(
@@ -75,7 +80,17 @@ fun UserProfileScreen(
                 label = { Text("Benutzername") },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .semantics { contentType = ContentType.Username }
+                    .semantics {
+                        contentType = ContentType.Username
+                    },
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        focusManager.moveFocus(FocusDirection.Down)
+                    }
+                )
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -83,12 +98,25 @@ fun UserProfileScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Passwort") },
+                label = { Text("Password") },
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.NumberPassword,
+                    imeAction = ImeAction.Done
+                ),
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .semantics { contentType = ContentType.Password }
+                    .semantics {
+                        contentType = ContentType.Password
+                    },
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        userViewModel.username = username
+                        userViewModel.password = password
+                        userViewModel.login()
+                        navController.popBackStack()
+                    }
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -106,7 +134,7 @@ fun UserProfileScreen(
                     ) {
                         Text("Abmelden")
                     }
-                }else {
+                } else {
                     Button(
                         onClick = {
                             userViewModel.username = username

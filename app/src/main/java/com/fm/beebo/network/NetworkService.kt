@@ -48,7 +48,6 @@ class LibrarySearchService {
 
             // ✅ If no session exists, initialize a new anonymous session
             if (existingCookies.isEmpty() || csid.isEmpty()) {
-                println("🔄 No session found, initializing anonymous session...")
 
                 // Initialize session by connecting to BASE_URL
                 val initResponse = Jsoup.connect(NetworkConfig.BASE_URL)
@@ -70,9 +69,6 @@ class LibrarySearchService {
                 cookieManager.syncFromHttpClient(existingCookies, BASE_LOGGED_IN_URL)
                 cookieManager.storeCSId(csid)
 
-                println("✅ Anonymous session initialized with CSId: $csid")
-            } else {
-                println("🔍 Using existing session with CSId: $csid")
             }
 
 
@@ -116,8 +112,6 @@ class LibrarySearchService {
                 cookieManager.clearCSId()
                 cookieManager.removeAllCookies(null)
                 cookieManager.flush()
-
-                println("🔄 Session expired, trying to initialize new session...")
 
                 // Try to initialize a fresh session
                 val freshInitResponse = Jsoup.connect(NetworkConfig.BASE_URL)
@@ -178,8 +172,6 @@ class LibrarySearchService {
                 // Use the retry results
                 searchDoc.empty()
                 searchDoc.appendElement("body").html(retrySearchDoc.html())
-
-                println("✅ Session renewed and search retried")
             }
 
 
@@ -187,7 +179,6 @@ class LibrarySearchService {
             val newCookies = searchResponse.cookies()
             if (newCookies.isNotEmpty() && cookiesChanged(existingCookies, newCookies)) {
                 cookieManager.setCookies(BASE_LOGGED_IN_URL, newCookies)
-                println("🍪 Session cookies updated due to server changes")
             }
 
 
@@ -268,7 +259,6 @@ class LibrarySearchService {
                         if (currentPage >= totalPages) break
                     } catch (e: Exception) {
                         // Handle page-specific errors but continue with results we have
-                        println("Error loading page $currentPage: ${e.message ?: "Unknown error"}")
                         emit(
                             SearchResult(
                                 results = results.toList(),
@@ -365,7 +355,6 @@ class LibrarySearchService {
         return withContext(Dispatchers.IO) {
             // Check for session expiry
             if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
-                println("Session expired. Please log in again.")
                 return@withContext LibraryMedia()
             }
 
@@ -448,7 +437,6 @@ class LibrarySearchService {
 
     private fun parseDetails(doc: Document): LibraryMedia? {
         if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
-            println("Session expired. Please log in again.")
             return null
         }
 
@@ -579,8 +567,7 @@ class LibrarySearchService {
                 )
 
                 results.add(media)
-            } catch (e: Exception) {
-                println("Error processing item: ${e.message}")
+            } catch (_: Exception) {
                 continue
             }
         }

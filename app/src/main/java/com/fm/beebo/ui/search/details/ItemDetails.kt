@@ -76,7 +76,7 @@ import com.fm.beebo.viewmodels.LibrarySearchViewModel
 fun ItemDetailsScreen(
     viewModel: LibrarySearchViewModel,
     selectedItemUrl: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val itemDetails = viewModel.itemDetailsMap[selectedItemUrl]
     var isWebViewVisible by remember { mutableStateOf(false) }
@@ -146,7 +146,11 @@ fun ItemDetailsScreen(
                     ) {
                         item {
                             Column(modifier = Modifier.padding(8.dp)) {
-                                if (listOf(Media.Other, Media.Alles).contains(itemDetails.kindOfMedium)) {
+                                if (listOf(
+                                        Media.Other,
+                                        Media.Alles
+                                    ).contains(itemDetails.kindOfMedium)
+                                ) {
                                     DetailCard(
                                         "Art des Mediums",
                                         itemDetails.kindOfMedium.getChipString(),
@@ -312,7 +316,7 @@ fun DetailCard(
         val dateRegex = Regex("\\d{2}\\.\\d{2}\\.\\d{4}")
         val extractedDate = dateRegex.find(content)?.value ?: content
         var itemYearString = ""
-        if (itemDetails != null){
+        if (itemDetails != null) {
             itemYearString = " (" + itemDetails.year + ")"
         }
         AlertDialog(
@@ -321,7 +325,11 @@ fun DetailCard(
             text = { Text("Erinnerung am Datum ${extractedDate} einfügen?") },
             confirmButton = {
                 TextButton(onClick = {
-                    addReminderToCalendar(context, itemDetails?.cleanedTitle() + itemYearString, content)
+                    addReminderToCalendar(
+                        context,
+                        itemDetails?.cleanedTitle() + itemYearString,
+                        content
+                    )
                     showDialog = false
                 }) {
                     Text("Yes")

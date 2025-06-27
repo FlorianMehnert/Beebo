@@ -106,7 +106,6 @@ fun SearchResultsList(
                         // First clean the string to handle cases like "2025 (gesamte Vormerkungen: 0)"
                         val cleanDateStr = dueDateStr.trim()
                             .split(" ")[0] // Take only the first part before any space
-                        println(cleanDateStr)
 
                         // Parse due date string (assuming format is "DD.MM.YYYY")
                         val parts = cleanDateStr.split(".")
