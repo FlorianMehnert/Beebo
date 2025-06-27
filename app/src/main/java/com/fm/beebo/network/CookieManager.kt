@@ -75,3 +75,27 @@ fun CookieManager.clearCSId() {
     this.setCookie(NetworkConfig.BASE_LOGGED_IN_URL, "APP_CSID=; Max-Age=0")
     this.flush()
 }
+
+fun CookieManager.getCookiesAsMap(): Map<String, String> {
+    val cookiesString = this.getCookie(NetworkConfig.BASE_LOGGED_IN_URL) ?: ""
+    return cookiesString.split("; ")
+        .mapNotNull {
+            val parts = it.split("=", limit = 2)
+            if (parts.size == 2) parts[0] to parts[1] else null
+        }
+        .toMap()
+}
+
+
+fun CookieManager.getCookies(): Map<String, String> {
+    return this.getCookiesAsMap()
+}
+
+fun CookieManager.hasSessionChanged(previousCookies: Map<String, String>): Boolean {
+    val currentCookies = this.getCookiesAsMap()
+    val importantKeys = setOf("JSESSIONID", "USERSESSIONID", "BaseURL", "APP_CSID")
+
+    return importantKeys.any { key ->
+        previousCookies[key] != currentCookies[key]
+    }
+}
