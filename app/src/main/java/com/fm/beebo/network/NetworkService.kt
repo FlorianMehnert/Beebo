@@ -1,13 +1,11 @@
 package com.fm.beebo.network
 
 import android.webkit.CookieManager
-import androidx.compose.material3.MediumTopAppBar
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.ui.settings.Media
 import com.fm.beebo.ui.settings.mediaFromString
 import com.fm.beebo.viewmodels.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -27,9 +25,9 @@ object NetworkConfig {
 
 class LibrarySearchService {
     companion object {
-        private const val BASE_URL = NetworkConfig.BASE_URL
         private const val BASE_LOGGED_IN_URL = NetworkConfig.BASE_LOGGED_IN_URL
     }
+
 
     fun searchWithFlow(
         searchTerm: String,
@@ -39,29 +37,43 @@ class LibrarySearchService {
         var currentPage = 1
         val results = mutableListOf<LibraryMedia>()
         var totalPages = 0
-        val cookieManager = CookieManager.getInstance()
         var pagesToFetch = maxPages
         viewModel.setAppStart(false)
 
         try {
-            // Initialize the session and get the CSId
-            val initialResponse = Jsoup.connect(BASE_URL)
-                .timeout(30000)
-                .execute()
+            val cookieManager = CookieManager.getInstance()
+            val existingCookies = cookieManager.getCookies()
+            val csid = cookieManager.getStoredCSId()
+            if (existingCookies.isEmpty()) {
+                emit(
+                    SearchResult(
+                        emptyList(),
+                        0,
+                        false,
+                        "Keine gültige Sitzung - bitte erneut anmelden"
+                    )
+                )
+                return@flow
+            }
 
-            // Store cookies
-            cookieManager.setCookies(BASE_LOGGED_IN_URL, initialResponse.cookies())
-            val initialDoc = initialResponse.parse()
-            val csidInput = initialDoc.select("input[name=CSId]").first()
-                ?: run {
-                    emit(SearchResult(emptyList(), 0, false, "Session initialization failed"))
-                    return@flow
-                }
+            if (csid.isEmpty()) {
+                emit(
+                    SearchResult(
+                        emptyList(),
+                        0,
+                        false,
+                        "Session-ID nicht gefunden - bitte erneut anmelden"
+                    )
+                )
+                return@flow
+            }
 
-            val csid = csidInput.attr("value")
+            println("🔍 Using stored CSId: $csid")
 
-            // Prepare search URL
-            val searchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
+
+            // Use existing cookies for search
+            val searchUrl =
+                "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
             val searchConnection = Jsoup.connect(searchUrl)
                 .data("searchCategories[0]", "-1")
                 .data("searchString[0]", searchTerm)
@@ -71,19 +83,50 @@ class LibrarySearchService {
                 .data("selectedViewBranchlib", "0")
                 .data("selectedSearchBranchlib", "")
                 .data("searchRestrictionID[0]", "8")
-                .data("searchRestrictionValue1[0]", if (viewModel.selectedMediaTypes.value.isNotEmpty()) viewModel.selectedMediaTypes.value[0].asGetParameter() else "")
+                .data(
+                    "searchRestrictionValue1[0]",
+                    if (viewModel.selectedMediaTypes.value.isNotEmpty()) viewModel.selectedMediaTypes.value[0].asGetParameter() else ""
+                )
                 .data("searchRestrictionID[1]", "6")
                 .data("searchRestrictionValue1[1]", "")
                 .data("searchRestrictionID[2]", "3")
-                .data("searchRestrictionValue1[2]", if (viewModel.filterByTimeSpan.value) viewModel.minYear.value.toString() else "")
-                .data("searchRestrictionValue2[2]", if (viewModel.filterByTimeSpan.value) viewModel.maxYear.value.toString() else "")
-                .cookies(cookieManager.getCookies())
+                .data(
+                    "searchRestrictionValue1[2]",
+                    if (viewModel.filterByTimeSpan.value) viewModel.minYear.value.toString() else ""
+                )
+                .data(
+                    "searchRestrictionValue2[2]",
+                    if (viewModel.filterByTimeSpan.value) viewModel.maxYear.value.toString() else ""
+                )
+                .cookies(existingCookies)
                 .timeout(30000)
 
+
             val searchResponse = searchConnection.execute()
-            // Update cookies
-            cookieManager.setCookies(BASE_LOGGED_IN_URL, searchResponse.cookies())
+
+            // Check if session expired and clear CSId if needed
             val searchDoc = searchResponse.parse()
+            if (searchDoc.select("div.error").text()
+                    .contains("Diese Sitzung ist nicht mehr gültig!")
+            ) {
+                cookieManager.clearCSId()
+                emit(
+                    SearchResult(
+                        emptyList(),
+                        0,
+                        false,
+                        "Sitzung abgelaufen - bitte erneut anmelden"
+                    )
+                )
+                return@flow
+            }
+
+            // Only update cookies if server sends new ones AND they're different
+            val newCookies = searchResponse.cookies()
+            if (newCookies.isNotEmpty() && cookiesChanged(existingCookies, newCookies)) {
+                cookieManager.setCookies(BASE_LOGGED_IN_URL, newCookies)
+                println("🍪 Session cookies updated due to server changes")
+            }
 
             // Check for results
             if (searchDoc.text().contains("keine Treffer")) {
@@ -205,11 +248,16 @@ class LibrarySearchService {
         }
     }
 
+    private fun cookiesChanged(
+        oldCookies: Map<String, String>,
+        newCookies: Map<String, String>
+    ): Boolean {
+        val importantKeys = setOf("JSESSIONID", "USERSESSIONID", "BaseURL")
+        return importantKeys.any { key ->
+            oldCookies[key] != newCookies[key]
+        }
+    }
 
-
-
-
-    // Create a data class to hold search results and metadata
     data class SearchResult(
         val results: List<LibraryMedia>,
         val totalPages: Int,
