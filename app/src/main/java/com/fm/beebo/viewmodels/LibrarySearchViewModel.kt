@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.LibrarySearchService
+import com.fm.beebo.network.getCookies
 import com.fm.beebo.network.isSessionValid
 import com.fm.beebo.ui.settings.Media
 import kotlinx.coroutines.launch
@@ -31,6 +32,15 @@ class LibrarySearchViewModel() : ViewModel() {
     private val _bulkFetchEnabled = MutableStateFlow(false)
     private var searchJob: Job? = null
 
+    private var lastSearchQuery: String = ""
+    private var lastSearchMaxPages: Int = 3
+    private var lastSettingsViewModel: SettingsViewModel? = null
+    private var lastSettingsDataStore: SettingsDataStore? = null
+    private var currentSessionCookies: Map<String, String> = emptyMap()
+
+    private var previouslyLoadedItems: Set<String> = emptySet()
+    private var isReSearchDueToSessionChange = false
+
     fun searchLibrary(query: String, maxPages: Int = 3, settingsViewModel: SettingsViewModel, settingsDataStore: SettingsDataStore) {
         if (query.isBlank()) return
 
@@ -41,14 +51,33 @@ class LibrarySearchViewModel() : ViewModel() {
             return
         }
 
+        // Store search parameters
+        lastSearchQuery = query
+        lastSearchMaxPages = maxPages
+        lastSettingsViewModel = settingsViewModel
+        lastSettingsDataStore = settingsDataStore
+
+
+        // ✅ Store which items had details before clearing
+        if (!isReSearchDueToSessionChange) {
+            previouslyLoadedItems = itemDetailsMap.keys.toSet()
+        }
+
+
         isLoading = true
         results = emptyList()
         itemDetailsMap = emptyMap()
+
+
         viewModelScope.launch {
             settingsDataStore.bulkFetchEnabledFlow.collectLatest { enabled ->
                 _bulkFetchEnabled.value = enabled
             }
         }
+
+
+        // Store current session state
+        currentSessionCookies = cookieManager.getCookies()
         searchJob = viewModelScope.launch {
             try {
                 librarySearchService.searchWithFlow(query, maxPages, settingsViewModel)
@@ -59,14 +88,37 @@ class LibrarySearchViewModel() : ViewModel() {
                             statusMessage = searchResult.message
                             progress = searchResult.progress
                             totalPages = searchResult.totalPages
-                            if (_bulkFetchEnabled.value){
+
+
+                            // ✅ Re-fetch details for previously loaded items after session change
+                            if (isReSearchDueToSessionChange && previouslyLoadedItems.isNotEmpty()) {
+                                println("🔄 Re-fetching details for ${previouslyLoadedItems.size} previously loaded items")
+
+                                searchResult.results.forEach { item ->
+                                    if (previouslyLoadedItems.contains(item.url)) {
+                                        viewModelScope.launch {
+                                            // Don't trigger session check again for these re-fetches
+                                            fetchItemDetailsInternal(item.url, item.isAvailable)
+                                        }
+                                    }
+                                }
+
+                                // Clear the tracking after re-fetching
+                                previouslyLoadedItems = emptySet()
+                                isReSearchDueToSessionChange = false
+                            }
+
+
+                            // ✅ Normal bulk fetch for new searches
+                            if (_bulkFetchEnabled.value && !isReSearchDueToSessionChange) {
                                 println("bulkfetch is enabled")
                                 searchResult.results.forEach { item ->
                                     viewModelScope.launch {
-                                        fetchItemDetails(item.url, item.isAvailable)
+                                        fetchItemDetailsInternal(item.url, item.isAvailable)
                                     }
                                 }
                             }
+
 
                             if (!searchResult.success ||
                                 searchResult.results.size >= searchResult.totalPages * 10 ||
@@ -85,23 +137,26 @@ class LibrarySearchViewModel() : ViewModel() {
         }
     }
 
-    fun cancelSearch() {
-        searchJob?.cancel()
-        isLoading = false
+    fun fetchItemDetails(itemUrl: String, available: Boolean) {
+        checkSessionAndReSearchIfNeeded()
+        fetchItemDetailsInternal(itemUrl, available)
     }
 
-    fun fetchItemDetails(itemUrl: String, available: Boolean) {
+
+    // ✅ Internal method that doesn't trigger session check (to avoid infinite loops)
+    private fun fetchItemDetailsInternal(itemUrl: String, available: Boolean) {
         viewModelScope.launch {
             try {
                 val itemDetails = librarySearchService.getItemDetails(itemUrl, available)
+
                 // Update the map with the fetched item details
                 itemDetailsMap = itemDetailsMap + (itemUrl to itemDetails)
+
 
                 // Update the results list with the new item details
                 results = results.map { item ->
                     if (item.url == itemUrl) {
                         item.copy(
-                            // Update the fields you want to refresh
                             title = itemDetails.title,
                             author = itemDetails.author,
                             year = itemDetails.year,
@@ -121,6 +176,43 @@ class LibrarySearchViewModel() : ViewModel() {
                 statusMessage = "Error: ${e.message}"
             }
         }
+    }
+
+    private fun checkSessionAndReSearchIfNeeded() {
+        if (lastSearchQuery.isEmpty()) return
+
+        val cookieManager = CookieManager.getInstance()
+        val newSessionCookies = cookieManager.getCookies()
+
+        if (sessionHasChanged(currentSessionCookies, newSessionCookies)) {
+            println("🔄 Session changed detected, re-searching...")
+            statusMessage = "Session geändert - Suchergebnisse werden aktualisiert..."
+
+            // ✅ Mark this as a session-change triggered re-search
+            isReSearchDueToSessionChange = true
+            currentSessionCookies = newSessionCookies
+
+
+            lastSettingsViewModel?.let { settingsVM ->
+                lastSettingsDataStore?.let { dataStore ->
+                    searchLibrary(lastSearchQuery, lastSearchMaxPages, settingsVM, dataStore)
+                }
+            }
+        }
+    }
+
+    private fun sessionHasChanged(oldCookies: Map<String, String>, newCookies: Map<String, String>): Boolean {
+        // Compare important session cookies
+        val importantKeys = setOf("JSESSIONID", "USERSESSIONID", "BaseURL", "APP_CSID")
+
+        return importantKeys.any { key ->
+            oldCookies[key] != newCookies[key]
+        }
+    }
+
+    fun cancelSearch() {
+        searchJob?.cancel()
+        isLoading = false
     }
 
     fun getCountOfMedium(kindOfMedium: Media): Int {

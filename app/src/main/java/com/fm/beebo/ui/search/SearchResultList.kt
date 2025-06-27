@@ -85,7 +85,7 @@ fun SearchResultsList(
             try {
                 val year = media.year.toInt()
                 year in selectedYearRange.first.value..selectedYearRange.second.value
-            } catch (e: NumberFormatException) {
+            } catch (_: NumberFormatException) {
                 false
             }
         }
