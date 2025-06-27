@@ -118,6 +118,12 @@ fun SearchResultItem(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
+                    }else if (item.isAvailable){
+                        Text(
+                            text = "Verfügbar",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
                     }
                 }
             }

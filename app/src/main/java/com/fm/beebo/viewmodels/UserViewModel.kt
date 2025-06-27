@@ -24,4 +24,11 @@ class UserViewModel : ViewModel() {
             isLoggedIn = true
         }
     }
+
+    fun logout(){
+        viewModelScope.launch {
+            loginService.logout()
+            isLoggedIn = false
+        }
+    }
 }
