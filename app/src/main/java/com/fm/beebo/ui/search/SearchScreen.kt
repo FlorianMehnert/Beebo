@@ -31,7 +31,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.ui.search.details.ItemDetailsScreen
 import com.fm.beebo.viewmodels.LibrarySearchViewModel

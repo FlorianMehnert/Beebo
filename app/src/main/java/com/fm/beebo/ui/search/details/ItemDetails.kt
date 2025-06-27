@@ -4,7 +4,6 @@ import android.webkit.CookieManager
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Indication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +31,6 @@ import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -67,7 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.fm.beebo.models.LibraryMedia
-import com.fm.beebo.network.getCookies
+import com.fm.beebo.network.syncToHttpClient
 import com.fm.beebo.ui.CustomWebViewClient
 import com.fm.beebo.ui.search.addReminderToCalendar
 import com.fm.beebo.ui.settings.Media
@@ -130,9 +128,11 @@ fun ItemDetailsScreen(
             if (isWebViewVisible) {
                 AndroidView(factory = { context ->
                     WebView(context).apply {
-                        webViewClient =
-                            CustomWebViewClient(CookieManager.getInstance().getCookies())
+                        val cookieManager = CookieManager.getInstance()
+                        val currentCookies = cookieManager.syncToHttpClient()
+                        webViewClient = CustomWebViewClient(currentCookies)
                         settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
                         loadUrl(itemDetails?.url ?: "")
                     }
                 })

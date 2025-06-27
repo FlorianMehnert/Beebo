@@ -1,5 +1,6 @@
 package com.fm.beebo.viewmodels
 
+import android.webkit.CookieManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.LibrarySearchService
+import com.fm.beebo.network.isSessionValid
 import com.fm.beebo.ui.settings.Media
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -28,8 +30,17 @@ class LibrarySearchViewModel() : ViewModel() {
     private val librarySearchService = LibrarySearchService()
     private val _bulkFetchEnabled = MutableStateFlow(false)
     private var searchJob: Job? = null
+
     fun searchLibrary(query: String, maxPages: Int = 3, settingsViewModel: SettingsViewModel, settingsDataStore: SettingsDataStore) {
         if (query.isBlank()) return
+
+        // ✅ Validate session before searching
+        val cookieManager = CookieManager.getInstance()
+        if (!cookieManager.isSessionValid()) {
+            statusMessage = "Session ungültig - bitte erneut anmelden"
+            return
+        }
+
         isLoading = true
         results = emptyList()
         itemDetailsMap = emptyMap()
