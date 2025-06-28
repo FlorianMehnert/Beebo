@@ -14,8 +14,8 @@ android {
         applicationId = "com.fm.beebo"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "2.1"
+        versionCode = 10
+        versionName = "3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.activity.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.msz.progress.indicator)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

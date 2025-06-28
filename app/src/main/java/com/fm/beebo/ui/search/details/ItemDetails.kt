@@ -68,6 +68,7 @@ import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.syncToHttpClient
 import com.fm.beebo.ui.CustomWebViewClient
 import com.fm.beebo.ui.search.addReminderToCalendar
+import com.fm.beebo.ui.search.components.BallIndicator
 import com.fm.beebo.ui.settings.Media
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 
@@ -230,9 +231,14 @@ fun ItemDetailsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Text("Keine Details verfügbar", style = MaterialTheme.typography.bodyLarge)
+                        Text("Lade Details…", style = MaterialTheme.typography.bodyLarge)
                         Spacer(modifier = Modifier.height(16.dp))
-                        CircularProgressIndicator()
+                        BallIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            diameter = 64.dp,
+                            minBallDiameter = 8.dp,
+                            maxBallDiameter = 16.dp
+                        )
                     }
                 }
             }

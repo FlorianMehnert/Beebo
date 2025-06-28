@@ -15,6 +15,7 @@ class SettingsDataStore(private val context: Context) {
         val DEFAULT_SEARCH_TERM_KEY = stringPreferencesKey("default_search_term")
         val MAX_PAGES_KEY = intPreferencesKey("max_pages_term")
         val BULK_FETCH = booleanPreferencesKey("experimental_feature")
+        val SWITCH_TO_BOTTOM_NAVIGATION = booleanPreferencesKey("switch_to_bottom_navigation")
     }
 
     val enableDefaultSearchTermFlow: Flow<Boolean> = context.dataStore.data
@@ -40,6 +41,11 @@ class SettingsDataStore(private val context: Context) {
             preferences[BULK_FETCH] == true
         }
 
+    val switchToBottomNavigationFlow: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[SWITCH_TO_BOTTOM_NAVIGATION] == true
+        }
+
     suspend fun enableDefaultSearchTerm(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[ENABLE_DEFAULT_SEARCH_TERM_KEY] = enabled
@@ -61,6 +67,12 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setBulkFetch(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[BULK_FETCH] = enabled
+        }
+    }
+
+    suspend fun setSwitchToBottomNavigation(enabled: Boolean){
+        context.dataStore.edit { preferences ->
+            preferences[SWITCH_TO_BOTTOM_NAVIGATION] = enabled
         }
     }
 }

@@ -1,22 +1,21 @@
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Engineering
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
@@ -27,10 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,16 +38,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.fm.beebo.datastore.SettingsDataStore
+import com.fm.beebo.ui.AppBottomNavigation
 import com.fm.beebo.ui.search.ExperimentalFeatureToggle
-import com.fm.beebo.ui.search.details.ToggleIconButton
 import com.fm.beebo.ui.settings.MaxPagesSlider
+import com.fm.beebo.viewmodels.UserViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -60,7 +57,9 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     settingsDataStore: SettingsDataStore,
     onBackPress: () -> Unit,
-    onShowLibraries: () -> Unit
+    onShowLibraries: () -> Unit,
+    navController: NavController,
+    userViewModel: UserViewModel,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val enableDefaultSearchTerm by settingsDataStore.enableDefaultSearchTermFlow.collectAsState(
@@ -68,7 +67,7 @@ fun SettingsScreen(
     )
     val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
     val bulkFetch by settingsDataStore.bulkFetchEnabledFlow.collectAsState(initial = false)
-
+    val switchToBottomNavigationFlow by settingsDataStore.switchToBottomNavigationFlow.collectAsState(initial=false)
     var text by remember(defaultSearchTerm) {
         mutableStateOf(defaultSearchTerm)
     }
@@ -83,6 +82,14 @@ fun SettingsScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            if (switchToBottomNavigationFlow){
+                AppBottomNavigation(
+                    navController = navController,
+                    userViewModel = userViewModel,
+                    currentRoute = "settings"
+                )}
         }
     ) { paddingValues ->
         Column(
@@ -90,6 +97,7 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             OutlinedTextField(
                 value = text,
@@ -194,6 +202,17 @@ fun SettingsScreen(
                                     settingsDataStore.setBulkFetch(!bulkFetch)
                                 }
                             },)
+                        ExperimentalFeatureToggle(
+                            settingsDataStore.switchToBottomNavigationFlow.collectAsState(false).value,
+                            "Benutze die experimentelle Navigationsleiste",
+                            "Navigationsleiste",
+                            "Verschiebe die Navigation nach unten",
+                            {
+                                coroutineScope.launch {
+                                    settingsDataStore.setSwitchToBottomNavigation(!switchToBottomNavigationFlow)
+                                }
+                            }
+                        )
                     }
                 }
 
@@ -272,4 +291,3 @@ fun SettingsScreen(
 
     }
 }
-
