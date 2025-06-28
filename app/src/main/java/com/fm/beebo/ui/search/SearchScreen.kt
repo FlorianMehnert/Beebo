@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.fm.beebo.datastore.SettingsDataStore
+import com.fm.beebo.ui.AppBottomNavigation
 import com.fm.beebo.ui.search.details.ItemDetailsScreen
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
@@ -54,6 +55,8 @@ fun SearchScreen(
     )
     val maxPagesSetting by settingsDataStore.maxPagesFlow.collectAsState(initial = "")
     var query by remember { mutableStateOf("") }
+    val switchToBottomNavigationFlow by settingsDataStore.switchToBottomNavigationFlow.collectAsState(initial=false)
+
 
     if (enableDefaultSearchTerm) {
         LaunchedEffect(defaultSearchTerm) {
@@ -103,6 +106,14 @@ fun SearchScreen(
                         }
                     }
                 })
+        },
+        bottomBar = {
+            if (switchToBottomNavigationFlow){
+            AppBottomNavigation(
+                navController = navController,
+                userViewModel = userViewModel,
+                currentRoute = "librarySearch"
+            )}
         }
     ) { paddingValues ->
         Column(

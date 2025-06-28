@@ -47,13 +47,15 @@ class MainActivity : ComponentActivity() {
                         SettingsScreen(
                             settingsDataStore = settingsDataStore,
                             onShowLibraries = { navController.navigate("libraries") },
-                            onBackPress = { navController.popBackStack() }
+                            onBackPress = { navController.popBackStack() },
+                            navController = navController,
+                            userViewModel = userViewModel
                         )
                     }
                     composable("libraries") {
                         LibrariesScreen(onBackPress = { navController.popBackStack() })
                     }
-                    composable ("profile") {
+                    composable("profile") {
                         UserProfileScreen(
                             navController = navController,
                             userViewModel = userViewModel
@@ -65,4 +67,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-

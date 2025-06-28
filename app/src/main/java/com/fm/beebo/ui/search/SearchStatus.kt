@@ -25,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
+import com.fm.beebo.ui.search.components.BallIndicator
 
 @Composable
 fun SearchStatus(
@@ -124,10 +124,9 @@ fun SearchStatus(
                         )
                 )
             } else if (progress == 0f && isLoading) {
-                CircularProgressIndicator(
+                BallIndicator(
                     modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.secondary,
                 )
             }
 
@@ -167,7 +166,7 @@ fun InfoDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text("Schließen")
             }
         }
     )
