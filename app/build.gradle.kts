@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.fm.beebo"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.fm.beebo"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 10
         versionName = "3.1"
 
