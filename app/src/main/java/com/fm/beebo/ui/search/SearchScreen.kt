@@ -87,22 +87,24 @@ fun SearchScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
-                    Row {
-                        IconButton(onClick = { navController.navigate("profile") }) {
-                            Icon(
-                                if (userViewModel.isLoggedIn) Icons.Default.AccountCircle else Icons.Outlined.AccountCircle,
-                                contentDescription = "Account",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        IconButton(onClick = onSettingsClick) {
-                            Icon(
-                                Icons.Filled.Settings,
-                                contentDescription = "Einstellungen",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(28.dp)
-                            )
+                    if (!switchToBottomNavigationFlow) {
+                        Row {
+                            IconButton(onClick = { navController.navigate("profile") }) {
+                                Icon(
+                                    if (userViewModel.isLoggedIn) Icons.Default.AccountCircle else Icons.Outlined.AccountCircle,
+                                    contentDescription = "Account",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                            IconButton(onClick = onSettingsClick) {
+                                Icon(
+                                    Icons.Filled.Settings,
+                                    contentDescription = "Einstellungen",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                     }
                 })
