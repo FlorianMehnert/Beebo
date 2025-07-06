@@ -1,4 +1,4 @@
-package com.fm.beebo.ui.search.components
+package com.fm.beebo.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,7 +39,7 @@ fun ToggleButton(
             .clickable {
                 isToggled = !isToggled
                 settingsViewModel.setFilterByTimeSpan(isToggled)
-            }, contentAlignment = androidx.compose.ui.Alignment.Center
+            }, contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,

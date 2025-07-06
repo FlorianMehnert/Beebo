@@ -1,4 +1,4 @@
-package com.fm.beebo.ui
+package com.fm.beebo.ui.search
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding

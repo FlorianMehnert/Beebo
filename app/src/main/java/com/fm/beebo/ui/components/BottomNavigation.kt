@@ -1,4 +1,4 @@
-package com.fm.beebo.ui
+package com.fm.beebo.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home

@@ -45,7 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.fm.beebo.datastore.SettingsDataStore
-import com.fm.beebo.ui.AppBottomNavigation
+import com.fm.beebo.ui.components.AppBottomNavigation
 import com.fm.beebo.ui.search.ExperimentalFeatureToggle
 import com.fm.beebo.ui.settings.MaxPagesSlider
 import com.fm.beebo.viewmodels.UserViewModel

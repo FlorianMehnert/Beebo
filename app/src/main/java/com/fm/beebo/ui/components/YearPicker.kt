@@ -1,4 +1,4 @@
-package com.fm.beebo.ui.search.components
+package com.fm.beebo.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

@@ -41,7 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
-import com.fm.beebo.ui.search.components.BallIndicator
+import com.fm.beebo.ui.components.BallIndicator
 
 @Composable
 fun SearchStatus(

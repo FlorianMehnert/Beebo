@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -68,7 +67,7 @@ import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.syncToHttpClient
 import com.fm.beebo.ui.CustomWebViewClient
 import com.fm.beebo.ui.search.addReminderToCalendar
-import com.fm.beebo.ui.search.components.BallIndicator
+import com.fm.beebo.ui.components.BallIndicator
 import com.fm.beebo.ui.settings.Media
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 

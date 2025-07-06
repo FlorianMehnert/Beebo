@@ -12,7 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.network.configure
-import com.fm.beebo.ui.LibrariesScreen
+import com.fm.beebo.ui.search.LibrariesScreen
 import com.fm.beebo.ui.profile.UserProfileScreen
 import com.fm.beebo.ui.search.SearchScreen
 import com.fm.beebo.ui.theme.BeeboTheme

@@ -41,8 +41,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.fm.beebo.datastore.SettingsDataStore
-import com.fm.beebo.ui.AppBottomNavigation
-import com.fm.beebo.ui.search.components.BallIndicator
+import com.fm.beebo.ui.components.AppBottomNavigation
+import com.fm.beebo.ui.components.BallIndicator
 import com.fm.beebo.viewmodels.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

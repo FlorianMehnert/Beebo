@@ -17,8 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.fm.beebo.ui.search.components.ToggleButton
-import com.fm.beebo.ui.search.components.YearPickerDialog
+import com.fm.beebo.ui.components.ToggleButton
+import com.fm.beebo.ui.components.YearPickerDialog
 import com.fm.beebo.viewmodels.SettingsViewModel
 import java.util.Calendar
 
