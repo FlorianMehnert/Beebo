@@ -2,9 +2,11 @@ package com.fm.beebo.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
@@ -66,6 +68,21 @@ fun AppBottomNavigation(
             onClick = {
                 if (currentRoute != "settings") {
                     navController.navigate("settings")
+                }
+            }
+        )
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    if (currentRoute == "map") Icons.Filled.Map else Icons.Outlined.Map,
+                    contentDescription = "Übersichtskarte"
+                )
+            },
+            label = { Text("Übersichtskarte") },
+            selected = currentRoute == "map",
+            onClick = {
+                if (currentRoute != "map") {
+                    navController.navigate("map")
                 }
             }
         )
