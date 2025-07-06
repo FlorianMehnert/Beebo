@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.network.configure
+import com.fm.beebo.ui.osm.MapScreen
 import com.fm.beebo.ui.search.LibrariesScreen
 import com.fm.beebo.ui.profile.UserProfileScreen
 import com.fm.beebo.ui.search.SearchScreen
@@ -59,6 +60,12 @@ class MainActivity : ComponentActivity() {
                         UserProfileScreen(
                             navController = navController,
                             userViewModel = userViewModel
+                        )
+                    }
+                    composable ("map") {
+                        MapScreen(
+                            navController,
+                            userViewModel
                         )
                     }
                 }

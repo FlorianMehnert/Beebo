@@ -78,6 +78,8 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.msz.progress.indicator)
+    implementation("org.osmdroid:osmdroid-android:6.1.10")
+    implementation("com.google.android.gms:play-services-location:21.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
