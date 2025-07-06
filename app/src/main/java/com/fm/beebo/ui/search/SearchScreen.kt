@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.fm.beebo.datastore.SettingsDataStore
-import com.fm.beebo.ui.AppBottomNavigation
+import com.fm.beebo.ui.components.AppBottomNavigation
 import com.fm.beebo.ui.search.details.ItemDetailsScreen
 import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
