@@ -68,6 +68,7 @@ fun SettingsScreen(
     val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
     val bulkFetch by settingsDataStore.bulkFetchEnabledFlow.collectAsState(initial = false)
     val switchToBottomNavigationFlow by settingsDataStore.switchToBottomNavigationFlow.collectAsState(initial=false)
+    val enableOverviewMapFlow by settingsDataStore.enableOverviewMapFlow.collectAsState(initial=false)
     var text by remember(defaultSearchTerm) {
         mutableStateOf(defaultSearchTerm)
     }
@@ -213,6 +214,19 @@ fun SettingsScreen(
                                 }
                             }
                         )
+                        if (switchToBottomNavigationFlow){
+                            ExperimentalFeatureToggle(
+                                settingsDataStore.enableOverviewMapFlow.collectAsState(false).value,
+                                "Zeige die Übersichtskarte",
+                                "Übersichtskarte",
+                                "Zeige die Übersichtskarte in der Navigationsleiste an",
+                                {
+                                    coroutineScope.launch {
+                                        settingsDataStore.setEnableOverviewMap(!enableOverviewMapFlow)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
 
@@ -256,7 +270,7 @@ fun SettingsScreen(
 
                     Column(horizontalAlignment = Alignment.Start) {
                         Text(
-                            text = "Version: 3.3",
+                            text = "Version: 3.4",
                             fontSize = 14.sp,
                         )
                         Text(
