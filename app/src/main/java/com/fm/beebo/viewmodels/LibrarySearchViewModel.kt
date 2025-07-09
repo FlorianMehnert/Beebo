@@ -48,10 +48,10 @@ class LibrarySearchViewModel() : ViewModel() {
 
 
         val cookieManager = CookieManager.getInstance()
-        if (!cookieManager.isSessionValid()) {
-            statusMessage = "Session ungültig - bitte erneut anmelden"
-            return
-        }
+        // if (!cookieManager.isSessionValid()) {
+        //    statusMessage = "Session ungültig - bitte erneut anmelden"
+        //    return
+        // }
 
 
         // Store search parameters
