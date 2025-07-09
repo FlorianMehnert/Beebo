@@ -16,6 +16,7 @@ class SettingsDataStore(private val context: Context) {
         val MAX_PAGES_KEY = intPreferencesKey("max_pages_term")
         val BULK_FETCH = booleanPreferencesKey("experimental_feature")
         val SWITCH_TO_BOTTOM_NAVIGATION = booleanPreferencesKey("switch_to_bottom_navigation")
+        val ENABLE_OVERVIEW_MAP_KEY = booleanPreferencesKey("enable_overview_map")
     }
 
     val enableDefaultSearchTermFlow: Flow<Boolean> = context.dataStore.data
@@ -46,6 +47,11 @@ class SettingsDataStore(private val context: Context) {
             preferences[SWITCH_TO_BOTTOM_NAVIGATION] == true
         }
 
+    val enableOverviewMapFlow: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[ENABLE_OVERVIEW_MAP_KEY] == true
+        }
+
     suspend fun enableDefaultSearchTerm(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[ENABLE_DEFAULT_SEARCH_TERM_KEY] = enabled
@@ -73,6 +79,12 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setSwitchToBottomNavigation(enabled: Boolean){
         context.dataStore.edit { preferences ->
             preferences[SWITCH_TO_BOTTOM_NAVIGATION] = enabled
+        }
+    }
+
+    suspend fun setEnableOverviewMap(enabled: Boolean){
+        context.dataStore.edit { preferences ->
+            preferences[ENABLE_OVERVIEW_MAP_KEY] = enabled
         }
     }
 }

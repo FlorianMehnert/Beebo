@@ -1,5 +1,5 @@
 [versions]
-aboutLibraries = "12.2.3"
+aboutLibraries = "12.2.4"
 agp = "8.11.0"
 datastorePreferences = "1.1.7"
 jsoup = "1.21.1"
@@ -10,6 +10,8 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 kotlinxSerializationJson = "1.9.0"
 mszProgressIndicator = "0.8.0"
+osmdroidAndroid = "6.1.20"
+playServicesLocation = "21.3.0"
 preference-ui = "1.1.1"
 lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
@@ -45,6 +47,8 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 msz-progress-indicator = { module = "com.ehsanmsz:msz-progress-indicator", version.ref = "mszProgressIndicator" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroidAndroid" }
 preference-ui = { module = "me.zhanghai.compose.preference:library", version.ref = "preference-ui" }
 ui = { module = "androidx.compose.ui:ui", version.ref = "ui" }
 androidx-datastore-core-android = { group = "androidx.datastore", name = "datastore-core-android", version.ref = "datastoreCoreAndroid" }
