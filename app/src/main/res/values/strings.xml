@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Beebo</string>
+    <string name="app_name" translatable="false">Beebo</string>
+    <string name="catalog_under_construction">The online catalog is currently under construction and therefore not accessible</string>
 </resources>

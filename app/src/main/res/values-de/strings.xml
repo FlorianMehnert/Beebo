@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Beebo</string>
+    <string name="catalog_under_construction">Der Online-Katalog ist aufgrund von Wartungsarbeiten nicht Verfügbar</string>
+</resources>

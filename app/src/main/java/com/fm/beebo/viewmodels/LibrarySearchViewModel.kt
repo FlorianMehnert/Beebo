@@ -143,6 +143,10 @@ class LibrarySearchViewModel() : ViewModel() {
                                 searchResult.totalPages <= 1 || searchResult.isComplete) {
                                 isLoading = false
                             }
+                            if (searchResult.message.contains("under construction", ignoreCase = true)) {
+                                isLoading = false
+                                return@withContext
+                            }
                         }
                     }
                 progress = 0f

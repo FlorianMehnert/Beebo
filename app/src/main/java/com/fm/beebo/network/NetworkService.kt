@@ -107,6 +107,10 @@ class LibrarySearchService {
 
             // Check if session expired
             val searchDoc = searchResponse.parse()
+            if (searchDoc.text().contains("Wartungsarbeiten", ignoreCase = true)) {
+                emit(SearchResult(emptyList(), 0, false, "Der Online-Katalog ist aufgrund von Wartungsarbeiten nicht verfügbar"))
+                return@flow
+            }
             if (searchDoc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
                 // Clear expired session and try to initialize a new one
                 cookieManager.clearCSId()
@@ -164,6 +168,10 @@ class LibrarySearchService {
 
                 // Update search response and doc with retry results
                 val retrySearchDoc = retrySearchResponse.parse()
+                if (retrySearchDoc.text().contains("Wartungsarbeiten", ignoreCase = true)) {
+                    emit(SearchResult(emptyList(), 0, false, "Der Online-Katalog ist aufgrund von Wartungsarbeiten nicht verfügbar"))
+                    return@flow
+                }
                 if (retrySearchDoc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
                     emit(SearchResult(emptyList(), 0, false, "Sitzung konnte nicht erneuert werden"))
                     return@flow
