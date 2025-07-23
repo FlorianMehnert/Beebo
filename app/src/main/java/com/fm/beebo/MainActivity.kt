@@ -65,7 +65,8 @@ class MainActivity : ComponentActivity() {
                     composable ("map") {
                         MapScreen(
                             navController,
-                            userViewModel
+                            userViewModel,
+                            settingsViewModel
                         )
                     }
                 }

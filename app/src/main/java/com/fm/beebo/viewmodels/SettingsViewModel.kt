@@ -57,8 +57,10 @@ class SettingsViewModel {
         updateFilterState()
     }
 
-    fun setBranchOffice(branchOffice: BranchOffice){
-        _selectedBranchOffice.value = branchOffice
+    fun setBranchOffice(branchOffice: BranchOffice?){
+        if (branchOffice != null) {
+            _selectedBranchOffice.value = branchOffice
+        }
         updateFilterState()
     }
 

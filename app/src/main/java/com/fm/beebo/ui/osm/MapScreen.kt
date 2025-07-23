@@ -2,6 +2,14 @@ package com.fm.beebo.ui.osm
 
 // Removed deprecated PreferenceManager import
 import android.Manifest
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
+import android.view.MotionEvent
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -20,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,20 +38,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import com.fm.beebo.R
 import com.fm.beebo.ui.components.AppBottomNavigation
+import com.fm.beebo.ui.search.BranchOffice
+import com.fm.beebo.viewmodels.SettingsViewModel
 import com.fm.beebo.viewmodels.UserViewModel
 import com.google.android.gms.location.LocationServices
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.IconOverlay.ANCHOR_BOTTOM
+import org.osmdroid.views.overlay.IconOverlay.ANCHOR_CENTER
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import androidx.core.graphics.scale
+import androidx.core.graphics.drawable.toDrawable
 
 data class Waypoint(
-    val id: String,
+    val id: Int,
     val title: String,
     val description: String,
     val latitude: Double,
@@ -54,6 +71,7 @@ data class Waypoint(
 fun MapScreen(
     navController: NavController,
     userViewModel: UserViewModel,
+    settingsViewModel: SettingsViewModel
 ) {
     Scaffold(
         topBar = {
@@ -81,7 +99,7 @@ fun MapScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            OsmMapView()
+            OsmMapView(settingsViewModel = settingsViewModel) // Pass the view model
         }
     }
 }
@@ -110,8 +128,9 @@ fun RequestLocationPermission(onGranted: () -> Unit) {
 }
 
 @Composable
-fun OsmMapView() {
+fun OsmMapView(settingsViewModel: SettingsViewModel) {
     val context = LocalContext.current
+    val selectedBranchOffice by settingsViewModel.selectedBranchOffice.collectAsState()
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     var lastLocation by remember { mutableStateOf<GeoPoint?>(null) }
     var locationPermissionGranted by remember { mutableStateOf(false) }
@@ -120,141 +139,141 @@ fun OsmMapView() {
     val waypoints = remember {
         listOf(
             Waypoint(
-                id = "1",
-                title = "Zentralbibliothek",
+                id = BranchOffice.Zentralbibliothek.id,
+                title = BranchOffice.Zentralbibliothek.displayName,
                 description = "Zentralbibo im Kulturpalast",
                 latitude = 51.050666,
                 longitude = 13.738295
             ),
             Waypoint(
-                id = "2",
-                title = "Bibliothek Blasewitz",
+                id = BranchOffice.Blasewitz.id,
+                title = BranchOffice.Blasewitz.displayName,
                 description = "",
                 latitude = 51.051027,
                 longitude = 13.807854
             ),
             Waypoint(
-                id = "3",
-                title = "Bibliothek Bühlau",
+                id = BranchOffice.Buehlau.id,
+                title = BranchOffice.Buehlau.displayName,
                 description = "",
                 latitude = 51.061745,
                 longitude = 13.84873
             ),
             Waypoint(
-                id = "4",
-                title = "Bibliothek Cossebaude",
+                id = BranchOffice.Cossebaude.id,
+                title = BranchOffice.Cossebaude.displayName,
                 description = "",
                 latitude = 51.08838376693984,
                 longitude = 13.630048042411289
             ),
             Waypoint(
-                id = "5",
-                title = "Bibliothek Cotta",
+                id = BranchOffice.Cotta.id,
+                title = BranchOffice.Cotta.displayName,
                 description = "",
                 latitude = 51.05752830676419,
                 longitude = 13.6860007709652
             ),
             Waypoint(
-                id = "6",
-                title = "Bibliothek Gorbitz",
+                id = BranchOffice.Gorbitz.id,
+                title = BranchOffice.Gorbitz.displayName,
                 description = "",
                 latitude = 51.04584224985092,
                 longitude = 13.669299482607935
             ),
             Waypoint(
-                id = "7",
-                title = "Bibliothek Gruna",
+                id = BranchOffice.Gruna.id,
+                title = BranchOffice.Gruna.displayName,
                 description = "",
                 latitude = 51.03418525200302,
                 longitude = 13.78361795318534
             ),
             Waypoint(
-                id = "8",
-                title = "Bibliothek Johannstadt",
+                id = BranchOffice.Johannstadt.id,
+                title = BranchOffice.Johannstadt.displayName,
                 description = "",
                 latitude = 51.049157283542556,
                 longitude = 13.76885322522458
             ),
             Waypoint(
-                id = "9",
-                title = "Bibliothek Klotzsche",
+                id = BranchOffice.Klotzsche.id,
+                title = BranchOffice.Klotzsche.displayName,
                 description = "",
                 latitude = 51.11939784488856,
                 longitude = 13.769891149084087
             ),
             Waypoint(
-                id = "10",
-                title = "Bibliothek Langebrück",
+                id = BranchOffice.Langebrueck.id,
+                title = BranchOffice.Langebrueck.displayName,
                 description = "",
                 latitude = 51.12724800127986,
                 longitude = 13.843881553437907
             ),
             Waypoint(
-                id = "11",
-                title = "Bibliothek Laubegast",
+                id = BranchOffice.Laubegast.id,
+                title = BranchOffice.Laubegast.displayName,
                 description = "",
                 latitude = 51.02500620146082,
                 longitude = 13.839257737292995
             ),
             Waypoint(
-                id = "12",
-                title = "Bibliothek Leubnitz-Neuostra",
+                id = BranchOffice.LeubnitzNeuostra.id,
+                title = BranchOffice.LeubnitzNeuostra.displayName,
                 description = "",
                 latitude = 51.02165602307906,
                 longitude = 13.764028928309257
             ),
             Waypoint(
-                id = "13",
-                title = "Bibliothek Neustadt",
+                id = BranchOffice.Neustadt.id,
+                title = BranchOffice.Neustadt.displayName,
                 description = "",
                 latitude = 51.06747146177359,
                 longitude = 13.747596329492392
             ),
             Waypoint(
-                id = "14",
-                title = "Bibliothek Pieschen",
+                id = BranchOffice.Pieschen.id,
+                title = BranchOffice.Pieschen.displayName,
                 description = "",
                 latitude = 51.07799264408835,
                 longitude = 13.720705561235228
             ),
             Waypoint(
-                id = "15",
-                title = "Bibliothek Plauen",
+                id = BranchOffice.Plauen.id,
+                title = BranchOffice.Plauen.displayName,
                 description = "",
                 latitude = 51.03469458786578,
                 longitude = 13.70551168163574
             ),
             Waypoint(
-                id = "16",
-                title = "Bibliothek Prohlis",
+                id = BranchOffice.Prohlis.id,
+                title = BranchOffice.Prohlis.displayName,
                 description = "",
                 latitude = 51.006203894415236,
                 longitude = 13.798450667932558
             ),
             Waypoint(
-                id = "17",
-                title = "Bibliothek Strehlen",
+                id = BranchOffice.Strehlen.id,
+                title = BranchOffice.Strehlen.displayName,
                 description = "",
                 latitude = 51.01971306378044,
                 longitude = 13.780271698657312
             ),
             Waypoint(
-                id = "18",
-                title = "Bibliothek Südvorstadt",
+                id = BranchOffice.Suedvorstadt.id,
+                title = BranchOffice.Suedvorstadt.displayName,
                 description = "",
                 latitude = 51.03399912872732,
                 longitude = 13.721460388888648
             ),
             Waypoint(
-                id = "19",
-                title = "Bibliothek Weißig",
+                id = BranchOffice.Weissig.id,
+                title = BranchOffice.Weissig.displayName,
                 description = "",
                 latitude = 51.06231646773942,
                 longitude = 13.884955722572409
             ),
             Waypoint(
-                id = "20",
-                title = "Bibliothek Weixdorf",
+                id = BranchOffice.Weixdorf.id,
+                title = BranchOffice.Weixdorf.displayName,
                 description = "",
                 latitude = 51.14212409847163,
                 longitude = 13.795246022787616
@@ -271,19 +290,52 @@ fun OsmMapView() {
         }
     }
 
+    fun getScaledDrawable(context: Context, resId: Int, width: Int, height: Int): Drawable {
+        val original = ContextCompat.getDrawable(context, resId) ?: return Color.RED.toDrawable()
+        val bitmap = (original as BitmapDrawable).bitmap
+        val scaledBitmap = bitmap.scale(width, height)
+        return scaledBitmap.toDrawable(context.resources)
+    }
+
+
     // Function to add waypoint markers
     fun addWaypoints(mapView: MapView) {
         waypoints.forEach { waypoint ->
-            val marker = Marker(mapView).apply {
+            val marker = object : Marker(mapView) {
+                override fun onLongPress(event: MotionEvent?, mapView: MapView?): Boolean {
+                    settingsViewModel.setBranchOffice(BranchOffice.getById(waypoint.id))
+                    Toast.makeText(mapView?.context, "Zweigstelle ausgewählt: ${waypoint.title}", Toast.LENGTH_SHORT).show()
+
+                    return true
+                }
+            }
+
+            marker.apply {
                 position = GeoPoint(waypoint.latitude, waypoint.longitude)
                 title = waypoint.title
                 snippet = waypoint.description
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                setAnchor(ANCHOR_CENTER, ANCHOR_BOTTOM)
+
+                setOnMarkerClickListener { m, mv ->
+                    showInfoWindow()
+                    mv.controller.animateTo(position)
+                    true
+                }
+
+                marker.icon = getScaledDrawable(mapView.context, R.drawable.marker, 28, 36) // Size in pixels
+
             }
+
             mapView.overlays.add(marker)
         }
+
         mapView.invalidate()
     }
+
+
+
+
+
 
     // Function to update location overlay
     fun updateLocationOverlay(mapView: MapView) {
