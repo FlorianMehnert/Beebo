@@ -33,7 +33,6 @@ fun FilterOptionsSection(
             text = { Text(text = option.toString()) },
             onClick = {
                 viewModel.setSortBy(option, true)
-                // Do not close the dropdown menu here
             },
             modifier = Modifier.conditional(selectedFilterOptions.first == option) {
                 val background = background(

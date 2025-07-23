@@ -117,7 +117,6 @@ fun OsmMapView() {
     var locationPermissionGranted by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
 
-    // Sample waypoints - replace with your actual waypoints
     val waypoints = remember {
         listOf(
             Waypoint(
