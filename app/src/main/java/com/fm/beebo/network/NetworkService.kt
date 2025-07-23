@@ -1,6 +1,7 @@
 package com.fm.beebo.network
 
 import android.webkit.CookieManager
+import androidx.compose.runtime.collectAsState
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.ui.settings.Media
 import com.fm.beebo.ui.settings.mediaFromString
@@ -80,8 +81,8 @@ class LibrarySearchService {
                 .data("searchHistoryCombinationOperator", "AND")
                 .data("searchHistory", "")
                 .data("callingPage", "searchParameters")
-                .data("selectedViewBranchlib", "0")
-                .data("selectedSearchBranchlib", "")
+                .data("selectedViewBranchlib", viewModel.selectedBranchOffice.value.id.toString())
+                .data("selectedSearchBranchlib", viewModel.selectedBranchOffice.value.id.toString())
                 .data("searchRestrictionID[0]", "8")
                 .data(
                     "searchRestrictionValue1[0]",

@@ -1,5 +1,6 @@
 package com.fm.beebo.viewmodels
 
+import com.fm.beebo.ui.search.BranchOffice
 import com.fm.beebo.ui.settings.FilterOptions
 import com.fm.beebo.ui.settings.Media
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +12,7 @@ class SettingsViewModel {
     private val _appStart = MutableStateFlow(false)
     private val _sortBy = MutableStateFlow(Pair(FilterOptions.YEAR, true))
     private val _selectedMediaTypes = MutableStateFlow<List<Media>>(emptyList())
+    private val _selectedBranchOffice = MutableStateFlow<BranchOffice>(BranchOffice.Zentralbibliothek)
     private val _dueDateFilter = MutableStateFlow<LocalDate?>(null)
     private val _filterByTimeSpan = MutableStateFlow(false)
     private val _minYear = MutableStateFlow(2000)
@@ -23,6 +25,7 @@ class SettingsViewModel {
     val appStart: StateFlow<Boolean> = _appStart
     val sortBy: StateFlow<Pair<FilterOptions, Boolean>> = _sortBy
     val selectedMediaTypes: StateFlow<List<Media>> = _selectedMediaTypes
+    val selectedBranchOffice: StateFlow<BranchOffice> = _selectedBranchOffice
     val dueDateFilter: StateFlow<LocalDate?> = _dueDateFilter
     val filterByTimeSpan: StateFlow<Boolean> = _filterByTimeSpan
     val minYear: StateFlow<Int> = _minYear
@@ -51,6 +54,11 @@ class SettingsViewModel {
             currentList.add(mediaType)
         }
         _selectedMediaTypes.value = currentList
+        updateFilterState()
+    }
+
+    fun setBranchOffice(branchOffice: BranchOffice){
+        _selectedBranchOffice.value = branchOffice
         updateFilterState()
     }
 
@@ -123,6 +131,8 @@ class SettingsViewModel {
         if (_filterByTimeSpan.value) {
             count++
         }
+
+        // TODO: Check branch office filter
 
         // Update the filter states
         _activeFiltersCount.value = count

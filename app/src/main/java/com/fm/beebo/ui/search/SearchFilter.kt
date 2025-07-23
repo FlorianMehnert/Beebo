@@ -44,6 +44,7 @@ fun SearchFilter(
     val dueDateFilter by viewModel.dueDateFilter.collectAsState()
     val filterByTimeSpan by viewModel.filterByTimeSpan.collectAsState()
     val selectedMediaTypes by viewModel.selectedMediaTypes.collectAsState(initial = emptyList())
+    val selectedBranchOffice by viewModel.selectedBranchOffice.collectAsState()
 
     Surface(
         modifier = Modifier
@@ -75,6 +76,21 @@ fun SearchFilter(
                     selectedFilterOptions = selectedFilterOptions
                 )
                 when (selectedFilterOptions.first) {
+                    FilterOptions.KIND_OF_MEDIUM -> FilterKindOfMedium(
+                        viewModel,
+                        searchViewModel,
+                        selectedMediaTypes,
+                        onFilterExpandedChange,
+                        onSearch
+                    )
+
+                    FilterOptions.BRANCH_OFFICE -> FilterBranchOffice(
+                        selectedBranchOffice = selectedBranchOffice,
+                        onBranchSelected = { selected ->
+                            viewModel.setBranchOffice(selected)
+                        }
+                    )
+
                     FilterOptions.YEAR -> FilterYear(
                         viewModel,
                         minYear,
@@ -83,13 +99,7 @@ fun SearchFilter(
                         onFilterExpandedChange,
                         onSearch
                     )
-                    FilterOptions.KIND_OF_MEDIUM -> FilterKindOfMedium(
-                        viewModel,
-                        searchViewModel,
-                        selectedMediaTypes,
-                        onFilterExpandedChange,
-                        onSearch
-                    )
+
                     FilterOptions.DUE_DATE -> FilterDueDate(
                         viewModel,
                         dueDateFilter,

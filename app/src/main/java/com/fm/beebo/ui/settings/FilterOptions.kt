@@ -15,6 +15,11 @@ enum class FilterOptions {
         override fun toString(): String {
             return "Verfügbarkeitsdatum"
         }
+    },
+    BRANCH_OFFICE {
+        override fun toString(): String {
+            return "Zweigstelle"
+        }
     };
 
 
