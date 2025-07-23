@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.viewmodels.UserViewModel
@@ -28,7 +29,7 @@ fun AppBottomNavigation(
     currentRoute: String
 ) {
     val settingsDataStore = SettingsDataStore(LocalContext.current)
-    val enableOverviewMap by settingsDataStore.enableOverviewMapFlow.collectAsState(initial=false)
+    val enableOverviewMap by settingsDataStore.enableOverviewMapFlow.collectAsState(initial = false)
     NavigationBar {
         NavigationBarItem(
             icon = {
@@ -37,8 +38,15 @@ fun AppBottomNavigation(
                     contentDescription = "Suche"
                 )
             },
-            label = { Text("Suche") },
+            label = {
+                Text(
+                    text = "Suche",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             selected = currentRoute == "librarySearch",
+            alwaysShowLabel = false, // Only show label when selected
             onClick = {
                 if (currentRoute != "librarySearch") {
                     navController.navigate("librarySearch") {
@@ -54,8 +62,15 @@ fun AppBottomNavigation(
                     contentDescription = "Profil"
                 )
             },
-            label = { Text("Profil") },
+            label = {
+                Text(
+                    text = "Profil",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             selected = currentRoute == "profile",
+            alwaysShowLabel = false, // Only show label when selected
             onClick = {
                 if (currentRoute != "profile") {
                     navController.navigate("profile")
@@ -69,8 +84,15 @@ fun AppBottomNavigation(
                     contentDescription = "Einstellungen"
                 )
             },
-            label = { Text("Einstellungen") },
+            label = {
+                Text(
+                    text = "Einstellungen",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             selected = currentRoute == "settings",
+            alwaysShowLabel = false, // Only show label when selected
             onClick = {
                 if (currentRoute != "settings") {
                     navController.navigate("settings")
@@ -78,20 +100,27 @@ fun AppBottomNavigation(
             }
         )
         if (enableOverviewMap)
-        NavigationBarItem(
-            icon = {
-                Icon(
-                    if (currentRoute == "map") Icons.Filled.Map else Icons.Outlined.Map,
-                    contentDescription = "Übersichtskarte"
-                )
-            },
-            label = { Text("Übersichtskarte") },
-            selected = currentRoute == "map",
-            onClick = {
-                if (currentRoute != "map") {
-                    navController.navigate("map")
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        if (currentRoute == "map") Icons.Filled.Map else Icons.Outlined.Map,
+                        contentDescription = "Übersichtskarte"
+                    )
+                },
+                label = {
+                    Text(
+                        text = "Standorte",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                selected = currentRoute == "map",
+                alwaysShowLabel = false, // Only show label when selected
+                onClick = {
+                    if (currentRoute != "map") {
+                        navController.navigate("map")
+                    }
                 }
-            }
-        )
+            )
     }
 }
