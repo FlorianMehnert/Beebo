@@ -23,5 +23,10 @@ enum class BranchOffice(val id: Int, val displayName: String) {
     Weixdorf(29, "Weixdorf"),
     Cossebaude(33, "Cossebaude"),
     EBibo(60, "eBibo - virtuelle Medien"),
-    Schulbibliothek(70, "Schulbibliothek")
+    Schulbibliothek(70, "Schulbibliothek");
+    companion object {
+        private val idMap = values().associateBy(BranchOffice::id)
+
+        fun getById(id: Int): BranchOffice? = idMap[id]
+    }
 }
