@@ -17,6 +17,7 @@ class SettingsDataStore(private val context: Context) {
         val BULK_FETCH = booleanPreferencesKey("experimental_feature")
         val SWITCH_TO_BOTTOM_NAVIGATION = booleanPreferencesKey("switch_to_bottom_navigation")
         val ENABLE_OVERVIEW_MAP_KEY = booleanPreferencesKey("enable_overview_map")
+        val ENABLE_ANIMATE_TO_MARKER_KEY = booleanPreferencesKey("enable_animate_to_marker")
     }
 
     val enableDefaultSearchTermFlow: Flow<Boolean> = context.dataStore.data
@@ -52,6 +53,11 @@ class SettingsDataStore(private val context: Context) {
             preferences[ENABLE_OVERVIEW_MAP_KEY] == true
         }
 
+    val enableAnimateToMarkerFlow: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[ENABLE_ANIMATE_TO_MARKER_KEY] == true
+    }
+
     suspend fun enableDefaultSearchTerm(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[ENABLE_DEFAULT_SEARCH_TERM_KEY] = enabled
@@ -85,6 +91,12 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setEnableOverviewMap(enabled: Boolean){
         context.dataStore.edit { preferences ->
             preferences[ENABLE_OVERVIEW_MAP_KEY] = enabled
+        }
+    }
+
+    suspend fun setAnimateToMarker(enabled: Boolean){
+        context.dataStore.edit { preferences ->
+            preferences[ENABLE_ANIMATE_TO_MARKER_KEY] = enabled
         }
     }
 }

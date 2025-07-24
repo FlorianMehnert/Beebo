@@ -73,6 +73,7 @@ fun SettingsScreen(
     val bulkFetch by settingsDataStore.bulkFetchEnabledFlow.collectAsState(initial = false)
     val switchToBottomNavigationFlow by settingsDataStore.switchToBottomNavigationFlow.collectAsState(initial=false)
     val enableOverviewMapFlow by settingsDataStore.enableOverviewMapFlow.collectAsState(initial=false)
+    val enableAnimateToMarkerFlow by settingsDataStore.enableAnimateToMarkerFlow.collectAsState(initial=true)
     var text by remember(defaultSearchTerm) {
         mutableStateOf(defaultSearchTerm)
     }
@@ -209,6 +210,17 @@ fun SettingsScreen(
                             },
                         )
                         ExperimentalFeatureToggle(
+                            settingsDataStore.enableAnimateToMarkerFlow.collectAsState(false).value,
+                            "Zentriere auf selektierte Standorte",
+                            "Karte: Fokussiere auf Standorte",
+                            "Zentriere die Kamera der Kartenansicht auf den angeklickten Marker",
+                            {
+                                coroutineScope.launch {
+                                    settingsDataStore.setAnimateToMarker(!enableAnimateToMarkerFlow)
+                                }
+                            },
+                        )
+                        ExperimentalFeatureToggle(
                             settingsDataStore.switchToBottomNavigationFlow.collectAsState(false).value,
                             "Benutze die experimentelle Navigationsleiste",
                             "Navigationsleiste",
@@ -275,7 +287,7 @@ fun SettingsScreen(
 
                     Column(horizontalAlignment = Alignment.Start) {
                         Text(
-                            text = "Version: 3.5",
+                            text = "Version: 3.6",
                             fontSize = 14.sp,
                         )
                         Text(

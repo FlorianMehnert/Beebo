@@ -3,10 +3,8 @@ package com.fm.beebo.ui.osm
 // Removed deprecated PreferenceManager import
 import android.Manifest
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.view.MotionEvent
 import android.widget.Toast
@@ -39,8 +37,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.graphics.scale
 import androidx.navigation.NavController
 import com.fm.beebo.R
+import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.ui.components.AppBottomNavigation
 import com.fm.beebo.ui.search.BranchOffice
 import com.fm.beebo.viewmodels.SettingsViewModel
@@ -55,8 +56,6 @@ import org.osmdroid.views.overlay.IconOverlay.ANCHOR_CENTER
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
-import androidx.core.graphics.scale
-import androidx.core.graphics.drawable.toDrawable
 
 data class Waypoint(
     val id: Int,
@@ -65,6 +64,26 @@ data class Waypoint(
     val latitude: Double,
     val longitude: Double
 )
+
+class WaypointMarker(
+    mapView: MapView,
+    private val waypoint: Waypoint,
+    private val settingsViewModel: SettingsViewModel
+) : Marker(mapView) {
+    override fun onLongPress(event: MotionEvent?, mapView: MapView?): Boolean {
+        val handledByMarker = super.onLongPress(event, mapView)
+        if (handledByMarker) {
+            settingsViewModel.setBranchOffice(BranchOffice.getById(waypoint.id))
+            Toast.makeText(
+                mapView?.context,
+                "Zweigstelle ausgewählt: ${waypoint.title}",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+        return handledByMarker
+    }
+
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +97,7 @@ fun MapScreen(
             TopAppBar(
                 title = { Text("Übersichtskarte") },
                 navigationIcon = {
-                    IconButton(onClick = {navController.popBackStack()}) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -130,13 +149,14 @@ fun RequestLocationPermission(onGranted: () -> Unit) {
 @Composable
 fun OsmMapView(settingsViewModel: SettingsViewModel) {
     val context = LocalContext.current
-    val selectedBranchOffice by settingsViewModel.selectedBranchOffice.collectAsState()
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     var lastLocation by remember { mutableStateOf<GeoPoint?>(null) }
     var locationPermissionGranted by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
+    val settingsDataStore = SettingsDataStore(LocalContext.current)
+    val centerOnMarker = settingsDataStore.enableAnimateToMarkerFlow.collectAsState(initial = false).value
 
-    val waypoints = remember {
+    val waypoints =
         listOf(
             Waypoint(
                 id = BranchOffice.Zentralbibliothek.id,
@@ -279,7 +299,6 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
                 longitude = 13.795246022787616
             ),
         )
-    }
 
     RequestLocationPermission {
         locationPermissionGranted = true
@@ -298,17 +317,9 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
     }
 
 
-    // Function to add waypoint markers
-    fun addWaypoints(mapView: MapView) {
-        waypoints.forEach { waypoint ->
-            val marker = object : Marker(mapView) {
-                override fun onLongPress(event: MotionEvent?, mapView: MapView?): Boolean {
-                    settingsViewModel.setBranchOffice(BranchOffice.getById(waypoint.id))
-                    Toast.makeText(mapView?.context, "Zweigstelle ausgewählt: ${waypoint.title}", Toast.LENGTH_SHORT).show()
-
-                    return true
-                }
-            }
+    fun addWaypoints(mapView: MapView, centerOnMarker: () -> Boolean) {
+        for (waypoint in waypoints) {
+            val marker = WaypointMarker(mapView, waypoint, settingsViewModel)
 
             marker.apply {
                 position = GeoPoint(waypoint.latitude, waypoint.longitude)
@@ -318,12 +329,14 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
 
                 setOnMarkerClickListener { m, mv ->
                     showInfoWindow()
-                    mv.controller.animateTo(position)
+                    if (centerOnMarker()) {
+                        mv.controller.animateTo(position,
+                            mapView.zoomLevelDouble.toFloat().toDouble(), 100)
+                    }
                     true
                 }
 
-                marker.icon = getScaledDrawable(mapView.context, R.drawable.marker, 28, 36) // Size in pixels
-
+                icon = getScaledDrawable(mapView.context, R.drawable.marker, 28, 36)
             }
 
             mapView.overlays.add(marker)
@@ -331,10 +344,6 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
 
         mapView.invalidate()
     }
-
-
-
-
 
 
     // Function to update location overlay
@@ -347,10 +356,21 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
         }
     }
 
+
     // Center map on location when permission is granted and location is available
     LaunchedEffect(lastLocation, locationPermissionGranted) {
         if (locationPermissionGranted && lastLocation != null) {
-            mapViewRef.value?.controller?.animateTo(lastLocation)
+            mapViewRef.value?.controller?.setCenter(lastLocation)
+        }
+    }
+
+    LaunchedEffect(centerOnMarker) {
+        mapViewRef.value?.let { mapView ->
+            // Clear existing waypoint markers
+            mapView.overlays.removeAll { it is WaypointMarker }
+            // Add waypoints with current setting
+            addWaypoints(mapView) { centerOnMarker }
+            mapView.invalidate()
         }
     }
 
@@ -359,7 +379,13 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
             factory = {
                 val mapView = MapView(context)
                 Configuration.getInstance()
-                    .load(context, context.getSharedPreferences("osmdroid", android.content.Context.MODE_PRIVATE))
+                    .load(
+                        context,
+                        context.getSharedPreferences(
+                            "osmdroid",
+                            Context.MODE_PRIVATE
+                        )
+                    )
                 Configuration.getInstance().userAgentValue = context.packageName
 
                 mapView.setTileSource(TileSourceFactory.MAPNIK)
@@ -370,7 +396,7 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
                 mapView.controller.setCenter(GeoPoint(51.0504, 13.7373))
 
                 // Add waypoints immediately
-                addWaypoints(mapView)
+                addWaypoints(mapView, { centerOnMarker })
 
                 // Add location overlay if permission is already granted
                 if (locationPermissionGranted) {
@@ -397,7 +423,7 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
                     fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                         location?.let {
                             val geoPoint = GeoPoint(it.latitude, it.longitude)
-                            mapViewRef.value?.controller?.animateTo(geoPoint)
+                            mapViewRef.value?.controller?.setCenter(geoPoint)
                         }
                     }
                 }
