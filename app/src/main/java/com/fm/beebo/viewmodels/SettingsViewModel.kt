@@ -19,7 +19,6 @@ class SettingsViewModel {
     private val _maxYear = MutableStateFlow(2025)
     private val _hasFilters = MutableStateFlow(false)
     private val _activeFiltersCount = MutableStateFlow(0)
-    private val _isHoldingReset = MutableStateFlow(false)
 
     // Public StateFlows
     val appStart: StateFlow<Boolean> = _appStart
