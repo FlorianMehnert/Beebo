@@ -1,3 +1,5 @@
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,6 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -51,6 +54,7 @@ import com.fm.beebo.ui.settings.MaxPagesSlider
 import com.fm.beebo.viewmodels.UserViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -202,7 +206,8 @@ fun SettingsScreen(
                                 coroutineScope.launch {
                                     settingsDataStore.setBulkFetch(!bulkFetch)
                                 }
-                            },)
+                            },
+                        )
                         ExperimentalFeatureToggle(
                             settingsDataStore.switchToBottomNavigationFlow.collectAsState(false).value,
                             "Benutze die experimentelle Navigationsleiste",
@@ -277,13 +282,17 @@ fun SettingsScreen(
                             text = "Autor: Merkosh",
                             fontSize = 14.sp,
                         )
+                        val context = LocalContext.current
                         Text(
                             text = "Quellcode",
                             fontSize = 14.sp,
                             style = TextStyle(
                                 textDecoration = TextDecoration.Underline
-                            ), modifier = Modifier.clickable {
-                                onShowLibraries()
+                            ),
+                            modifier = Modifier.clickable {
+                                val githubUrl = "https://github.com/FlorianMehnert/Beebo/"
+                                val intent = Intent(Intent.ACTION_VIEW, githubUrl.toUri())
+                                context.startActivity(intent)
                             }
                         )
                         Spacer(Modifier.height(6.dp))
