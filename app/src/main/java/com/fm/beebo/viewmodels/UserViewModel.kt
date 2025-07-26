@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fm.beebo.network.LoginService
 import kotlinx.coroutines.launch
+import kotlin.math.log
 
 class UserViewModel : ViewModel() {
     var isLoggedIn by mutableStateOf(false)
@@ -26,7 +27,6 @@ class UserViewModel : ViewModel() {
                 val loginSuccess = loginService.login(username, password)
                 if (loginSuccess) {
                     isLoggedIn = true
-                    // Fetch account details after successful login
                     fetchAccountDetails()
                 } else {
                     errorMessage = "Login fehlgeschlagen"

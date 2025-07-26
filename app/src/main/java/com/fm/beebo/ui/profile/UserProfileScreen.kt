@@ -124,24 +124,20 @@ fun UserProfileScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // In UserProfileScreen.kt, update the WebView section:
             if (isWebViewVisible && userViewModel.isLoggedIn) {
-                // Show WebView
                 AndroidView(
                     factory = { context ->
                         WebView(context).apply {
                             val cookieManager = CookieManager.getInstance()
-                            val currentCookies = cookieManager.syncToHttpClient()
+                            cookieManager.syncToHttpClient()
 
                             webViewClient = object : WebViewClient() {
                                 override fun onPageFinished(view: WebView?, url: String?) {
                                     super.onPageFinished(view, url)
 
-                                    // Check if we're on the main account page and navigate to fees
                                     if (url?.contains("userAccount.do") == true &&
                                         !url.contains("type=8") &&
                                         !url.contains("accountTyp=FEES")) {
-                                        // Click on the fees link via JavaScript
                                         view?.evaluateJavascript(
                                             """
                                 (function() {
@@ -167,7 +163,11 @@ fun UserProfileScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                // Show normal UI
+                LaunchedEffect(userViewModel.isLoggedIn) {
+                    if (userViewModel.isLoggedIn) {
+                        userViewModel.fetchAccountDetails()
+                    }
+                }
                 Column(
                     modifier = Modifier
                         .fillMaxSize()

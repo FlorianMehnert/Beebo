@@ -1,3 +1,4 @@
+// Update your LoginService.kt file:
 package com.fm.beebo.network
 
 import android.webkit.CookieManager
@@ -6,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Connection
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 
 class LoginService {
 
@@ -28,7 +30,6 @@ class LoginService {
                     Jsoup.connect(NetworkConfig.BASE_URL) // ✅ Use BASE_URL for initialization
                         .timeout(30000)
                         .execute()
-
 
                 val sessionCookies = initialResponse.cookies()
                 cookieManager.syncFromHttpClient(sessionCookies, BASE_LOGGED_IN_URL)
@@ -55,7 +56,6 @@ class LoginService {
                     .followRedirects(true)
                     .execute()
 
-
                 // Update cookies after login
                 val loginCookies = loginResponse.cookies()
                 val finalCookies = sessionCookies.toMutableMap().apply {
@@ -75,7 +75,6 @@ class LoginService {
 
                 return@withContext isLoggedIn
 
-
             } catch (e: Exception) {
                 CookieManager.getInstance().clearCSId()
                 return@withContext false
@@ -83,52 +82,38 @@ class LoginService {
         }
     }
 
-    // Update your LoginService.kt fetchAccountFees method:
-    suspend fun fetchAccountFees(): String? {
+    suspend fun fetchAccountPage(): Document? {
         return withContext(Dispatchers.IO) {
             try {
                 val cookieManager = CookieManager.getInstance()
                 val cookies = cookieManager.getCookies()
                 val csid = cookieManager.getStoredCSId()
 
-                if (cookies.isEmpty() || csid.isEmpty()) {
-                    return@withContext null
-                }
-
-                // First, we need to navigate to the account page
-                // The login.html shows we're logged in but not on the account details page
-                val accountUrl = "$BASE_LOGGED_IN_URL/webOPACClient/userAccount.do?methodToCall=showAccount&accountTyp=FEES"
-
+                val accountUrl = "$BASE_LOGGED_IN_URL/webOPACClient/userAccount.do?methodToCall=show&type=1"
                 val response = Jsoup.connect(accountUrl)
                     .cookies(cookies)
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                    .referrer("$BASE_LOGGED_IN_URL/webOPACClient/search.do")
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .header("Accept-Language", "de-DE,de;q=0.9,en;q=0.8")
                     .timeout(30000)
                     .execute()
 
-                val doc = response.parse()
+                return@withContext response.parse()
+            } catch (e: Exception) {
+                return@withContext null
+            }
+        }
+    }
+
+    suspend fun fetchAccountFees(): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val doc = fetchAccountPage() ?: return@withContext null
 
                 // Check for session expiry
                 if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
                     return@withContext null
-                }
-
-                // If we're not on the fees page, try the direct link
-                if (!doc.html().contains("showAccount(8)")) {
-                    // Try alternative URL format
-                    val feesUrl = "$BASE_LOGGED_IN_URL/webOPACClient/userAccount.do?methodToCall=showAccount&type=8"
-                    val feesResponse = Jsoup.connect(feesUrl)
-                        .cookies(cookies)
-                        .timeout(30000)
-                        .execute()
-
-                    val feesDoc = feesResponse.parse()
-
-                    // Parse fees from this page
-                    val feesText = feesDoc.select("td:contains(EUR)").text()
-                    if (feesText.isNotEmpty()) {
-                        val feePattern = "(\\d+,\\d+)\\s*EUR".toRegex()
-                        val match = feePattern.find(feesText)
-                        return@withContext match?.groupValues?.get(1)?.let { "$it EUR" } ?: "0,00 EUR"
-                    }
                 }
 
                 // Parse the fees from the page
@@ -141,9 +126,10 @@ class LoginService {
                     return@withContext match?.groupValues?.get(1)?.let { "$it EUR" } ?: "0,00 EUR"
                 }
 
-                // If no fees link found, look for fees in the page content
-                val feesText = doc.select("td:contains(Gebühren)").text()
-                if (feesText.isNotEmpty()) {
+                // If no fees link found, look for fees in the account table
+                val feesRow = doc.select("tr:contains(Gebühren)").firstOrNull()
+                if (feesRow != null) {
+                    val feesText = feesRow.text()
                     val feePattern = "(\\d+,\\d+)\\s*EUR".toRegex()
                     val match = feePattern.find(feesText)
                     return@withContext match?.groupValues?.get(1)?.let { "$it EUR" } ?: "0,00 EUR"
@@ -156,8 +142,6 @@ class LoginService {
             }
         }
     }
-
-
 
     suspend fun logout(): Boolean {
         return withContext(Dispatchers.IO) {
@@ -184,5 +168,4 @@ class LoginService {
             }
         }
     }
-
 }
