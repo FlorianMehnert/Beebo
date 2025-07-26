@@ -14,8 +14,8 @@ android {
         applicationId = "com.fm.beebo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "3.6"
+        versionCode = 14
+        versionName = "4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
