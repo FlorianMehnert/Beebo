@@ -21,6 +21,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -56,6 +57,7 @@ import org.osmdroid.views.overlay.IconOverlay.ANCHOR_CENTER
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import androidx.core.graphics.toColorInt
 
 data class Waypoint(
     val id: Int,
@@ -154,7 +156,9 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
     var locationPermissionGranted by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     val settingsDataStore = SettingsDataStore(LocalContext.current)
-    val centerOnMarker = settingsDataStore.enableAnimateToMarkerFlow.collectAsState(initial = false).value
+    val centerOnMarker =
+        settingsDataStore.enableAnimateToMarkerFlow.collectAsState(initial = false).value
+    val selectedBranchOffice by settingsViewModel.selectedBranchOffice.collectAsState()
 
     val waypoints =
         listOf(
@@ -316,8 +320,22 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
         return scaledBitmap.toDrawable(context.resources)
     }
 
+    fun increaseSaturation(color: Int, factor: Float = 1.0f): Int {
+        val hsv = FloatArray(3)
+        Color.colorToHSV(color, hsv)
 
-    fun addWaypoints(mapView: MapView, centerOnMarker: () -> Boolean) {
+        // hsv[1] is saturation: clamp it to [0, 1]
+        hsv[1] = (hsv[1] * factor).coerceIn(0f, 1f)
+
+        return Color.HSVToColor(Color.alpha(color), hsv)
+    }
+
+
+    fun addWaypoints(
+        mapView: MapView,
+        centerOnMarker: () -> Boolean,
+        selectedBranchOffice: BranchOffice?
+    ) {
         for (waypoint in waypoints) {
             val marker = WaypointMarker(mapView, waypoint, settingsViewModel)
 
@@ -330,13 +348,22 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
                 setOnMarkerClickListener { m, mv ->
                     showInfoWindow()
                     if (centerOnMarker()) {
-                        mv.controller.animateTo(position,
-                            mapView.zoomLevelDouble.toFloat().toDouble(), 100)
+                        mv.controller.animateTo(
+                            position,
+                            mapView.zoomLevelDouble.toFloat().toDouble(), 100
+                        )
                     }
                     true
                 }
 
-                icon = getScaledDrawable(mapView.context, R.drawable.marker, 28, 36)
+                // Change icon based on whether this is the selected branch office
+                icon = getScaledDrawable(mapView.context, R.drawable.marker, 28, 36).apply {
+                    if (selectedBranchOffice != null && waypoint.id == selectedBranchOffice.id) {
+                        setTint("#c1121f".toColorInt())
+                    } else {
+                        setTint("#003049".toColorInt())
+                    }
+                }
             }
 
             mapView.overlays.add(marker)
@@ -346,7 +373,8 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
     }
 
 
-    // Function to update location overlay
+
+
     fun updateLocationOverlay(mapView: MapView) {
         if (locationPermissionGranted) {
             val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), mapView)
@@ -364,12 +392,10 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
         }
     }
 
-    LaunchedEffect(centerOnMarker) {
+    LaunchedEffect(centerOnMarker, selectedBranchOffice) {
         mapViewRef.value?.let { mapView ->
-            // Clear existing waypoint markers
             mapView.overlays.removeAll { it is WaypointMarker }
-            // Add waypoints with current setting
-            addWaypoints(mapView) { centerOnMarker }
+            addWaypoints(mapView, { centerOnMarker }, selectedBranchOffice)
             mapView.invalidate()
         }
     }
@@ -396,7 +422,7 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
                 mapView.controller.setCenter(GeoPoint(51.0504, 13.7373))
 
                 // Add waypoints immediately
-                addWaypoints(mapView, { centerOnMarker })
+                addWaypoints(mapView, { centerOnMarker }, selectedBranchOffice)
 
                 // Add location overlay if permission is already granted
                 if (locationPermissionGranted) {
