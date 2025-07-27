@@ -384,6 +384,13 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
         }
     }
 
+    LaunchedEffect(centerOnMarker, selectedBranchOffice) {
+        mapViewRef.value?.let { mapView ->
+            mapView.overlays.removeAll { it is WaypointMarker }
+            addWaypoints(mapView, { centerOnMarker }, selectedBranchOffice)
+            mapView.invalidate()
+        }
+    }
 
     // Center map on location when permission is granted and location is available
     LaunchedEffect(lastLocation, locationPermissionGranted) {
@@ -392,13 +399,6 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
         }
     }
 
-    LaunchedEffect(centerOnMarker, selectedBranchOffice) {
-        mapViewRef.value?.let { mapView ->
-            mapView.overlays.removeAll { it is WaypointMarker }
-            addWaypoints(mapView, { centerOnMarker }, selectedBranchOffice)
-            mapView.invalidate()
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
