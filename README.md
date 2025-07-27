@@ -7,10 +7,9 @@ As the [current website](https://katalog.bibo-dresden.de/) does not offer a plea
 - Filter by release date, availability date, media type, and branch office
 - Allow to log in to your library account and see the current fees
 - See all available library branches in an overview map
+- Uses Material3 colors (which means you can change the Apps Colors based on your background settings)
 
-![search](images/search_screen.png)
-![profile](images/profile.png)
-![map](images/map.png)
+![screens](images/screens_combined.png)
 
 ## Installation
 Either build this app yourself in AndroidStudio or install in the [play store](https://play.google.com/store/apps/details?id=com.fm.beebo).
