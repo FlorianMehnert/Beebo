@@ -2,148 +2,141 @@
   {
     "id": 1,
     "title": "Zentralbibliothek",
-    "description": "Schloßstraße 2, 01067 Dresden",
-    "latitude": 51.0509304,
-    "longitude": 13.7383838
+    "description": "Schloßstraße 2, 01067 Dresden ",
+    "latitude": 51.050715,
+    "longitude": 13.738260
   },
   {
     "id": 2,
     "title": "Blasewitz",
-    "description": "Tolkewitzer Straße 8, 01277 Dresden",
-    "latitude": 51.045964,
-    "longitude": 13.803964
+    "description": "Tolkewitzer Straße 8, 01277 Dresden ",
+    "latitude": 51.051367,
+    "longitude": 13.807219
   },
   {
     "id": 3,
     "title": "Bühlau",
-    "description": "Quohrener Straße 18, 01324 Dresden",
-    "latitude": 51.055222,
-    "longitude": 13.857222
+    "description": "Bautzner Landstraße 130, 01324 Dresden ",
+    "latitude": 51.061659,
+    "longitude": 13.848915
   },
   {
     "id": 4,
     "title": "Cossebaude",
     "description": "Dresdner Straße 3, 01156 Dresden",
-    "latitude": 51.058611,
-    "longitude": 13.601944
+    "latitude": 51.088302,
+    "longitude": 13.629979
   },
   {
     "id": 5,
     "title": "Cotta",
-    "description": "Hebbelstraße 35, 01157 Dresden",
-    "latitude": 51.055278,
-    "longitude": 13.6825
+    "description": "Cossebauder Straße 42, 01157 Dresden ",
+    "latitude": 51.057548,
+    "longitude": 13.685850
   },
   {
     "id": 6,
     "title": "Gorbitz",
-    "description": "Leutewitzer Ring 5, 01169 Dresden",
-    "latitude": 51.045833,
-    "longitude": 13.6775
+    "description": "Merianplatz 4, 01169 Dresden ",
+    "latitude": 51.045499,
+    "longitude": 13.669439
   },
   {
     "id": 7,
     "title": "Gruna",
-    "description": "Papstdorfer Straße 1301277, 01277 Dresden",
-    "latitude": 51.0331804,
-    "longitude": 13.7851858
+    "description": "Papstdorfer Straße 13, 01277 Dresden ",
+    "latitude": 51.033650,
+    "longitude": 13.783925
   },
   {
     "id": 8,
-    "title": "Hellerau",
-    "description": "Moritzburger Weg 67, 01109 Dresden",
-    "latitude": 51.110278,
-    "longitude": 13.765
+    "title": "Johannstadt",
+    "description": "Fetscherstraße 67, 01307 Dresden ",
+    "latitude": 51.051179,
+    "longitude": 13.775829
   },
   {
     "id": 9,
-    "title": "Johannstadt",
-    "description": "Pfotenhauerstraße 79, 01307 Dresden",
-    "latitude": 51.051944,
-    "longitude": 13.776944
+    "title": "Klotzsche",
+    "description": "Boltenhagener Straße 66, 01109 Dresden ",
+    "latitude": 51.119152,
+    "longitude": 13.770116
   },
   {
     "id": 10,
-    "title": "Klotzsche",
-    "description": "Königsbrücker Landstraße 100, 01109 Dresden",
-    "latitude": 51.117222,
-    "longitude": 13.779444
+    "title": "Langebrück",
+    "description": "Hauptstraße 4, 01465 Dresden",
+    "latitude": 51.126753,
+    "longitude": 13.844206
   },
   {
     "id": 11,
     "title": "Laubegast",
     "description": "Österreicher Straße 61, 01279 Dresden",
-    "latitude": 51.0275,
-    "longitude": 13.841944
+    "latitude": 51.023768,
+    "longitude": 13.838994
   },
   {
     "id": 12,
     "title": "Leubnitz",
-    "description": "Wilhelm-Franke-Straße 30, 01219 Dresden",
-    "latitude": 51.0125,
-    "longitude": 13.765
+    "description": " Corinthstraße 8, 01219 Dresden",
+    "latitude": 51.020718,
+    "longitude": 13.762583
   },
   {
     "id": 13,
-    "title": "Löbtau",
-    "description": "Wernerstraße 21, 01159 Dresden",
-    "latitude": 51.045,
-    "longitude": 13.701944
+    "title": "Neustadt",
+    "description": "Königsbrücker Straße 26 01099 Dresden ",
+    "latitude": 51.067087,
+    "longitude": 13.747473
   },
   {
     "id": 14,
-    "title": "Neustadt",
-    "description": "Königsbrücker Straße 26, 01099 Dresden",
-    "latitude": 51.066944,
-    "longitude": 13.754444
+    "title": "Pieschen",
+    "description": "Bürgerstraße 63, 01127 Dresden ",
+    "latitude": 51.076866,
+    "longitude": 13.721342
   },
   {
     "id": 15,
-    "title": "Pieschen",
-    "description": "Oschatzer Straße 20, 01127 Dresden",
-    "latitude": 51.073611,
-    "longitude": 13.721944
+    "title": "Plauen",
+    "description": "Altplauen 1, 01187 Dresden ",
+    "latitude": 51.029448,
+    "longitude": 13.706494
   },
   {
     "id": 16,
-    "title": "Plauen",
-    "description": "Altplauen 19, 01187 Dresden",
-    "latitude": 51.0275,
-    "longitude": 13.701944
+    "title": "Prohlis",
+    "description": "Prohliser Allee 10, 01239 Dresden ",
+    "latitude": 51.005512,
+    "longitude": 13.798125
   },
   {
     "id": 17,
-    "title": "Prohlis",
-    "description": "Prohliser Allee 10, 01239 Dresden",
-    "latitude": 51.0125,
-    "longitude": 13.789444
+    "title": "Strehlen",
+    "description": "Otto-Dix-Ring 61, 01219 Dresden ",
+    "latitude": 51.018620,
+    "longitude": 13.779924
   },
   {
     "id": 18,
-    "title": "Strehlen",
-    "description": "Lockwitzer Straße 1, 01219 Dresden",
-    "latitude": 51.018611,
-    "longitude": 13.756944
+    "title": "Südvorstadt",
+    "description": " Münchner Platz 2, 01187 Dresden ",
+    "latitude": 51.030436,
+    "longitude": 13.722079
   },
   {
     "id": 19,
-    "title": "Südvorstadt",
-    "description": "Zwickauer Straße 42, 01069 Dresden",
-    "latitude": 51.0275,
-    "longitude": 13.734444
+    "title": "Weixdorf",
+    "description": " Hohenbusch-Markt 1, 01108 Dresden",
+    "latitude": 141059,
+    "longitude": 13.796188
   },
   {
     "id": 20,
-    "title": "Weixdorf",
-    "description": "Königsbrücker Landstraße 291, 01108 Dresden",
-    "latitude": 51.151944,
-    "longitude": 13.825
-  },
-  {
-    "id": 21,
     "title": "Weißig",
     "description": "Bautzner Landstraße 291, 01328 Dresden",
-    "latitude": 51.070833,
-    "longitude": 13.900278
+    "latitude": 51.061556,
+    "longitude": 13.885372
   }
 ]
