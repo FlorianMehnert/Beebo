@@ -55,7 +55,6 @@ fun SearchScreen(
     )
     val maxPagesSetting by settingsDataStore.maxPagesFlow.collectAsState(initial = "")
     var query by remember { mutableStateOf("") }
-    val switchToBottomNavigationFlow by settingsDataStore.switchToBottomNavigationFlow.collectAsState(initial=false)
 
 
     if (enableDefaultSearchTerm) {
@@ -87,35 +86,32 @@ fun SearchScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
-                    if (!switchToBottomNavigationFlow) {
-                        Row {
-                            IconButton(onClick = { navController.navigate("profile") }) {
-                                Icon(
-                                    if (userViewModel.isLoggedIn) Icons.Default.AccountCircle else Icons.Outlined.AccountCircle,
-                                    contentDescription = "Account",
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                            IconButton(onClick = onSettingsClick) {
-                                Icon(
-                                    Icons.Filled.Settings,
-                                    contentDescription = "Einstellungen",
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
+                    Row {
+                        IconButton(onClick = { navController.navigate("profile") }) {
+                            Icon(
+                                if (userViewModel.isLoggedIn) Icons.Default.AccountCircle else Icons.Outlined.AccountCircle,
+                                contentDescription = "Account",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        IconButton(onClick = onSettingsClick) {
+                            Icon(
+                                Icons.Filled.Settings,
+                                contentDescription = "Einstellungen",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(28.dp)
+                            )
                         }
                     }
                 })
         },
         bottomBar = {
-            if (switchToBottomNavigationFlow){
             AppBottomNavigation(
                 navController = navController,
                 userViewModel = userViewModel,
                 currentRoute = "librarySearch"
-            )}
+            )
         }
     ) { paddingValues ->
         Column(
@@ -171,7 +167,10 @@ fun SearchScreen(
                     firstTimeStart = settingsViewModel.appStart.collectAsState().value,
                     dueDateFilter = settingsViewModel.dueDateFilter,
                     doYearRangeFiltering = settingsViewModel.filterByTimeSpan.collectAsState().value,
-                    selectedYearRange = Pair(settingsViewModel.minYear.collectAsState(), settingsViewModel.maxYear.collectAsState()),
+                    selectedYearRange = Pair(
+                        settingsViewModel.minYear.collectAsState(),
+                        settingsViewModel.maxYear.collectAsState()
+                    ),
                     selectedMediaTypes = settingsViewModel.selectedMediaTypes
                 )
             }

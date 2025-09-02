@@ -71,8 +71,6 @@ fun SettingsScreen(
     )
     val defaultSearchTerm by settingsDataStore.defaultSearchTermFlow.collectAsState(initial = "")
     val bulkFetch by settingsDataStore.bulkFetchEnabledFlow.collectAsState(initial = false)
-    val switchToBottomNavigationFlow by settingsDataStore.switchToBottomNavigationFlow.collectAsState(initial=false)
-    val enableOverviewMapFlow by settingsDataStore.enableOverviewMapFlow.collectAsState(initial=false)
     val enableAnimateToMarkerFlow by settingsDataStore.enableAnimateToMarkerFlow.collectAsState(initial=true)
     var text by remember(defaultSearchTerm) {
         mutableStateOf(defaultSearchTerm)
@@ -90,12 +88,10 @@ fun SettingsScreen(
             )
         },
         bottomBar = {
-            if (switchToBottomNavigationFlow){
                 AppBottomNavigation(
                     navController = navController,
                     userViewModel = userViewModel,
-                    currentRoute = "settings"
-                )}
+                    currentRoute = "settings")
         }
     ) { paddingValues ->
         Column(
@@ -220,30 +216,6 @@ fun SettingsScreen(
                                 }
                             },
                         )
-                        ExperimentalFeatureToggle(
-                            settingsDataStore.switchToBottomNavigationFlow.collectAsState(false).value,
-                            "Benutze die experimentelle Navigationsleiste",
-                            "Navigationsleiste",
-                            "Verschiebe die Navigation nach unten",
-                            {
-                                coroutineScope.launch {
-                                    settingsDataStore.setSwitchToBottomNavigation(!switchToBottomNavigationFlow)
-                                }
-                            }
-                        )
-                        if (switchToBottomNavigationFlow){
-                            ExperimentalFeatureToggle(
-                                settingsDataStore.enableOverviewMapFlow.collectAsState(false).value,
-                                "Zeige die Übersichtskarte",
-                                "Übersichtskarte",
-                                "Zeige die Übersichtskarte in der Navigationsleiste an",
-                                {
-                                    coroutineScope.launch {
-                                        settingsDataStore.setEnableOverviewMap(!enableOverviewMapFlow)
-                                    }
-                                }
-                            )
-                        }
                     }
                 }
 

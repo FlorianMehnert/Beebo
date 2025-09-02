@@ -75,7 +75,6 @@ fun UserProfileScreen(
     var password by remember { mutableStateOf(userViewModel.password) }
     val focusManager = LocalFocusManager.current
     val settingsDataStore = SettingsDataStore(LocalContext.current)
-    val switchToBottomNavigationFlow by settingsDataStore.switchToBottomNavigationFlow.collectAsState(initial=false)
     var isWebViewVisible by remember { mutableStateOf(false) }
 
     // Fetch account details when logged in
@@ -110,13 +109,11 @@ fun UserProfileScreen(
             )
         },
         bottomBar = {
-            if (switchToBottomNavigationFlow) {
-                AppBottomNavigation(
-                    navController = navController,
-                    userViewModel = userViewModel,
-                    currentRoute = "profile"
-                )
-            }
+            AppBottomNavigation(
+                navController = navController,
+                userViewModel = userViewModel,
+                currentRoute = "profile"
+            )
         }
     ) { paddingValues ->
         Box(
@@ -137,7 +134,8 @@ fun UserProfileScreen(
 
                                     if (url?.contains("userAccount.do") == true &&
                                         !url.contains("type=8") &&
-                                        !url.contains("accountTyp=FEES")) {
+                                        !url.contains("accountTyp=FEES")
+                                    ) {
                                         view?.evaluateJavascript(
                                             """
                                 (function() {
@@ -156,7 +154,8 @@ fun UserProfileScreen(
                             settings.domStorageEnabled = true
 
                             // Start with the main account page
-                            val accountUrl = "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/userAccount.do?methodToCall=show&type=1"
+                            val accountUrl =
+                                "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/userAccount.do?methodToCall=show&type=1"
                             loadUrl(accountUrl)
                         }
                     },

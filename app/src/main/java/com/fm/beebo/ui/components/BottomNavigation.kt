@@ -29,7 +29,6 @@ fun AppBottomNavigation(
     currentRoute: String
 ) {
     val settingsDataStore = SettingsDataStore(LocalContext.current)
-    val enableOverviewMap by settingsDataStore.enableOverviewMapFlow.collectAsState(initial = false)
     NavigationBar {
         NavigationBarItem(
             icon = {
@@ -99,28 +98,28 @@ fun AppBottomNavigation(
                 }
             }
         )
-        if (enableOverviewMap)
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        if (currentRoute == "map") Icons.Filled.Map else Icons.Outlined.Map,
-                        contentDescription = "Übersichtskarte"
-                    )
-                },
-                label = {
-                    Text(
-                        text = "Standorte",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                selected = currentRoute == "map",
-                alwaysShowLabel = false, // Only show label when selected
-                onClick = {
-                    if (currentRoute != "map") {
-                        navController.navigate("map")
-                    }
+
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    if (currentRoute == "map") Icons.Filled.Map else Icons.Outlined.Map,
+                    contentDescription = "Übersichtskarte"
+                )
+            },
+            label = {
+                Text(
+                    text = "Standorte",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
+            selected = currentRoute == "map",
+            alwaysShowLabel = false, // Only show label when selected
+            onClick = {
+                if (currentRoute != "map") {
+                    navController.navigate("map")
                 }
-            )
+            }
+        )
     }
 }
