@@ -21,7 +21,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -58,6 +57,9 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import androidx.core.graphics.toColorInt
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.io.InputStreamReader
 
 data class Waypoint(
     val id: Int,
@@ -85,6 +87,13 @@ class WaypointMarker(
         return handledByMarker
     }
 
+}
+
+fun loadWaypointsFromJson(context: Context): List<Waypoint> {
+    val inputStream = context.assets.open("dresden_waypoints.json")
+    val reader = InputStreamReader(inputStream)
+    val type = object : TypeToken<List<Waypoint>>() {}.type
+    return Gson().fromJson(reader, type)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,149 +169,149 @@ fun OsmMapView(settingsViewModel: SettingsViewModel) {
         settingsDataStore.enableAnimateToMarkerFlow.collectAsState(initial = false).value
     val selectedBranchOffice by settingsViewModel.selectedBranchOffice.collectAsState()
 
-    val waypoints =
-        listOf(
-            Waypoint(
-                id = BranchOffice.Zentralbibliothek.id,
-                title = BranchOffice.Zentralbibliothek.displayName,
-                description = "Zentralbibo im Kulturpalast",
-                latitude = 51.050666,
-                longitude = 13.738295
-            ),
-            Waypoint(
-                id = BranchOffice.Blasewitz.id,
-                title = BranchOffice.Blasewitz.displayName,
-                description = "",
-                latitude = 51.051027,
-                longitude = 13.807854
-            ),
-            Waypoint(
-                id = BranchOffice.Buehlau.id,
-                title = BranchOffice.Buehlau.displayName,
-                description = "",
-                latitude = 51.061745,
-                longitude = 13.84873
-            ),
-            Waypoint(
-                id = BranchOffice.Cossebaude.id,
-                title = BranchOffice.Cossebaude.displayName,
-                description = "",
-                latitude = 51.08838376693984,
-                longitude = 13.630048042411289
-            ),
-            Waypoint(
-                id = BranchOffice.Cotta.id,
-                title = BranchOffice.Cotta.displayName,
-                description = "",
-                latitude = 51.05752830676419,
-                longitude = 13.6860007709652
-            ),
-            Waypoint(
-                id = BranchOffice.Gorbitz.id,
-                title = BranchOffice.Gorbitz.displayName,
-                description = "",
-                latitude = 51.04584224985092,
-                longitude = 13.669299482607935
-            ),
-            Waypoint(
-                id = BranchOffice.Gruna.id,
-                title = BranchOffice.Gruna.displayName,
-                description = "",
-                latitude = 51.03418525200302,
-                longitude = 13.78361795318534
-            ),
-            Waypoint(
-                id = BranchOffice.Johannstadt.id,
-                title = BranchOffice.Johannstadt.displayName,
-                description = "",
-                latitude = 51.049157283542556,
-                longitude = 13.76885322522458
-            ),
-            Waypoint(
-                id = BranchOffice.Klotzsche.id,
-                title = BranchOffice.Klotzsche.displayName,
-                description = "",
-                latitude = 51.11939784488856,
-                longitude = 13.769891149084087
-            ),
-            Waypoint(
-                id = BranchOffice.Langebrueck.id,
-                title = BranchOffice.Langebrueck.displayName,
-                description = "",
-                latitude = 51.12724800127986,
-                longitude = 13.843881553437907
-            ),
-            Waypoint(
-                id = BranchOffice.Laubegast.id,
-                title = BranchOffice.Laubegast.displayName,
-                description = "",
-                latitude = 51.02500620146082,
-                longitude = 13.839257737292995
-            ),
-            Waypoint(
-                id = BranchOffice.LeubnitzNeuostra.id,
-                title = BranchOffice.LeubnitzNeuostra.displayName,
-                description = "",
-                latitude = 51.02165602307906,
-                longitude = 13.764028928309257
-            ),
-            Waypoint(
-                id = BranchOffice.Neustadt.id,
-                title = BranchOffice.Neustadt.displayName,
-                description = "",
-                latitude = 51.06747146177359,
-                longitude = 13.747596329492392
-            ),
-            Waypoint(
-                id = BranchOffice.Pieschen.id,
-                title = BranchOffice.Pieschen.displayName,
-                description = "",
-                latitude = 51.07799264408835,
-                longitude = 13.720705561235228
-            ),
-            Waypoint(
-                id = BranchOffice.Plauen.id,
-                title = BranchOffice.Plauen.displayName,
-                description = "",
-                latitude = 51.03469458786578,
-                longitude = 13.70551168163574
-            ),
-            Waypoint(
-                id = BranchOffice.Prohlis.id,
-                title = BranchOffice.Prohlis.displayName,
-                description = "",
-                latitude = 51.006203894415236,
-                longitude = 13.798450667932558
-            ),
-            Waypoint(
-                id = BranchOffice.Strehlen.id,
-                title = BranchOffice.Strehlen.displayName,
-                description = "",
-                latitude = 51.01971306378044,
-                longitude = 13.780271698657312
-            ),
-            Waypoint(
-                id = BranchOffice.Suedvorstadt.id,
-                title = BranchOffice.Suedvorstadt.displayName,
-                description = "",
-                latitude = 51.03399912872732,
-                longitude = 13.721460388888648
-            ),
-            Waypoint(
-                id = BranchOffice.Weissig.id,
-                title = BranchOffice.Weissig.displayName,
-                description = "",
-                latitude = 51.06231646773942,
-                longitude = 13.884955722572409
-            ),
-            Waypoint(
-                id = BranchOffice.Weixdorf.id,
-                title = BranchOffice.Weixdorf.displayName,
-                description = "",
-                latitude = 51.14212409847163,
-                longitude = 13.795246022787616
-            ),
-        )
+    val waypoints = loadWaypointsFromJson(context)
+//        listOf(
+//            Waypoint(
+//                id = BranchOffice.Zentralbibliothek.id,
+//                title = BranchOffice.Zentralbibliothek.displayName,
+//                description = "Zentralbibo im Kulturpalast",
+//                latitude = 51.050666,
+//                longitude = 13.738295
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Blasewitz.id,
+//                title = BranchOffice.Blasewitz.displayName,
+//                description = "",
+//                latitude = 51.051027,
+//                longitude = 13.807854
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Buehlau.id,
+//                title = BranchOffice.Buehlau.displayName,
+//                description = "",
+//                latitude = 51.061745,
+//                longitude = 13.84873
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Cossebaude.id,
+//                title = BranchOffice.Cossebaude.displayName,
+//                description = "",
+//                latitude = 51.08838376693984,
+//                longitude = 13.630048042411289
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Cotta.id,
+//                title = BranchOffice.Cotta.displayName,
+//                description = "",
+//                latitude = 51.05752830676419,
+//                longitude = 13.6860007709652
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Gorbitz.id,
+//                title = BranchOffice.Gorbitz.displayName,
+//                description = "",
+//                latitude = 51.04584224985092,
+//                longitude = 13.669299482607935
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Gruna.id,
+//                title = BranchOffice.Gruna.displayName,
+//                description = "",
+//                latitude = 51.03418525200302,
+//                longitude = 13.78361795318534
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Johannstadt.id,
+//                title = BranchOffice.Johannstadt.displayName,
+//                description = "",
+//                latitude = 51.049157283542556,
+//                longitude = 13.76885322522458
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Klotzsche.id,
+//                title = BranchOffice.Klotzsche.displayName,
+//                description = "",
+//                latitude = 51.11939784488856,
+//                longitude = 13.769891149084087
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Langebrueck.id,
+//                title = BranchOffice.Langebrueck.displayName,
+//                description = "",
+//                latitude = 51.12724800127986,
+//                longitude = 13.843881553437907
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Laubegast.id,
+//                title = BranchOffice.Laubegast.displayName,
+//                description = "",
+//                latitude = 51.02500620146082,
+//                longitude = 13.839257737292995
+//            ),
+//            Waypoint(
+//                id = BranchOffice.LeubnitzNeuostra.id,
+//                title = BranchOffice.LeubnitzNeuostra.displayName,
+//                description = "",
+//                latitude = 51.02165602307906,
+//                longitude = 13.764028928309257
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Neustadt.id,
+//                title = BranchOffice.Neustadt.displayName,
+//                description = "",
+//                latitude = 51.06747146177359,
+//                longitude = 13.747596329492392
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Pieschen.id,
+//                title = BranchOffice.Pieschen.displayName,
+//                description = "",
+//                latitude = 51.07799264408835,
+//                longitude = 13.720705561235228
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Plauen.id,
+//                title = BranchOffice.Plauen.displayName,
+//                description = "",
+//                latitude = 51.03469458786578,
+//                longitude = 13.70551168163574
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Prohlis.id,
+//                title = BranchOffice.Prohlis.displayName,
+//                description = "",
+//                latitude = 51.006203894415236,
+//                longitude = 13.798450667932558
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Strehlen.id,
+//                title = BranchOffice.Strehlen.displayName,
+//                description = "",
+//                latitude = 51.01971306378044,
+//                longitude = 13.780271698657312
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Suedvorstadt.id,
+//                title = BranchOffice.Suedvorstadt.displayName,
+//                description = "",
+//                latitude = 51.03399912872732,
+//                longitude = 13.721460388888648
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Weissig.id,
+//                title = BranchOffice.Weissig.displayName,
+//                description = "",
+//                latitude = 51.06231646773942,
+//                longitude = 13.884955722572409
+//            ),
+//            Waypoint(
+//                id = BranchOffice.Weixdorf.id,
+//                title = BranchOffice.Weixdorf.displayName,
+//                description = "",
+//                latitude = 51.14212409847163,
+//                longitude = 13.795246022787616
+//            ),
+//        )
 
     RequestLocationPermission {
         locationPermissionGranted = true

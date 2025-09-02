@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.msz.progress.indicator)
     implementation(libs.osmdroid.android)
     implementation(libs.play.services.location)
+    implementation(libs.gson)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

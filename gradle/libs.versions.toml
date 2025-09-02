@@ -23,6 +23,7 @@ navigationCompose = "2.9.1"
 foundationAndroid = "1.8.3"
 androidx-appcompat = "1.7.1"
 androidx-activity = "1.10.1"
+gson = "2.10.1"
 
 
 [libraries]
@@ -58,6 +59,7 @@ androidx-foundation-android = { group = "androidx.compose.foundation", name = "f
 androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version = "1.4.0-alpha17" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 androidx-activity = { module = "androidx.activity:activity-ktx", version.ref = "androidx-activity" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 
 
 [plugins]
