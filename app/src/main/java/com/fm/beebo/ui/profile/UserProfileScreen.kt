@@ -5,8 +5,11 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -21,6 +26,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,6 +38,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -58,12 +68,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.fm.beebo.datastore.SettingsDataStore
+import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.NetworkConfig
 import com.fm.beebo.network.syncToHttpClient
 import com.fm.beebo.ui.CustomWebViewClient
 import com.fm.beebo.ui.components.AppBottomNavigation
 import com.fm.beebo.ui.components.BallIndicator
 import com.fm.beebo.viewmodels.UserViewModel
+
+enum class ProfileTab { ACCOUNT, WISHLIST }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,6 +89,24 @@ fun UserProfileScreen(
     val focusManager = LocalFocusManager.current
     val settingsDataStore = SettingsDataStore(LocalContext.current)
     var isWebViewVisible by remember { mutableStateOf(false) }
+
+    // --- State for Wishlist ---
+    var selectedTab by remember { mutableStateOf(ProfileTab.ACCOUNT) }
+    val wishSet by userViewModel.wishList.collectAsState(initial = emptySet())
+    var wishlistItems by remember { mutableStateOf<List<LibraryMedia>>(emptyList()) }
+
+    // Initialize UserViewModel with context
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        userViewModel.initialize(context)
+    }
+
+    // Load wishlist items when tab changes
+    LaunchedEffect(selectedTab, wishSet) {
+        if (selectedTab == ProfileTab.WISHLIST) {
+            wishlistItems = userViewModel.getWishlistItems()
+        }
+    }
 
     // Fetch account details when logged in
     LaunchedEffect(userViewModel.isLoggedIn) {
@@ -175,7 +206,45 @@ fun UserProfileScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     if (userViewModel.isLoggedIn) {
-                        // Show account information when logged in
+                        TabRow(
+                            selectedTabIndex = selectedTab.ordinal,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ) {
+                            Tab(
+                                selected = selectedTab == ProfileTab.ACCOUNT,
+                                onClick = { selectedTab = ProfileTab.ACCOUNT },
+                                text = { Text("Konto") }
+                            )
+                            Tab(
+                                selected = selectedTab == ProfileTab.WISHLIST,
+                                onClick = { selectedTab = ProfileTab.WISHLIST },
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Merkliste")
+                                        if (wishSet.isNotEmpty()) {
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Badge {
+                                                Text(wishSet.size.toString())
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                        }
+
+                        when (selectedTab) {
+                            ProfileTab.ACCOUNT -> AccountContent(
+                                userViewModel = userViewModel,
+                                navController = navController
+                            )
+                            ProfileTab.WISHLIST -> WishlistContent(
+                                wishlistIds = wishSet,
+                                userViewModel = userViewModel,
+                                navController = navController
+                            )
+                        }
+
                         Text(
                             text = "Angemeldet als: ${userViewModel.username}",
                             style = MaterialTheme.typography.headlineSmall,
@@ -223,7 +292,6 @@ fun UserProfileScreen(
                             Text("Abmelden")
                         }
                     } else {
-                        // Show login form when not logged in
                         OutlinedTextField(
                             value = username,
                             onValueChange = { username = it },
@@ -328,4 +396,159 @@ fun ToggleIconButton(
                 onClick = { onCheckedChange(!checked) }
             )
     )
+}
+
+@Composable
+private fun AccountContent(
+    userViewModel: UserViewModel,
+    navController: NavController
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Angemeldet als: ${userViewModel.username}",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        userViewModel.accountFees?.let { fees ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Gebühren",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = fees,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = {
+                userViewModel.logout()
+                navController.popBackStack()
+            },
+            shape = RoundedCornerShape(4.dp),
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text("Abmelden")
+        }
+    }
+}
+
+@Composable
+private fun WishlistContent(
+    wishlistIds: Set<String>,
+    userViewModel: UserViewModel,
+    navController: NavController
+) {
+    if (wishlistIds.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.FavoriteBorder,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Deine Merkliste ist leer",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Füge Medien über das Herz-Symbol hinzu",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(
+                items = wishlistIds.toList(),
+                key = { it }
+            ) { itemId ->
+                // For now, show a placeholder. In a real app, you'd load the media details
+                WishlistItemPlaceholder(
+                    itemId = itemId,
+                    onRemove = {  },
+                    onClick = {
+                        // Navigate to details when you have the full media object
+                        // navController.navigate("details/$itemId")
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WishlistItemPlaceholder(
+    itemId: String,
+    onRemove: () -> Unit,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Media ID: $itemId",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "Details werden geladen...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = onRemove) {
+                Icon(
+                    imageVector = Icons.Filled.Favorite,
+                    contentDescription = "Aus Merkliste entfernen",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
 }

@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.ui.settings.Media
+import com.fm.beebo.viewmodels.UserViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -64,7 +65,8 @@ fun SearchResultsList(
     selectedYearRange: Pair<State<Int>, State<Int>>,
     selectedMediaTypes: StateFlow<List<Media>>,
     onItemClick: (LibraryMedia) -> Unit,
-    firstTimeStart: Boolean
+    firstTimeStart: Boolean,
+    userViewModel: UserViewModel
 ) {
     // Get current filters
     val currentDueDateFilter = dueDateFilter.collectAsState().value
@@ -157,8 +159,12 @@ fun SearchResultsList(
             ) {
                 items(sortedResults) { item ->
                     SearchResultItem(
-                        item,
+                        item = item,
                         onClick = { onItemClick(item) },
+                        onWishToggle = { media ->
+                            userViewModel.toggleWishlistItem(media)
+                        },
+                        wished = userViewModel.isInWishlist(item)
                     )
                 }
             }

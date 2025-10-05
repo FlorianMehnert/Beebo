@@ -19,9 +19,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,7 +55,9 @@ import java.util.TimeZone
 @Composable
 fun SearchResultItem(
     item: LibraryMedia,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onWishToggle: (LibraryMedia) -> Unit,
+    wished: Boolean
 ) {
 
     var title = item.title.replace("¬", "")
@@ -128,6 +135,19 @@ fun SearchResultItem(
                             text = "Entliehen",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+            Column (modifier = Modifier.padding(start = 8.dp)) {
+                Row {
+                    IconToggleButton(
+                        checked = wished,
+                        onCheckedChange = { onWishToggle(item) }
+                    ) {
+                        Icon(
+                            imageVector = if (wished) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Wunschliste"
                         )
                     }
                 }

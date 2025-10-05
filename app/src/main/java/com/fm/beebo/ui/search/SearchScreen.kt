@@ -171,7 +171,8 @@ fun SearchScreen(
                         settingsViewModel.minYear.collectAsState(),
                         settingsViewModel.maxYear.collectAsState()
                     ),
-                    selectedMediaTypes = settingsViewModel.selectedMediaTypes
+                    selectedMediaTypes = settingsViewModel.selectedMediaTypes,
+                    userViewModel = userViewModel
                 )
             }
         }
