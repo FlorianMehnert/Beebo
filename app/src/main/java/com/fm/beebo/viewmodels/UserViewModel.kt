@@ -33,55 +33,72 @@ class UserViewModel : ViewModel() {
     private val loginService = LoginService()
 
     fun login() {
-        viewModelScope.launch {
-            isLoading = true
-            errorMessage = null
+        viewModelScope.launch(Dispatchers.IO) {
+            withContext(Dispatchers.Main) {
+                isLoading = true
+                errorMessage = null
+            }
+
             try {
                 val loginSuccess = loginService.login(username, password)
                 if (loginSuccess) {
-                    isLoggedIn = true
+                    withContext(Dispatchers.Main) {
+                        isLoggedIn = true
+                        // Clear temporary wishlist when logging in
+                        _wishList.value = emptySet()
+                    }
+
                     fetchAccountDetails()
-                    // Fetch wishlist after login
+                    // Fetch server-side wishlist after login
                     fetchWishlist()
                 } else {
-                    errorMessage = "Login fehlgeschlagen"
+                    withContext(Dispatchers.Main) {
+                        errorMessage = "Login fehlgeschlagen"
+                    }
                 }
             } catch (e: Exception) {
-                errorMessage = "Fehler beim Login: ${e.message}"
+                withContext(Dispatchers.Main) {
+                    errorMessage = "Fehler beim Login: ${e.message}"
+                }
             } finally {
-                isLoading = false
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
             }
         }
     }
 
     fun fetchAccountDetails() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val fees = loginService.fetchAccountFees()
-                accountFees = fees
+                withContext(Dispatchers.Main) {
+                    accountFees = fees
+                }
             } catch (e: Exception) {
-                errorMessage = "Fehler beim Abrufen der Kontodaten: ${e.message}"
+                withContext(Dispatchers.Main) {
+                    errorMessage = "Fehler beim Abrufen der Kontodaten: ${e.message}"
+                }
             }
         }
     }
 
     fun logout() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             loginService.logout()
-            isLoggedIn = false
-            accountFees = null
-            _wishList.value = emptySet()
+            withContext(Dispatchers.Main) {
+                isLoggedIn = false
+                accountFees = null
+                _wishList.value = emptySet()
+            }
         }
     }
 
     fun toggleWishlistItem(item: LibraryMedia) {
-        viewModelScope.launch {
-            print("toggle wishlist item")
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val cookieManager = CookieManager.getInstance()
                 val cookies = cookieManager.getCookies()
-
-                errorMessage = "in toggle wishlist item"
 
                 // Extract the item position from the URL
                 val urlPattern = "curPos=(\\d+)".toRegex()
@@ -97,7 +114,6 @@ class UserViewModel : ViewModel() {
                 val wishlistUrl =
                     "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/memorizeHitList.do?" +
                             "methodToCall=addToMemorizeList&curPos=$curPos&forward=hitlist&identifier=$identifier"
-                print(wishlistUrl)
 
                 // Make the request to add/remove from wishlist
                 val response = Jsoup.connect(wishlistUrl)
@@ -105,35 +121,36 @@ class UserViewModel : ViewModel() {
                     .timeout(30000)
                     .execute()
 
-                // Update local wishlist state
+                // Update local wishlist state on main thread
                 val itemId = "${item.title}|${item.year}|${item.kindOfMedium.name}"
-                if (_wishList.value.contains(itemId)) {
-                    _wishList.value = _wishList.value - itemId
-                } else {
-                    _wishList.value = _wishList.value + itemId
+                withContext(Dispatchers.Main) {
+                    if (_wishList.value.contains(itemId)) {
+                        _wishList.value = _wishList.value - itemId
+                    } else {
+                        _wishList.value = _wishList.value + itemId
+                    }
                 }
 
             } catch (e: Exception) {
-                errorMessage = "Fehler beim Aktualisieren der Merkliste: ${e.message}"
+                withContext(Dispatchers.Main) {
+                    errorMessage = "Fehler beim Aktualisieren der Merkliste: ${e.message}"
+                }
             }
         }
     }
 
     fun toggleWishlistUsingServerLink(item: LibraryMedia) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val link = item.memorizeActionUrl ?: return@launch
                 val cookieManager = CookieManager.getInstance()
                 val cookies = cookieManager.getCookies()
 
-                // Execute on IO dispatcher like fetchItemDetails does
-                val response = withContext(Dispatchers.IO) {
-                    Jsoup.connect(link)
-                        .cookies(cookies)
-                        .timeout(30000)
-                        .followRedirects(true)
-                        .execute()
-                }
+                val response = Jsoup.connect(link)
+                    .cookies(cookies)
+                    .timeout(30000)
+                    .followRedirects(true)
+                    .execute()
 
                 // Update cookies if needed
                 val newCookies = response.cookies()
@@ -141,7 +158,7 @@ class UserViewModel : ViewModel() {
                     cookieManager.setCookies(NetworkConfig.BASE_LOGGED_IN_URL, newCookies)
                 }
 
-                // Toggle local state
+                // Toggle local state on main thread
                 val nowInList = !item.isInMemorizeList
                 val nextLink = when {
                     link.contains("addToMemorizeList") ->
@@ -153,33 +170,37 @@ class UserViewModel : ViewModel() {
                     else -> link
                 }
 
-                item.isInMemorizeList = nowInList
-                item.memorizeActionUrl = nextLink
+                withContext(Dispatchers.Main) {
+                    item.isInMemorizeList = nowInList
+                    item.memorizeActionUrl = nextLink
 
-                // Update wishlist state
-                val itemId = "${item.title}|${item.year}|${item.kindOfMedium.name}"
-                _wishList.value = if (nowInList) {
-                    _wishList.value + itemId
-                } else {
-                    _wishList.value - itemId
+                    // Update wishlist state
+                    val itemId = "${item.title}|${item.year}|${item.kindOfMedium.name}"
+                    _wishList.value = if (nowInList) {
+                        _wishList.value + itemId
+                    } else {
+                        _wishList.value - itemId
+                    }
                 }
             } catch (e: Exception) {
-                errorMessage = "Fehler beim Aktualisieren der Merkliste: ${e.message}"
+                withContext(Dispatchers.Main) {
+                    errorMessage = "Fehler beim Aktualisieren der Merkliste: ${e.message}"
+                }
             }
         }
     }
-
 
     fun syncWishlistFromSearchResult(items: List<LibraryMedia>) {
         val parsed = items.filter { it.isInMemorizeList }
         val ids = parsed.map {
             "${it.title}|${it.year}|${it.kindOfMedium.name}"
         }.toSet()
+        _wishList.value = ids
     }
 
-    // Fetch the current wishlist from the website
+    // This is the method causing the crash - fix the dispatcher
     fun fetchWishlist() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val cookieManager = CookieManager.getInstance()
                 val cookies = cookieManager.getCookies()
@@ -212,10 +233,15 @@ class UserViewModel : ViewModel() {
                     }
                 }
 
-                _wishList.value = wishlistItems
+                // Update state on main thread
+                withContext(Dispatchers.Main) {
+                    _wishList.value = wishlistItems
+                }
 
             } catch (e: Exception) {
                 // Silently fail if not logged in or wishlist not accessible
+                withContext(Dispatchers.Main) {
+                }
             }
         }
     }
@@ -225,7 +251,7 @@ class UserViewModel : ViewModel() {
         return _wishList.value.contains(uniqueId)
     }
 
-    suspend fun getWishlistItems(): List<LibraryMedia> {
+    suspend fun getWishlistItems(): List<LibraryMedia> = withContext(Dispatchers.IO) {
         val wishlistItems = mutableListOf<LibraryMedia>()
 
         try {
@@ -245,7 +271,7 @@ class UserViewModel : ViewModel() {
             doc.select("table tr").forEach { row ->
                 val titleElement = row.select("a[href*='singleHit.do']").firstOrNull()
                 if (titleElement != null) {
-                    val title = titleElement.text().trim().replace("¬", "")
+                    val title = titleElement.text().trim().replace("Â¬", "")
                     val url = NetworkConfig.BASE_LOGGED_IN_URL + titleElement.attr("href")
 
                     val yearText = row.text()
@@ -274,10 +300,9 @@ class UserViewModel : ViewModel() {
             // Return empty list if error
         }
 
-        return wishlistItems
+        return@withContext wishlistItems
     }
 
-    // Initialize is no longer needed since we fetch from website
     fun initialize(context: Context) {
         // Fetch wishlist if logged in
         if (isLoggedIn) {
