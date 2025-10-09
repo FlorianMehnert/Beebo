@@ -11,9 +11,12 @@ import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.LoginService
 import com.fm.beebo.network.NetworkConfig
 import com.fm.beebo.network.getCookies
+import com.fm.beebo.network.setCookies
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 
 class UserViewModel : ViewModel() {
@@ -91,8 +94,9 @@ class UserViewModel : ViewModel() {
                 val identifier = identifierMatch?.groupValues?.get(1) ?: return@launch
 
                 // Build the wishlist URL
-                val wishlistUrl = "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/memorizeHitList.do?" +
-                        "methodToCall=addToMemorizeList&curPos=$curPos&forward=hitlist&identifier=$identifier"
+                val wishlistUrl =
+                    "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/memorizeHitList.do?" +
+                            "methodToCall=addToMemorizeList&curPos=$curPos&forward=hitlist&identifier=$identifier"
                 print(wishlistUrl)
 
                 // Make the request to add/remove from wishlist
@@ -115,6 +119,64 @@ class UserViewModel : ViewModel() {
         }
     }
 
+    fun toggleWishlistUsingServerLink(item: LibraryMedia) {
+        viewModelScope.launch {
+            try {
+                val link = item.memorizeActionUrl ?: return@launch
+                val cookieManager = CookieManager.getInstance()
+                val cookies = cookieManager.getCookies()
+
+                // Execute on IO dispatcher like fetchItemDetails does
+                val response = withContext(Dispatchers.IO) {
+                    Jsoup.connect(link)
+                        .cookies(cookies)
+                        .timeout(30000)
+                        .followRedirects(true)
+                        .execute()
+                }
+
+                // Update cookies if needed
+                val newCookies = response.cookies()
+                if (newCookies.isNotEmpty()) {
+                    cookieManager.setCookies(NetworkConfig.BASE_LOGGED_IN_URL, newCookies)
+                }
+
+                // Toggle local state
+                val nowInList = !item.isInMemorizeList
+                val nextLink = when {
+                    link.contains("addToMemorizeList") ->
+                        link.replace("addToMemorizeList", "removeFromMemorizeList")
+                    link.contains("removeFromMemorizeList") ->
+                        link.replace("removeFromMemorizeList", "addToMemorizeList")
+                    link.contains("deleteFromMemorizeList") ->
+                        link.replace("deleteFromMemorizeList", "addToMemorizeList")
+                    else -> link
+                }
+
+                item.isInMemorizeList = nowInList
+                item.memorizeActionUrl = nextLink
+
+                // Update wishlist state
+                val itemId = "${item.title}|${item.year}|${item.kindOfMedium.name}"
+                _wishList.value = if (nowInList) {
+                    _wishList.value + itemId
+                } else {
+                    _wishList.value - itemId
+                }
+            } catch (e: Exception) {
+                errorMessage = "Fehler beim Aktualisieren der Merkliste: ${e.message}"
+            }
+        }
+    }
+
+
+    fun syncWishlistFromSearchResult(items: List<LibraryMedia>) {
+        val parsed = items.filter { it.isInMemorizeList }
+        val ids = parsed.map {
+            "${it.title}|${it.year}|${it.kindOfMedium.name}"
+        }.toSet()
+    }
+
     // Fetch the current wishlist from the website
     fun fetchWishlist() {
         viewModelScope.launch {
@@ -122,7 +184,8 @@ class UserViewModel : ViewModel() {
                 val cookieManager = CookieManager.getInstance()
                 val cookies = cookieManager.getCookies()
 
-                val wishlistUrl = "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/memorizelist.do?methodToCall=show"
+                val wishlistUrl =
+                    "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/memorizelist.do?methodToCall=show"
                 val response = Jsoup.connect(wishlistUrl)
                     .cookies(cookies)
                     .timeout(30000)
@@ -169,7 +232,8 @@ class UserViewModel : ViewModel() {
             val cookieManager = CookieManager.getInstance()
             val cookies = cookieManager.getCookies()
 
-            val wishlistUrl = "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/memorizelist.do?methodToCall=show"
+            val wishlistUrl =
+                "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/memorizelist.do?methodToCall=show"
             val response = Jsoup.connect(wishlistUrl)
                 .cookies(cookies)
                 .timeout(30000)

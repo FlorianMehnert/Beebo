@@ -16,8 +16,10 @@ data class LibraryMedia(
     val actors: List<String> = emptyList(),
     val isbn: String = "",
     val availableLibraries: List<String> = emptyList(),
-    val unavailableLibraries: MutableList<Pair<String, String>> = mutableListOf<Pair<String, String>>(),
-    val orderableLibraries: List<String> = emptyList()
+    val unavailableLibraries: MutableList<Pair<String, String>> = mutableListOf(),
+    val orderableLibraries: List<String> = emptyList(),
+    var memorizeActionUrl: String? = "",
+    var isInMemorizeList: Boolean = false
 ) {
     fun getIsAvailable(): String {
         return if (isAvailable) " ausleihbar" else " nicht_ausleihbar "

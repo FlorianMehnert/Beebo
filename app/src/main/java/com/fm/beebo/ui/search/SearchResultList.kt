@@ -158,13 +158,16 @@ fun SearchResultsList(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(sortedResults) { item ->
+                    val uniqueId = "${item.title}|${item.year}|${item.kindOfMedium.name}"
+                    val wished = userViewModel.wishList.collectAsState().value.contains(uniqueId)
+
                     SearchResultItem(
                         item = item,
                         onClick = { onItemClick(item) },
                         onWishToggle = { media ->
-                            userViewModel.toggleWishlistItem(media)
+                            userViewModel.toggleWishlistUsingServerLink(media)
                         },
-                        wished = userViewModel.isInWishlist(item)
+                        wished = wished
                     )
                 }
             }

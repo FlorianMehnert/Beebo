@@ -526,6 +526,8 @@ class LibrarySearchService {
         }
     }
 
+
+
     /**
      * Is invoked on the search results list
      * @return List of search results as DataClass LibraryMedia
@@ -535,46 +537,33 @@ class LibrarySearchService {
         val table = doc.select("table").firstOrNull() ?: return results
         for (row in table.select("tr").filter { row -> row.select("th").isNotEmpty() }) {
             try {
-                // title
-                val titleTag = row.select("a[href][title=null]").firstOrNull()
-                    ?: row.select("a[href]:not([title='in die Merkliste'])").firstOrNull()
-                    ?: row.select("a[href]:not([title='vormerken/bestellen'])").firstOrNull()
+                val titleTag = row.select("a[href][title=null]").firstOrNull() ?: row.select("a[href]:not([title='in die Merkliste'])").firstOrNull() ?: row.select("a[href]:not([title='vormerken/bestellen'])").firstOrNull()
                 val title = titleTag?.text()?.trim() ?: continue
-
-                // Extract the year
                 val text = row.select("td").text()
                 var year = ""
-
-                // Look for [YYYY] pattern first
-                val bracketPattern = "\\[(\\d{4})]".toRegex()
-                val bracketMatch = bracketPattern.find(text)
-                if (bracketMatch != null) {
-                    year = bracketMatch.groupValues[1]
-                } else {
-                    // If not found in brackets, look for standalone year
-                    val yearPattern = "\\b(20\\d{2})\\b".toRegex()  // Matches years from 2000-2099
-                    val yearMatch = yearPattern.find(text)
-                    if (yearMatch != null) {
-                        year = yearMatch.groupValues[1]
-                    }
+                val bracketMatch = "\\[(\\d{4})]".toRegex().find(text)
+                year = bracketMatch?.groupValues?.get(1) ?: run {
+                    "\\b(20\\d{2})\\b".toRegex().find(text)?.groupValues?.get(1) ?: ""
                 }
-
                 val isAvailable = row.select("span.textgruen").isNotEmpty()
-
-                // Extract the link
                 val itemLink = titleTag.attr("href")
                 val kindOfMediumRaw = row.select("img").firstOrNull()
                 val kindOfMedium = kindOfMediumRaw?.attr("title") ?: ""
-
+                val memAnchor = row.select("a[title='in die Merkliste'], a[title='aus der Merkliste löschen']").firstOrNull()
+                val memTitle = memAnchor?.attr("title") ?: ""
+                val memHref = memAnchor?.attr("href")?.let { "$BASE_LOGGED_IN_URL$it" }
+                val isInMemList = memTitle.contains("aus der Merkliste")
                 val media = LibraryMedia(
                     url = "$BASE_LOGGED_IN_URL$itemLink",
                     isAvailable = isAvailable,
                     year = year,
                     title = title,
                     dueDates = emptyList(),
-                    kindOfMedium = mediaFromString(kindOfMedium)
-                )
-
+                    kindOfMedium = mediaFromString(kindOfMedium),
+                ).apply {
+                    memorizeActionUrl = memHref
+                    isInMemorizeList = isInMemList
+                }
                 results.add(media)
             } catch (_: Exception) {
                 continue
