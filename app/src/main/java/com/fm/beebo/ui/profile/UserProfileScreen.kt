@@ -334,27 +334,120 @@ private fun WishlistContent(
     userViewModel: UserViewModel,
     navController: NavController
 ) {
-    if (wishlistIds.isEmpty()) {
-        EmptyWishlistState()
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+    val wishlistItems by userViewModel.wishlistItems.collectAsState()
+
+    // Fetch wishlist when this composable is first displayed and user is logged in
+    LaunchedEffect(userViewModel.isLoggedIn) {
+        if (userViewModel.isLoggedIn) {
+            userViewModel.fetchWishlist()
+        }
+    }
+
+    when {
+        userViewModel.isWishlistLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                BallIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    diameter = 32.dp
+                )
+            }
+        }
+        wishlistItems.isEmpty() -> {
+            EmptyWishlistState()
+        }
+        else -> {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(
+                    items = wishlistItems,
+                    key = { item ->
+                        // Create a unique key using multiple properties and index
+                        "${item.title}|${item.year}|${item.kindOfMedium.name}|${item.url.hashCode()}"
+                    }
+                ) { item ->
+                    WishlistItemCard(
+                        item = item,
+                        onRemove = {
+                            userViewModel.toggleWishlistUsingServerLink(item)
+                        },
+                        onClick = {
+                            // Navigate to item details
+                            navController.navigate("item_details/${java.net.URLEncoder.encode(item.url, "UTF-8")}")
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WishlistItemCard(
+    item: LibraryMedia,
+    onRemove: () -> Unit,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            items(
-                items = wishlistIds.toList(),
-                key = { it }
-            ) { itemId ->
-                WishlistItemPlaceholder(
-                    itemId = itemId,
-                    onRemove = { /* TODO: Implement remove */ },
-                    onClick = { /* TODO: Navigate to details */ }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2
+                )
+                if (item.author.isNotBlank()) {
+                    Text(
+                        text = item.author,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (item.year.isNotBlank()) {
+                        Text(
+                            text = item.year,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        text = item.kindOfMedium.getChipString(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            IconButton(onClick = onRemove) {
+                Icon(
+                    imageVector = Icons.Filled.Favorite,
+                    contentDescription = "Aus Merkliste entfernen",
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
     }
 }
+
+
 
 @Composable
 private fun EmptyWishlistState() {
@@ -414,37 +507,18 @@ private fun ProfileWebView() {
                 val cookieManager = CookieManager.getInstance()
                 cookieManager.syncToHttpClient()
 
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        if (url?.contains("userAccount.do") == true &&
-                            !url.contains("type=8") &&
-                            !url.contains("accountTyp=FEES")
-                        ) {
-                            view?.evaluateJavascript(
-                                """
-                                (function() {
-                                    var feesLink = document.querySelector('a[onclick*="showAccount(8)"]');
-                                    if (feesLink) {
-                                        feesLink.click();
-                                    }
-                                })();
-                                """.trimIndent()
-                            ) { }
-                        }
-                    }
-                }
-
+                webViewClient = WebViewClient()
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
 
-                val accountUrl = "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/userAccount.do?methodToCall=show&type=1"
-                loadUrl(accountUrl)
+                val wishlistUrl = "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/memorizelist.do?methodToCall=show"
+                loadUrl(wishlistUrl)
             }
         },
         modifier = Modifier.fillMaxSize()
     )
 }
+
 
 @Composable
 private fun ToggleIconButton(

@@ -20,6 +20,10 @@ import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 
 class UserViewModel : ViewModel() {
+    private val _wishlistItems = MutableStateFlow<List<LibraryMedia>>(emptyList())
+    val wishlistItems: StateFlow<List<LibraryMedia>> = _wishlistItems
+
+    var isWishlistLoading by mutableStateOf(false)
     private val _wishList = MutableStateFlow<Set<String>>(emptySet())
 
     var isLoggedIn by mutableStateOf(false)
@@ -163,10 +167,13 @@ class UserViewModel : ViewModel() {
                 val nextLink = when {
                     link.contains("addToMemorizeList") ->
                         link.replace("addToMemorizeList", "removeFromMemorizeList")
+
                     link.contains("removeFromMemorizeList") ->
                         link.replace("removeFromMemorizeList", "addToMemorizeList")
+
                     link.contains("deleteFromMemorizeList") ->
                         link.replace("deleteFromMemorizeList", "addToMemorizeList")
+
                     else -> link
                 }
 
@@ -198,9 +205,12 @@ class UserViewModel : ViewModel() {
         _wishList.value = ids
     }
 
-    // This is the method causing the crash - fix the dispatcher
     fun fetchWishlist() {
         viewModelScope.launch(Dispatchers.IO) {
+            withContext(Dispatchers.Main) {
+                isWishlistLoading = true
+            }
+
             try {
                 val cookieManager = CookieManager.getInstance()
                 val cookies = cookieManager.getCookies()
@@ -214,33 +224,101 @@ class UserViewModel : ViewModel() {
 
                 val doc = response.parse()
 
-                // Parse wishlist items from the page
-                val wishlistItems = mutableSetOf<String>()
-                doc.select("table tr").forEach { row ->
-                    val titleElement = row.select("a[href*='singleHit.do']").firstOrNull()
-                    if (titleElement != null) {
-                        val title = titleElement.text().trim()
-                        val yearText = row.text()
-                        val yearPattern = "\\[(\\d{4})]".toRegex()
-                        val year = yearPattern.find(yearText)?.groupValues?.get(1) ?: ""
+                // Check for session expiry
+                if (doc.select("div.error").text()
+                        .contains("Diese Sitzung ist nicht mehr gültig!")
+                ) {
+                    withContext(Dispatchers.Main) {
+                        isLoggedIn = false
+                        _wishlistItems.value = emptyList()
+                        _wishList.value = emptySet()
+                        isWishlistLoading = false
+                    }
+                    return@launch
+                }
 
-                        // Extract media type from image
-                        val mediaTypeImg = row.select("img[title]").firstOrNull()
-                        val mediaType = mediaTypeImg?.attr("title") ?: "Other"
+                val wishlistItems = mutableListOf<LibraryMedia>()
+                val wishlistIds = mutableSetOf<String>()
 
-                        val itemId = "$title|$year|$mediaType"
-                        wishlistItems.add(itemId)
+
+                // Parse wishlist items from the HTML structure
+                doc.select("table.data tbody tr").forEachIndexed { index, row ->
+                    try {
+                        print(row.html())
+
+                        // Get the availability link which contains the item details
+                        val availabilityLink =
+                            row.select("a[href*='availability.do']").firstOrNull()
+                        print("Availability Link: $availabilityLink")
+
+                        if (availabilityLink != null) {
+                            // Extract title from the cell content
+                            val titleCell =
+                                row.select("td").getOrNull(3) // 4th column contains the details
+                            if (titleCell != null) {
+                                val titleText = titleCell.text()
+                                val titleLines = titleText.split("\n").map { it.trim() }
+
+                                val title = titleLines.firstOrNull()?.takeIf { it.isNotBlank() }
+                                    ?: "Unknown Title $index"
+
+                                // Extract year from brackets
+                                val yearPattern = "\\[(\\d{4})]".toRegex()
+                                val year = yearPattern.find(titleText)?.groupValues?.get(1) ?: ""
+
+                                // Extract author if present
+                                val author = titleLines.find { it.contains("¬[") }
+                                    ?.replace("¬[Verfasser]", "")
+                                    ?.replace("¬", "")
+                                    ?.trim() ?: ""
+
+                                // Get media type from image
+                                val mediaImg = row.select("img[title]").firstOrNull()
+                                val mediaType = mediaImg?.attr("title") ?: "Other"
+
+                                // Build the detail URL from availability link
+                                val availabilityHref = availabilityLink.attr("href")
+                                val detailUrl =
+                                    "${NetworkConfig.BASE_LOGGED_IN_URL}$availabilityHref"
+
+                                val libraryMedia = LibraryMedia(
+                                    title = title,
+                                    url = detailUrl,
+                                    year = year,
+                                    author = author,
+                                    kindOfMedium = com.fm.beebo.ui.settings.mediaFromString(
+                                        mediaType
+                                    ),
+                                    isAvailable = true, // Will be determined when details are loaded
+                                    dueDates = emptyList(),
+                                    isInMemorizeList = true
+                                )
+
+                                wishlistItems.add(libraryMedia)
+
+                                // Create a unique ID that includes the index to prevent duplicates
+                                val itemId =
+                                    "${title}|${year}|${libraryMedia.kindOfMedium.name}|$index"
+                                wishlistIds.add(itemId)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        print("Error parsing wishlist item: $e")
+                        // Skip malformed entries
+                        return@forEachIndexed
                     }
                 }
 
-                // Update state on main thread
                 withContext(Dispatchers.Main) {
-                    _wishList.value = wishlistItems
+                    _wishlistItems.value = wishlistItems
+                    _wishList.value = wishlistIds
+                    isWishlistLoading = false
                 }
 
             } catch (e: Exception) {
-                // Silently fail if not logged in or wishlist not accessible
                 withContext(Dispatchers.Main) {
+                    errorMessage = "Fehler beim Laden der Merkliste: ${e.message}"
+                    isWishlistLoading = false
                 }
             }
         }

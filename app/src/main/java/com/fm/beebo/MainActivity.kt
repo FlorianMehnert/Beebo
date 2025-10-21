@@ -7,16 +7,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.network.configure
 import com.fm.beebo.ui.osm.MapScreen
 import com.fm.beebo.ui.search.LibrariesScreen
 import com.fm.beebo.ui.profile.UserProfileScreen
 import com.fm.beebo.ui.search.SearchScreen
+import com.fm.beebo.ui.search.details.ItemDetailsScreen
 import com.fm.beebo.ui.theme.BeeboTheme
+import com.fm.beebo.viewmodels.LibrarySearchViewModel
 import com.fm.beebo.viewmodels.UserViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
 
@@ -34,11 +39,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             BeeboTheme {
                 val navController = rememberNavController()
+                val librarySearchViewModel: LibrarySearchViewModel = viewModel()
 
                 NavHost(navController = navController, startDestination = "librarySearch") {
                     composable("librarySearch") {
                         SearchScreen(
                             onSettingsClick = { navController.navigate("settings") },
+                            viewModel = librarySearchViewModel,
                             settingsViewModel = settingsViewModel,
                             userViewModel = userViewModel,
                             navController = navController
@@ -67,6 +74,19 @@ class MainActivity : ComponentActivity() {
                             navController,
                             userViewModel,
                             settingsViewModel
+                        )
+                    }
+                    composable(
+                        route = "item_details/{url}",
+                        arguments = listOf(navArgument("url") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val encodedUrl = backStackEntry.arguments?.getString("url") ?: ""
+                        val decodedUrl = java.net.URLDecoder.decode(encodedUrl, "UTF-8")
+
+                        ItemDetailsScreen(
+                            viewModel = librarySearchViewModel,
+                            selectedItemUrl = decodedUrl,
+                            onBack = { navController.popBackStack() }
                         )
                     }
                 }
