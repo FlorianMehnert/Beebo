@@ -44,6 +44,9 @@ import com.fm.beebo.ui.components.AppBottomNavigation
 import com.fm.beebo.ui.components.BallIndicator
 import com.fm.beebo.viewmodels.UserViewModel
 
+import androidx.compose.material3.pulltorefresh.*
+
+
 enum class ProfileTab { ACCOUNT, WISHLIST }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -330,6 +333,7 @@ private fun FeesCard(fees: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WishlistContent(
     wishlistIds: Set<String>,
@@ -337,52 +341,59 @@ private fun WishlistContent(
     navController: NavController
 ) {
     val wishlistItems by userViewModel.wishlistItems.collectAsState()
+    val refreshing = userViewModel.isWishlistLoading
 
-    // Fetch wishlist when this composable is first displayed and user is logged in
+    val pullState = rememberPullToRefreshState()
+
     LaunchedEffect(userViewModel.isLoggedIn) {
-        if (userViewModel.isLoggedIn) {
-            userViewModel.fetchWishlist()
-        }
+        if (userViewModel.isLoggedIn) userViewModel.fetchWishlist()
     }
 
-    when {
-        userViewModel.isWishlistLoading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                BallIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    diameter = 32.dp
-                )
-            }
-        }
-        wishlistItems.isEmpty() -> {
-            EmptyWishlistState()
-        }
-        else -> {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(
-                    items = wishlistItems,
-                    key = { item ->
-                        // Create a unique key using multiple properties and index
-                        "${item.title}|${item.year}|${item.kindOfMedium.name}|${item.url.hashCode()}"
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        PullToRefreshBox(
+            state = pullState,
+            isRefreshing = refreshing,
+            onRefresh = { userViewModel.fetchWishlist() },
+        ) {
+            when {
+                refreshing -> {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        BallIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            diameter = 32.dp
+                        )
                     }
-                ) { item ->
-                    WishlistItemCard(
-                        item = item,
-                        onRemove = {
-                            userViewModel.toggleWishlistUsingServerLink(item)
-                        },
-                        onClick = {
-                            // Navigate to item details
-                            navController.navigate("item_details/${java.net.URLEncoder.encode(item.url, "UTF-8")}")
+                }
+
+                wishlistItems.isEmpty() -> {
+                    EmptyWishlistState()
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(
+                            items = wishlistItems,
+                            key = {
+                                "${it.title}|${it.year}|${it.kindOfMedium.name}|${it.url.hashCode()}"
+                            }
+                        ) { item ->
+                            WishlistItemCard(
+                                item = item,
+                                onRemove = { userViewModel.toggleWishlistUsingServerLink(item) },
+                                onClick = {
+                                    navController.navigate(
+                                        "item_details/${java.net.URLEncoder.encode(item.url, "UTF-8")}"
+                                    )
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             }
         }
@@ -395,7 +406,7 @@ private fun WishlistItemCard(
     onRemove: () -> Unit,
     onClick: () -> Unit
 ) {
-    val displayMedium = item.kindOfMedium.getIcon()          // same helper as in SearchResultItem
+    val displayMedium = item.kindOfMedium.getIcon()
     var showMediumTooltip by remember { mutableStateOf(false) }
 
     Card(
