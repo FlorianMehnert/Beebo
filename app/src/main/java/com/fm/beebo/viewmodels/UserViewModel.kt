@@ -19,6 +19,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 
+import com.fm.beebo.logToFile
+import com.fm.beebo.parseTitleBlock
+
 class UserViewModel : ViewModel() {
     private val _wishlistItems = MutableStateFlow<List<LibraryMedia>>(emptyList())
     val wishlistItems: StateFlow<List<LibraryMedia>> = _wishlistItems
@@ -205,6 +208,8 @@ class UserViewModel : ViewModel() {
         _wishList.value = ids
     }
 
+
+
     fun fetchWishlist() {
         viewModelScope.launch(Dispatchers.IO) {
             withContext(Dispatchers.Main) {
@@ -223,11 +228,7 @@ class UserViewModel : ViewModel() {
                     .execute()
 
                 val doc = response.parse()
-
-                // Check for session expiry
-                if (doc.select("div.error").text()
-                        .contains("Diese Sitzung ist nicht mehr gültig!")
-                ) {
+                if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
                     withContext(Dispatchers.Main) {
                         isLoggedIn = false
                         _wishlistItems.value = emptyList()
@@ -240,72 +241,37 @@ class UserViewModel : ViewModel() {
                 val wishlistItems = mutableListOf<LibraryMedia>()
                 val wishlistIds = mutableSetOf<String>()
 
-
-                // Parse wishlist items from the HTML structure
                 doc.select("table.data tbody tr").forEachIndexed { index, row ->
                     try {
-                        print(row.html())
-
-                        // Get the availability link which contains the item details
-                        val availabilityLink =
-                            row.select("a[href*='availability.do']").firstOrNull()
-                        print("Availability Link: $availabilityLink")
-
+                        val availabilityLink = row.select("a[href*='availability.do']").firstOrNull()
                         if (availabilityLink != null) {
-                            // Extract title from the cell content
-                            val titleCell =
-                                row.select("td").getOrNull(3) // 4th column contains the details
+                            // The structure is: td[0]=checkbox, td[1]=image, td[2]=title, td[3]=cover
+                            val titleCell = row.select("td").getOrNull(2)
+
                             if (titleCell != null) {
-                                val titleText = titleCell.text()
-                                val titleLines = titleText.split("\n").map { it.trim() }
 
-                                val title = titleLines.firstOrNull()?.takeIf { it.isNotBlank() }
-                                    ?: "Unknown Title $index"
+                                val (title, year, author) = parseTitleBlock(titleCell, index)
 
-                                // Extract year from brackets
-                                val yearPattern = "\\[(\\d{4})]".toRegex()
-                                val year = yearPattern.find(titleText)?.groupValues?.get(1) ?: ""
+                                val mediaImg   = row.select("img[title]").firstOrNull()
+                                val mediaType  = mediaImg?.attr("title") ?: "Other"
 
-                                // Extract author if present
-                                val author = titleLines.find { it.contains("¬[") }
-                                    ?.replace("¬[Verfasser]", "")
-                                    ?.replace("¬", "")
-                                    ?.trim() ?: ""
-
-                                // Get media type from image
-                                val mediaImg = row.select("img[title]").firstOrNull()
-                                val mediaType = mediaImg?.attr("title") ?: "Other"
-
-                                // Build the detail URL from availability link
-                                val availabilityHref = availabilityLink.attr("href")
-                                val detailUrl =
-                                    "${NetworkConfig.BASE_LOGGED_IN_URL}$availabilityHref"
+                                val detailUrl  = "${NetworkConfig.BASE_LOGGED_IN_URL}${availabilityLink.attr("href")}"
 
                                 val libraryMedia = LibraryMedia(
-                                    title = title,
-                                    url = detailUrl,
-                                    year = year,
-                                    author = author,
-                                    kindOfMedium = com.fm.beebo.ui.settings.mediaFromString(
-                                        mediaType
-                                    ),
-                                    isAvailable = true, // Will be determined when details are loaded
-                                    dueDates = emptyList(),
+                                    title          = title,
+                                    url            = detailUrl,
+                                    year           = year,
+                                    author         = author,
+                                    kindOfMedium   = com.fm.beebo.ui.settings.mediaFromString(mediaType),
+                                    isAvailable    = true,
+                                    dueDates       = emptyList(),
                                     isInMemorizeList = true
                                 )
-
                                 wishlistItems.add(libraryMedia)
-
-                                // Create a unique ID that includes the index to prevent duplicates
-                                val itemId =
-                                    "${title}|${year}|${libraryMedia.kindOfMedium.name}|$index"
-                                wishlistIds.add(itemId)
+                                wishlistIds.add("$title|$year|${libraryMedia.kindOfMedium.name}|$index")
                             }
                         }
-                    } catch (e: Exception) {
-                        print("Error parsing wishlist item: $e")
-                        // Skip malformed entries
-                        return@forEachIndexed
+                    } catch (_: Exception) {
                     }
                 }
 
@@ -316,6 +282,7 @@ class UserViewModel : ViewModel() {
                 }
 
             } catch (e: Exception) {
+                logToFile("Exception in fetchWishlist: ${e.message}")
                 withContext(Dispatchers.Main) {
                     errorMessage = "Fehler beim Laden der Merkliste: ${e.message}"
                     isWishlistLoading = false
@@ -323,6 +290,7 @@ class UserViewModel : ViewModel() {
             }
         }
     }
+
 
     fun isInWishlist(item: LibraryMedia): Boolean {
         val uniqueId = "${item.title}|${item.year}|${item.kindOfMedium.name}"

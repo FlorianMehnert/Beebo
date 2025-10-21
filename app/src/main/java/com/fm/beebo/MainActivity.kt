@@ -1,6 +1,7 @@
 package com.fm.beebo
 
 import SettingsScreen
+import android.content.Context
 import android.os.Bundle
 import android.webkit.CookieManager
 import androidx.activity.ComponentActivity
@@ -26,9 +27,16 @@ import com.fm.beebo.viewmodels.UserViewModel
 import com.fm.beebo.viewmodels.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        lateinit var appContext: Context
+            private set
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         super.onCreate(savedInstanceState)
+        appContext = applicationContext
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
         val settingsDataStore = SettingsDataStore(applicationContext)
         val settingsViewModel = SettingsViewModel()
