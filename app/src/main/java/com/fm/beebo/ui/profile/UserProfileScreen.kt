@@ -51,7 +51,7 @@ fun UserProfileScreen(
     userViewModel: UserViewModel
 ) {
     val context = LocalContext.current
-    var selectedTab by remember { mutableStateOf(ProfileTab.WISHLIST) } // Default to wishlist
+    var selectedTab by remember { mutableStateOf(ProfileTab.ACCOUNT) }
     var isWebViewVisible by remember { mutableStateOf(false) }
     val wishSet by userViewModel.wishList.collectAsState(initial = emptySet())
 
