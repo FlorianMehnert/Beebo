@@ -3,6 +3,7 @@ package com.fm.beebo.ui.profile
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.fm.beebo.datastore.SettingsDataStore
@@ -393,6 +395,9 @@ private fun WishlistItemCard(
     onRemove: () -> Unit,
     onClick: () -> Unit
 ) {
+    val displayMedium = item.kindOfMedium.getIcon()          // same helper as in SearchResultItem
+    var showMediumTooltip by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -405,6 +410,29 @@ private fun WishlistItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (item.isAvailable)
+                            MaterialTheme.colorScheme.inversePrimary
+                        else
+                            MaterialTheme.colorScheme.surface
+                    )
+                    .clickable { showMediumTooltip = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = displayMedium,
+                    fontSize = 20.sp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+
+            Spacer(Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.title,
@@ -436,6 +464,7 @@ private fun WishlistItemCard(
                     )
                 }
             }
+
             IconButton(onClick = onRemove) {
                 Icon(
                     imageVector = Icons.Filled.Favorite,
@@ -445,7 +474,19 @@ private fun WishlistItemCard(
             }
         }
     }
+
+    if (showMediumTooltip) {
+        AlertDialog(
+            onDismissRequest = { showMediumTooltip = false },
+            title = { Text("Medienart") },
+            text  = { Text("$displayMedium steht für \"${item.kindOfMedium.getChipString()}\"") },
+            confirmButton = {
+                TextButton(onClick = { showMediumTooltip = false }) { Text("Schließen") }
+            }
+        )
+    }
 }
+
 
 
 
