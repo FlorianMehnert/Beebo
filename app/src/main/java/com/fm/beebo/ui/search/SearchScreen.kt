@@ -43,7 +43,7 @@ import com.fm.beebo.viewmodels.UserViewModel
 @Composable
 fun SearchScreen(
     onSettingsClick: () -> Unit,
-    viewModel: LibrarySearchViewModel = viewModel(),
+    viewModel: LibrarySearchViewModel,
     settingsViewModel: SettingsViewModel,
     userViewModel: UserViewModel,
     navController: NavController
