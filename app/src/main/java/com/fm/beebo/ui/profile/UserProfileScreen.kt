@@ -9,6 +9,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -44,9 +46,9 @@ import com.fm.beebo.ui.components.BallIndicator
 import com.fm.beebo.viewmodels.UserViewModel
 
 import androidx.compose.material3.pulltorefresh.*
+import com.fm.beebo.viewmodels.ProfileTab
+import kotlinx.coroutines.launch
 
-
-enum class ProfileTab { ACCOUNT, WISHLIST }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,7 +57,22 @@ fun UserProfileScreen(
     userViewModel: UserViewModel
 ) {
     val context = LocalContext.current
-    var selectedTab by remember { mutableStateOf(ProfileTab.ACCOUNT) }
+    val pagerState = rememberPagerState(pageCount = { 2 })
+    val coroutineScope = rememberCoroutineScope()
+
+    // Use the last selected tab from the view model as initial state
+    val selectedTab by userViewModel.lastSelectedTab.collectAsState()
+
+    // Sync pager state with selected tab
+    LaunchedEffect(selectedTab) {
+        pagerState.animateScrollToPage(selectedTab.ordinal)
+    }
+
+    // Update selected tab when user swipes
+    LaunchedEffect(pagerState.currentPage) {
+        userViewModel.lastSelectedTab.value = ProfileTab.values()[pagerState.currentPage]
+    }
+
     var isWebViewVisible by remember { mutableStateOf(false) }
     val wishSet by userViewModel.wishList.collectAsState(initial = emptySet())
 
@@ -93,13 +110,47 @@ fun UserProfileScreen(
             if (isWebViewVisible && userViewModel.isLoggedIn) {
                 ProfileWebView()
             } else {
-                ProfileContent(
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it },
-                    wishSet = wishSet,
-                    userViewModel = userViewModel,
-                    navController = navController
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    ProfileTabs(
+                        selectedTab = selectedTab,
+                        onTabSelected = { tab ->
+                            userViewModel.lastSelectedTab.value = tab
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(tab.ordinal)
+                            }
+                        },
+                        wishCount = wishSet.size,
+                        isLoggedIn = userViewModel.isLoggedIn
+                    )
+
+                    // Horizontal Pager for swipe functionality
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        when (ProfileTab.values()[page]) {
+                            ProfileTab.ACCOUNT -> {
+                                if (userViewModel.isLoggedIn) {
+                                    AccountContent(userViewModel, navController)
+                                } else {
+                                    LoginForm(userViewModel)
+                                }
+                            }
+                            ProfileTab.WISHLIST -> {
+                                WishlistContent(
+                                    wishlistIds = wishSet,
+                                    userViewModel = userViewModel,
+                                    navController = navController
+                                )
+                            }
+                        }
+                    }
+
+                    LoadingAndErrorStates(userViewModel)
+                }
             }
         }
     }
@@ -219,7 +270,9 @@ private fun LoginForm(userViewModel: UserViewModel) {
     val focusManager = LocalFocusManager.current
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(24.dp))
@@ -228,7 +281,9 @@ private fun LoginForm(userViewModel: UserViewModel) {
             value = username,
             onValueChange = { username = it },
             label = { Text("Benutzername") },
-            modifier = Modifier.semantics { contentType = ContentType.Username },
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentType = ContentType.Username },
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) }
@@ -246,7 +301,9 @@ private fun LoginForm(userViewModel: UserViewModel) {
                 keyboardType = KeyboardType.NumberPassword,
                 imeAction = ImeAction.Done
             ),
-            modifier = Modifier.semantics { contentType = ContentType.Password },
+            modifier = Modifier
+                .fillMaxWidth() // Make text field full width
+                .semantics { contentType = ContentType.Password },
             keyboardActions = KeyboardActions(
                 onDone = { performLogin(userViewModel, username, password) }
             )
@@ -256,12 +313,16 @@ private fun LoginForm(userViewModel: UserViewModel) {
 
         Button(
             onClick = { performLogin(userViewModel, username, password) },
+            modifier = Modifier.fillMaxWidth(), // Make button full width
             shape = RoundedCornerShape(4.dp)
         ) {
             Text("Anmelden")
         }
+
+        Spacer(modifier = Modifier.weight(1f)) // Push everything to the top
     }
 }
+
 
 private fun performLogin(userViewModel: UserViewModel, username: String, password: String) {
     userViewModel.username = username

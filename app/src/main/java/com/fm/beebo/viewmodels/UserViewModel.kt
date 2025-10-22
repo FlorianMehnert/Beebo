@@ -1,5 +1,7 @@
 package com.fm.beebo.viewmodels
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.webkit.CookieManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +23,8 @@ import org.jsoup.Jsoup
 import com.fm.beebo.logToFile
 import com.fm.beebo.parseTitleBlock
 
+enum class ProfileTab { ACCOUNT, WISHLIST }
+
 class UserViewModel : ViewModel() {
     private val _wishlistItems = MutableStateFlow<List<LibraryMedia>>(emptyList())
     val wishlistItems: StateFlow<List<LibraryMedia>> = _wishlistItems
@@ -37,6 +41,9 @@ class UserViewModel : ViewModel() {
     val wishList: StateFlow<Set<String>> = _wishList
 
     private val loginService = LoginService()
+    
+    val lastSelectedTab = MutableStateFlow(ProfileTab.ACCOUNT)
+
 
     fun login() {
         viewModelScope.launch(Dispatchers.IO) {
