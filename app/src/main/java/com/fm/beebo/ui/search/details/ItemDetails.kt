@@ -46,6 +46,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,6 +82,15 @@ fun ItemDetailsScreen(
     val itemDetails = viewModel.itemDetailsMap[selectedItemUrl]
     var isWebViewVisible by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
+
+    // Handle wishlist items
+    LaunchedEffect(selectedItemUrl) {
+        if (itemDetails == null && selectedItemUrl.contains("availability.do")) {
+            viewModel.fetchItemDetailsForWishlistItem(selectedItemUrl)
+        }
+    }
+
+    val isLoading = viewModel.isLoading
 
     BackHandler { onBack() }
 
@@ -133,7 +143,7 @@ fun ItemDetailsScreen(
                         webViewClient = CustomWebViewClient(currentCookies)
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
-                        loadUrl(itemDetails?.url ?: "")
+                        loadUrl(selectedItemUrl)
                     }
                 })
             } else {
@@ -196,7 +206,7 @@ fun ItemDetailsScreen(
                                         "Entliehen bis",
                                         itemDetails.dueDates[0],
                                         Icons.Filled.EventBusy,
-                                        hasBookmark = true,
+                                        hasBookmark = itemDetails.dueDates[0] != "Keine Vormerkung möglich",
                                         itemDetails = itemDetails
                                     )
                                 }
@@ -224,7 +234,7 @@ fun ItemDetailsScreen(
                             }
                         }
                     }
-                } else {
+                } else if (isLoading) {
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -237,6 +247,17 @@ fun ItemDetailsScreen(
                             diameter = 64.dp,
                             minBallDiameter = 8.dp,
                             maxBallDiameter = 16.dp
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            "Fehler beim Laden der Details",
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     }
                 }

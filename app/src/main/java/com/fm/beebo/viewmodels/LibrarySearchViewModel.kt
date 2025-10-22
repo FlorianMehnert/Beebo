@@ -10,7 +10,6 @@ import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.LibrarySearchService
 import com.fm.beebo.network.getCookies
-import com.fm.beebo.network.isSessionValid
 import com.fm.beebo.ui.settings.Media
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -48,20 +47,13 @@ class LibrarySearchViewModel() : ViewModel() {
 
 
         val cookieManager = CookieManager.getInstance()
-        // if (!cookieManager.isSessionValid()) {
-        //    statusMessage = "Session ungültig - bitte erneut anmelden"
-        //    return
-        // }
 
-
-        // Store search parameters
         lastSearchQuery = query
         lastSearchMaxPages = maxPages
         lastSettingsViewModel = settingsViewModel
         lastSettingsDataStore = settingsDataStore
 
 
-        // ✅ Store which items had details before clearing (only for new searches, not re-searches)
         if (!isReSearchDueToSessionChange) {
             previouslyLoadedItems = itemDetailsMap.keys.toSet()
         }
@@ -79,7 +71,6 @@ class LibrarySearchViewModel() : ViewModel() {
         }
 
 
-        // ✅ Only update session cookies if this is NOT a re-search due to session change
         if (!isReSearchDueToSessionChange) {
             currentSessionCookies = cookieManager.getCookies()
         }
@@ -169,7 +160,7 @@ class LibrarySearchViewModel() : ViewModel() {
 
         // ✅ Check if session changed
         if (sessionHasChanged(currentSessionCookies, newSessionCookies)) {
-            currentlyRefetching = true
+            isLoading = true
             // ✅ Store the item fetch request for after re-search
             pendingItemFetch = itemUrl to available
 
@@ -184,25 +175,22 @@ class LibrarySearchViewModel() : ViewModel() {
                     searchLibrary(lastSearchQuery, lastSearchMaxPages, settingsVM, dataStore)
                 }
             }
-            currentlyRefetching = false
+            isLoading = false
         } else {
-            // ✅ No session change, fetch details directly
             fetchItemDetailsInternal(itemUrl, available)
         }
     }
 
 
-    // ✅ Internal method that doesn't trigger session check (to avoid infinite loops)
     private fun fetchItemDetailsInternal(itemUrl: String, available: Boolean) {
         viewModelScope.launch {
+            isLoading = true
             try {
                 val itemDetails = librarySearchService.getItemDetails(itemUrl, available)
 
-                // Update the map with the fetched item details
                 itemDetailsMap = itemDetailsMap + (itemUrl to itemDetails)
 
 
-                // Update the results list with the new item details
                 results = results.map { item ->
                     if (item.url == itemUrl) {
                         item.copy(
@@ -221,6 +209,7 @@ class LibrarySearchViewModel() : ViewModel() {
                         item
                     }
                 }
+                isLoading = false
             } catch (e: Exception) {
                 statusMessage = "Error: ${e.message}"
             }
@@ -228,7 +217,6 @@ class LibrarySearchViewModel() : ViewModel() {
     }
 
     fun sessionHasChanged(oldCookies: Map<String, String>, newCookies: Map<String, String>): Boolean {
-        // Compare important session cookies
         val importantKeys = setOf("JSESSIONID", "USERSESSIONID", "BaseURL", "APP_CSID")
 
         return importantKeys.any { key ->
@@ -249,6 +237,23 @@ class LibrarySearchViewModel() : ViewModel() {
             }
         }
         return count
+    }
+
+    fun fetchItemDetailsForWishlistItem(url: String) {
+        isLoading = true
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val libraryMedia = librarySearchService.getWishlistItemDetails(url)
+                withContext(Dispatchers.Main) {
+                    itemDetailsMap = itemDetailsMap + (url to libraryMedia)
+                    isLoading = false  // Reset ViewModel's loading state
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
+            }
+        }
     }
 }
 

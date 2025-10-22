@@ -1,7 +1,6 @@
 package com.fm.beebo.network
 
 import android.webkit.CookieManager
-import androidx.compose.runtime.collectAsState
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.ui.settings.Media
 import com.fm.beebo.ui.settings.mediaFromString
@@ -59,7 +58,14 @@ class LibrarySearchService {
                 val csidInput = initDoc.select("input[name=CSId]").first()
 
                 if (csidInput == null) {
-                    emit(SearchResult(emptyList(), 0, false, "Fehler beim Initialisieren der Sitzung"))
+                    emit(
+                        SearchResult(
+                            emptyList(),
+                            0,
+                            false,
+                            "Fehler beim Initialisieren der Sitzung"
+                        )
+                    )
                     return@flow
                 }
 
@@ -74,7 +80,8 @@ class LibrarySearchService {
 
 
             // Now proceed with search using the session (either existing or newly created)
-            val searchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
+            val searchUrl =
+                "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$csid&methodToCallParameter=submitSearch"
             val searchConnection = Jsoup.connect(searchUrl)
                 .data("searchCategories[0]", "-1")
                 .data("searchString[0]", searchTerm)
@@ -109,10 +116,19 @@ class LibrarySearchService {
             // Check if session expired
             val searchDoc = searchResponse.parse()
             if (searchDoc.text().contains("Wartungsarbeiten", ignoreCase = true)) {
-                emit(SearchResult(emptyList(), 0, false, "Der Online-Katalog ist aufgrund von Wartungsarbeiten nicht verfügbar"))
+                emit(
+                    SearchResult(
+                        emptyList(),
+                        0,
+                        false,
+                        "Der Online-Katalog ist aufgrund von Wartungsarbeiten nicht verfügbar"
+                    )
+                )
                 return@flow
             }
-            if (searchDoc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
+            if (searchDoc.select("div.error").text()
+                    .contains("Diese Sitzung ist nicht mehr gültig!")
+            ) {
                 // Clear expired session and try to initialize a new one
                 cookieManager.clearCSId()
                 cookieManager.removeAllCookies(null)
@@ -127,7 +143,14 @@ class LibrarySearchService {
                 val freshCsidInput = freshInitDoc.select("input[name=CSId]").first()
 
                 if (freshCsidInput == null) {
-                    emit(SearchResult(emptyList(), 0, false, "Sitzung abgelaufen und konnte nicht erneuert werden"))
+                    emit(
+                        SearchResult(
+                            emptyList(),
+                            0,
+                            false,
+                            "Sitzung abgelaufen und konnte nicht erneuert werden"
+                        )
+                    )
                     return@flow
                 }
 
@@ -138,7 +161,8 @@ class LibrarySearchService {
                 cookieManager.storeCSId(freshCsid)
 
                 // Retry search with fresh session
-                val retrySearchUrl = "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$freshCsid&methodToCallParameter=submitSearch"
+                val retrySearchUrl =
+                    "$BASE_LOGGED_IN_URL/webOPACClient/search.do?methodToCall=submit&CSId=$freshCsid&methodToCallParameter=submitSearch"
                 val retrySearchResponse = Jsoup.connect(retrySearchUrl)
                     .data("searchCategories[0]", "-1")
                     .data("searchString[0]", searchTerm)
@@ -170,11 +194,27 @@ class LibrarySearchService {
                 // Update search response and doc with retry results
                 val retrySearchDoc = retrySearchResponse.parse()
                 if (retrySearchDoc.text().contains("Wartungsarbeiten", ignoreCase = true)) {
-                    emit(SearchResult(emptyList(), 0, false, "Der Online-Katalog ist aufgrund von Wartungsarbeiten nicht verfügbar"))
+                    emit(
+                        SearchResult(
+                            emptyList(),
+                            0,
+                            false,
+                            "Der Online-Katalog ist aufgrund von Wartungsarbeiten nicht verfügbar"
+                        )
+                    )
                     return@flow
                 }
-                if (retrySearchDoc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
-                    emit(SearchResult(emptyList(), 0, false, "Sitzung konnte nicht erneuert werden"))
+                if (retrySearchDoc.select("div.error").text()
+                        .contains("Diese Sitzung ist nicht mehr gültig!")
+                ) {
+                    emit(
+                        SearchResult(
+                            emptyList(),
+                            0,
+                            false,
+                            "Sitzung konnte nicht erneuert werden"
+                        )
+                    )
                     return@flow
                 }
 
@@ -266,7 +306,7 @@ class LibrarySearchService {
                         // Get next page URL
                         nextUrl = getNextPageLink(nextPageDoc)
                         if (currentPage >= totalPages) break
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         // Handle page-specific errors but continue with results we have
                         emit(
                             SearchResult(
@@ -358,74 +398,102 @@ class LibrarySearchService {
     suspend fun parseItemDetails(
         doc: Document,
         url: String,
-        available: Boolean
-    ): LibraryMedia {
-        CookieManager.getInstance()
-        return withContext(Dispatchers.IO) {
-            // Check for session expiry
-            if (doc.select("div.error").text().contains("Diese Sitzung ist nicht mehr gültig!")) {
-                return@withContext LibraryMedia()
-            }
+        available: Boolean        // <- value from search list, still accepted
+    ): LibraryMedia = withContext(Dispatchers.IO) {
 
-            val extraDetailsTabUrl = changeDetailsTab(doc)
-            val extendedMedia: LibraryMedia? = if (extraDetailsTabUrl.isNotEmpty()) {
-                parseDetailsTab(BASE_LOGGED_IN_URL + extraDetailsTabUrl)
-            } else {
-                null
-            }
+        /* --------- session check stays as it is --------- */
+        if (doc.select("div.error")
+                .text()
+                .contains("Diese Sitzung ist nicht mehr gültig!")
+        ) return@withContext LibraryMedia()
+        val extraDetailsTabUrl = changeDetailsTab(doc)
+        val extendedMedia: LibraryMedia? = if (extraDetailsTabUrl.isNotEmpty()) {
+            parseDetailsTab(BASE_LOGGED_IN_URL + extraDetailsTabUrl)
+        } else {
+            null
+        }
 
-            val title = doc.select("h1").text()
-            val dueDates = doc.select("td:contains(entliehen bis)").eachText()
-                .map { it.replace("entliehen bis ", "").replace("(gesamte Vormerkungen: 0)", "") }
-            val kindOfMedium = doc.select("div.teaser").text().let {
+        val title = doc.select("h1").text()
+        val dueDates = doc.select("td:contains(entliehen bis)").eachText()
+            .map { it.replace("entliehen bis ", "").replace("(gesamte Vormerkungen: 0)", "") }
+        val kindOfMedium = doc.select("div.teaser").text().let {
+            when {
+                it.contains("DVD") -> Media.Filme
+                it.contains("Blu-ray") -> Media.Bluray
+                it.contains("CD") -> Media.CDs
+                it.contains("Buch") -> Media.Bücher
+                else -> Media.Other
+            }
+        }
+
+        /* 🆕  availability detection  ---------------------- */
+        val librariesAvailable = mutableListOf<String>()
+        val librariesUnavailable = mutableListOf<Pair<String, String>>()   // lib  +  due date
+        val librariesOrderable = mutableListOf<String>()
+
+        var isAvailableInDetails = false       // flag that will finally overwrite the
+        //     'available' parameter if we found
+        //     any explicit information inside
+        //     the details page
+
+        // iterate over every holding row inside the table
+        doc.select("#tab-content table.data tbody tr").forEach { row ->
+            val tds = row.select("td")
+            if (tds.size >= 2) {
+                val library = tds.getOrNull(0)?.text()?.trim() ?: ""
+                val statusText = tds.getOrNull(1)?.text()?.trim()?.lowercase() ?: ""
+
                 when {
-                    it.contains("DVD") -> Media.Filme
-                    it.contains("Blu-ray") -> Media.Bluray
-                    it.contains("CD") -> Media.CDs
-                    it.contains("Buch") -> Media.Bücher
-                    else -> Media.Other
-                }
-            }
+                    statusText.contains("ausleihbar") -> {
+                        librariesAvailable.add(library)
+                        isAvailableInDetails = true
+                    }
 
-            val librariesAvailable = mutableListOf<String>()
-            val librariesUnavailable =
-                mutableListOf<Pair<String, String>>() // Library name and due date
-            val librariesOrderable = mutableListOf<String>()
-
-            doc.select("table.data tbody tr").forEach { row ->
-                val library = row.select("td").getOrNull(2)?.text()?.trim() ?: ""
-                val statusText = row.select("td").getOrNull(3)?.text()?.trim() ?: ""
-
-                when {
-                    statusText.contains("ausleihbar") -> librariesAvailable.add(library)
                     statusText.contains("entliehen bis") -> {
-                        val dueDate =
-                            statusText.substringAfter("entliehen bis ").substringBefore(" (")
+                        val dueDate = statusText.substringAfter("entliehen bis ")
+                            .substringBefore(" (")
+                            .trim()
                         librariesUnavailable.add(library to dueDate)
                     }
 
-                    statusText.contains("bestellbar") -> librariesOrderable.add(library)
+                    statusText.contains("entliehen") -> {
+                        val dueDate = "Keine Vormerkung möglich"
+                        librariesUnavailable.add(library to dueDate)
+                    }
+
+                    statusText.contains("bestellbar") -> {
+                        librariesOrderable.add(library)
+                    }
                 }
             }
-
-            LibraryMedia(
-                url = url,
-                isAvailable = available,
-                year = extendedMedia?.year?.replace("[", "")?.replace("]", "") ?: "",
-                title = title,
-                dueDates = dueDates,
-                kindOfMedium = extendedMedia?.kindOfMedium ?: kindOfMedium,
-                author = extendedMedia?.author ?: "",
-                actors = extendedMedia?.actors ?: emptyList(),
-                language = extendedMedia?.language ?: "",
-                isbn = extendedMedia?.isbn ?: "",
-                publisher = extendedMedia?.publisher ?: "",
-                direction = extendedMedia?.direction ?: "",
-                availableLibraries = librariesAvailable,
-                unavailableLibraries = librariesUnavailable,
-                orderableLibraries = librariesOrderable
-            )
         }
+
+        val finalAvailability = if (isAvailableInDetails) {
+            true
+        } else if (librariesUnavailable.isNotEmpty()) {
+            false
+        } else {
+            available
+        }
+
+        /* --------- object creation – only isAvailable changed --------- */
+        LibraryMedia(
+            url = url,
+            isAvailable = finalAvailability,
+            year = extendedMedia?.year?.replace("[", "")?.replace("]", "") ?: "",
+            title = title,
+            dueDates = librariesUnavailable.map { it.second },
+            kindOfMedium = extendedMedia?.kindOfMedium ?: kindOfMedium,
+            author = extendedMedia?.author ?: "",
+            actors = extendedMedia?.actors ?: emptyList(),
+            language = extendedMedia?.language ?: "",
+            isbn = extendedMedia?.isbn ?: "",
+            publisher = extendedMedia?.publisher ?: "",
+            direction = extendedMedia?.direction ?: "",
+            availableLibraries = librariesAvailable,
+            unavailableLibraries = librariesUnavailable,
+            orderableLibraries = librariesOrderable
+        )
     }
 
     suspend fun parseDetailsTab(
@@ -527,7 +595,6 @@ class LibrarySearchService {
     }
 
 
-
     /**
      * Is invoked on the search results list
      * @return List of search results as DataClass LibraryMedia
@@ -537,10 +604,12 @@ class LibrarySearchService {
         val table = doc.select("table").firstOrNull() ?: return results
         for (row in table.select("tr").filter { row -> row.select("th").isNotEmpty() }) {
             try {
-                val titleTag = row.select("a[href][title=null]").firstOrNull() ?: row.select("a[href]:not([title='in die Merkliste'])").firstOrNull() ?: row.select("a[href]:not([title='vormerken/bestellen'])").firstOrNull()
+                val titleTag = row.select("a[href][title=null]").firstOrNull()
+                    ?: row.select("a[href]:not([title='in die Merkliste'])").firstOrNull()
+                    ?: row.select("a[href]:not([title='vormerken/bestellen'])").firstOrNull()
                 val title = titleTag?.text()?.trim() ?: continue
                 val text = row.select("td").text()
-                var year = ""
+                var year: String
                 val bracketMatch = "\\[(\\d{4})]".toRegex().find(text)
                 year = bracketMatch?.groupValues?.get(1) ?: run {
                     "\\b(20\\d{2})\\b".toRegex().find(text)?.groupValues?.get(1) ?: ""
@@ -549,7 +618,9 @@ class LibrarySearchService {
                 val itemLink = titleTag.attr("href")
                 val kindOfMediumRaw = row.select("img").firstOrNull()
                 val kindOfMedium = kindOfMediumRaw?.attr("title") ?: ""
-                val memAnchor = row.select("a[title='in die Merkliste'], a[title='aus der Merkliste löschen']").firstOrNull()
+                val memAnchor =
+                    row.select("a[title='in die Merkliste'], a[title='aus der Merkliste löschen']")
+                        .firstOrNull()
                 val memTitle = memAnchor?.attr("title") ?: ""
                 val memHref = memAnchor?.attr("href")?.let { "$BASE_LOGGED_IN_URL$it" }
                 val isInMemList = memTitle.contains("aus der Merkliste")
@@ -579,4 +650,18 @@ class LibrarySearchService {
     private fun getCurrentTab(doc: Document): String {
         return doc.select("#current2").text()
     }
+
+    suspend fun getWishlistItemDetails(itemUrl: String): LibraryMedia {
+        val cookieManager = CookieManager.getInstance()
+        return withContext(Dispatchers.IO) {
+            val response = Jsoup.connect(itemUrl)
+                .cookies(cookieManager.getCookies())
+                .timeout(30000)
+                .execute()
+
+            val doc = response.parse()
+            parseItemDetails(doc, itemUrl, true)
+        }
+    }
+
 }
