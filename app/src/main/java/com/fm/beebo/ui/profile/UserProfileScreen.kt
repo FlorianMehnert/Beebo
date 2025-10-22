@@ -65,11 +65,8 @@ fun UserProfileScreen(
         userViewModel.initialize(context)
     }
 
-    // Fetch account details when logged in
-    LaunchedEffect(userViewModel.isLoggedIn) {
-        if (userViewModel.isLoggedIn && userViewModel.accountFees == null) {
-            userViewModel.fetchAccountDetails()
-        }
+    LaunchedEffect(Unit) {
+        userViewModel.fetchWishlist()
     }
 
     Scaffold(
