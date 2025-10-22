@@ -18,7 +18,6 @@ fun parseTitleBlock(cell: Element, fallbackIndex: Int): Triple<String, String, S
         .split(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE))  // Split on <br> or <br/>
         .map { fragment ->
             val parsed = Jsoup.parse(fragment).text().trim()
-            android.util.Log.d("ParseTitle", "Fragment: '$fragment' -> Parsed: '$parsed'")
             parsed
         }
         .filter { it.isNotBlank() }
@@ -60,7 +59,5 @@ fun logToFile(message: String) {
             writer.appendLine("${System.currentTimeMillis()}: $message")
         }
     } catch (e: IOException) {
-        // Optionally handle logging failure (e.g., print to Logcat)
-        android.util.Log.e("Logger", "Failed to write log", e)
     }
 }

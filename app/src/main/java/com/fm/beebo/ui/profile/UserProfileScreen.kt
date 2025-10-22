@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
-import com.fm.beebo.datastore.SettingsDataStore
 import com.fm.beebo.models.LibraryMedia
 import com.fm.beebo.network.NetworkConfig
 import com.fm.beebo.network.syncToHttpClient
@@ -62,7 +61,7 @@ fun UserProfileScreen(
 
     // Initialize UserViewModel
     LaunchedEffect(Unit) {
-        userViewModel.initialize(context)
+        userViewModel.initialize()
     }
 
     LaunchedEffect(Unit) {

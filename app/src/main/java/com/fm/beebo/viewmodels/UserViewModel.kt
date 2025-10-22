@@ -101,51 +101,6 @@ class UserViewModel : ViewModel() {
         }
     }
 
-    fun toggleWishlistItem(item: LibraryMedia) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val cookieManager = CookieManager.getInstance()
-                val cookies = cookieManager.getCookies()
-
-                // Extract the item position from the URL
-                val urlPattern = "curPos=(\\d+)".toRegex()
-                val posMatch = urlPattern.find(item.url)
-                val curPos = posMatch?.groupValues?.get(1) ?: return@launch
-
-                // Extract identifier from URL
-                val identifierPattern = "identifier=([^&]+)".toRegex()
-                val identifierMatch = identifierPattern.find(item.url)
-                val identifier = identifierMatch?.groupValues?.get(1) ?: return@launch
-
-                // Build the wishlist URL
-                val wishlistUrl =
-                    "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/memorizeHitList.do?" +
-                            "methodToCall=addToMemorizeList&curPos=$curPos&forward=hitlist&identifier=$identifier"
-
-                // Make the request to add/remove from wishlist
-                val response = Jsoup.connect(wishlistUrl)
-                    .cookies(cookies)
-                    .timeout(30000)
-                    .execute()
-
-                // Update local wishlist state on main thread
-                val itemId = "${item.title}|${item.year}|${item.kindOfMedium.name}"
-                withContext(Dispatchers.Main) {
-                    if (_wishList.value.contains(itemId)) {
-                        _wishList.value = _wishList.value - itemId
-                    } else {
-                        _wishList.value = _wishList.value + itemId
-                    }
-                }
-
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    errorMessage = "Fehler beim Aktualisieren der Merkliste: ${e.message}"
-                }
-            }
-        }
-    }
-
     fun toggleWishlistUsingServerLink(item: LibraryMedia) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -200,15 +155,6 @@ class UserViewModel : ViewModel() {
         }
     }
 
-    fun syncWishlistFromSearchResult(items: List<LibraryMedia>) {
-        val parsed = items.filter { it.isInMemorizeList }
-        val ids = parsed.map {
-            "${it.title}|${it.year}|${it.kindOfMedium.name}"
-        }.toSet()
-        _wishList.value = ids
-    }
-
-
 
     fun fetchWishlist() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -255,17 +201,28 @@ class UserViewModel : ViewModel() {
                                 val mediaImg   = row.select("img[title]").firstOrNull()
                                 val mediaType  = mediaImg?.attr("title") ?: "Other"
 
-                                val detailUrl  = "${NetworkConfig.BASE_LOGGED_IN_URL}${availabilityLink.attr("href")}"
+                                val availabilityUrl = availabilityLink.attr("href")
+                                val curPosMatch = "curPos=(\\d+)".toRegex().find(availabilityUrl)
+                                val curPos = curPosMatch?.groupValues?.get(1) ?: "1"
+
+                                val identifierInput = row.select("input[name='identifier']").firstOrNull()
+                                val identifier = identifierInput?.attr("value") ?: run {
+                                    val checkboxInput = row.select("input[type='checkbox']").firstOrNull()
+                                    checkboxInput?.attr("value") ?: "unknown_${index}"
+                                }
+
+                                val detailUrl = "${NetworkConfig.BASE_LOGGED_IN_URL}$availabilityUrl"
 
                                 val libraryMedia = LibraryMedia(
-                                    title          = title,
-                                    url            = detailUrl,
-                                    year           = year,
-                                    author         = author,
-                                    kindOfMedium   = com.fm.beebo.ui.settings.mediaFromString(mediaType),
-                                    isAvailable    = true,
-                                    dueDates       = emptyList(),
-                                    isInMemorizeList = true
+                                    title = title,
+                                    url = detailUrl,
+                                    year = year,
+                                    author = author,
+                                    kindOfMedium = com.fm.beebo.ui.settings.mediaFromString(mediaType),
+                                    isAvailable = true,
+                                    dueDates = emptyList(),
+                                    isInMemorizeList = true,
+                                    memorizeActionUrl = "${NetworkConfig.BASE_LOGGED_IN_URL}$availabilityUrl"
                                 )
                                 wishlistItems.add(libraryMedia)
                                 wishlistIds.add("$title|$year|${libraryMedia.kindOfMedium.name}|$index")
@@ -292,64 +249,7 @@ class UserViewModel : ViewModel() {
     }
 
 
-    fun isInWishlist(item: LibraryMedia): Boolean {
-        val uniqueId = "${item.title}|${item.year}|${item.kindOfMedium.name}"
-        return _wishList.value.contains(uniqueId)
-    }
-
-    suspend fun getWishlistItems(): List<LibraryMedia> = withContext(Dispatchers.IO) {
-        val wishlistItems = mutableListOf<LibraryMedia>()
-
-        try {
-            val cookieManager = CookieManager.getInstance()
-            val cookies = cookieManager.getCookies()
-
-            val wishlistUrl =
-                "${NetworkConfig.BASE_LOGGED_IN_URL}/webOPACClient/memorizelist.do?methodToCall=show"
-            val response = Jsoup.connect(wishlistUrl)
-                .cookies(cookies)
-                .timeout(30000)
-                .execute()
-
-            val doc = response.parse()
-
-            // Parse each wishlist item
-            doc.select("table tr").forEach { row ->
-                val titleElement = row.select("a[href*='singleHit.do']").firstOrNull()
-                if (titleElement != null) {
-                    val title = titleElement.text().trim().replace("Â¬", "")
-                    val url = NetworkConfig.BASE_LOGGED_IN_URL + titleElement.attr("href")
-
-                    val yearText = row.text()
-                    val yearPattern = "\\[(\\d{4})]".toRegex()
-                    val year = yearPattern.find(yearText)?.groupValues?.get(1) ?: ""
-
-                    val mediaTypeImg = row.select("img[title]").firstOrNull()
-                    val mediaType = mediaTypeImg?.attr("title") ?: "Other"
-
-                    val isAvailable = row.select("span.textgruen").isNotEmpty()
-
-                    wishlistItems.add(
-                        LibraryMedia(
-                            title = title,
-                            url = url,
-                            year = year,
-                            kindOfMedium = com.fm.beebo.ui.settings.mediaFromString(mediaType),
-                            isAvailable = isAvailable,
-                            author = "", // Will be filled when details are loaded
-                            dueDates = emptyList()
-                        )
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            // Return empty list if error
-        }
-
-        return@withContext wishlistItems
-    }
-
-    fun initialize(context: Context) {
+    fun initialize() {
         // Fetch wishlist if logged in
         if (isLoggedIn) {
             fetchWishlist()
